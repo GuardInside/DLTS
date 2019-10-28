@@ -80,15 +80,19 @@ BOOL MainWindow_OnCreate(HWND hwnd, LPCREATESTRUCT)
     hGraph = gCreateWindow(hInst, hwnd, WS_CHILD|WS_DLGFRAME|WS_VISIBLE);
     gPosition(hGraph, 10, 22);
     gSize(hGraph, 340, 200);
+    gPrecision(hGraph, 0, 2);
     hGraph_DAQ = gCreateWindow(hInst, hwnd, WS_CHILD|WS_DLGFRAME|WS_VISIBLE);
     gPosition(hGraph_DAQ, 370, 22);
     gSize(hGraph_DAQ, 340, 200);
+    gPrecision(hGraph_DAQ, 0, 3);
     hRelax = gCreateWindow(hInst, hwnd, WS_CHILD|WS_DLGFRAME|WS_VISIBLE);
     gPosition(hRelax, 10, 249);
     gSize(hRelax, 340, 210);
+    gPrecision(hRelax, 0, 3);
     hGraph_DLTS = gCreateWindow(hInst, hwnd, WS_CHILD|WS_DLGFRAME|WS_VISIBLE);
     gPosition(hGraph_DLTS, 370, 249);
     gSize(hGraph_DLTS, 340, 210);
+    gPrecision(hRelax, 2, 3);
     /* Индикатор выполнения */
     hProgress = CreateWindow(PROGRESS_CLASS, NULL, WS_VISIBLE | WS_CHILD, 733, 195, 140, 20, hwnd, (HMENU)ID_PROGRESS, hInst, NULL);
         SendMessage(hProgress, PBM_SETRANGE, 0, 100 << 16);
@@ -137,13 +141,14 @@ void MainWindow_OnCommand(HWND hwnd, int id, HWND, UINT)
         case ID_BUTTON_PREVIOUS_RELAXATION:
             if(index_relax == 0 || SavedRelaxations.empty())
                 break;
-            else index_relax--;
+            index_relax--;
             PlotRelax();
+
             break;
         case ID_BUTTON_NEXT_RELAXATION:
             if(index_relax == SavedRelaxations.size()-1 || SavedRelaxations.empty())
                 break;
-            else index_relax++;
+            index_relax++;
             PlotRelax();
             break;
         /* Сохранить файл */

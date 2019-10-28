@@ -652,7 +652,7 @@
 	<sstream>
 	<iomanip>
 
-1572252996 source:c:\users\Виктор\documents\github\dlts\cpp\data acuisition\daq.cpp
+1572254265 source:c:\users\Виктор\documents\github\dlts\cpp\data acuisition\daq.cpp
 	"daq.h"
 	"variable.h"
 
@@ -762,7 +762,7 @@
 	<dlts_math.h>
 	<daq.h>
 
-1572253478 source:c:\users\Виктор\documents\github\dlts\cpp\facility\drawhelp.cpp
+1572256160 source:c:\users\Виктор\documents\github\dlts\cpp\facility\drawhelp.cpp
 	"graph.h"
 	"variable.h"
 	"gwin.h"
@@ -871,7 +871,7 @@
 1572175641 source:c:\users\Виктор\documents\github\dlts\cpp\graph and window\weight_setting.cpp
 	<winfunc.h>
 
-1572253911 source:c:\users\Виктор\documents\github\dlts\cpp\main.cpp
+1572255734 source:c:\users\Виктор\documents\github\dlts\cpp\main.cpp
 	<windows.h>
 	<windowsx.h>
 	<commctrl.h>
@@ -906,10 +906,10 @@
 	<richedit.h>
 	"..\headers\resource.h"
 
-1572254028 source:c:\users\Виктор\documents\github\dlts\cpp\graph and window\gwin.cpp
+1572256455 source:c:\users\Виктор\documents\github\dlts\cpp\graph and window\gwin.cpp
 	"gwin.h"
 
-1572208337 c:\users\Виктор\documents\github\dlts\headers\gwin.h
+1572254814 c:\users\Виктор\documents\github\dlts\headers\gwin.h
 	<windows.h>
 	<windowsx.h>
 	<string>

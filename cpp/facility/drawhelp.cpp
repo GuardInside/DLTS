@@ -58,7 +58,7 @@ VOID plotDAQ()
 
 VOID PlotRelax()
 {
-    EnterCriticalSection(&csGlobalVariable);
+    TryEnterCriticalSection(&csGlobalVariable);
     gwin::gVector vData1;
     stringstream buffer;
     for(size_t i = 0; i < Relaxation.size(); i++)

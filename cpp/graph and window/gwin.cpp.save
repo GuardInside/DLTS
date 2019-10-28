@@ -20,23 +20,24 @@ namespace gwin
         }
         gPlotInfo():
             hBitMap{NULL},
-            iMark1{5}, iMark2{10},
+            iMark1{5}, iMark2{10}, iAdMark1{2}, iAdMark2{0},
             iPrec1{DEFAULT_PRECISION}, iPrec2{DEFAULT_PRECISION},
             hAxisPen{CreatePen(PS_SOLID, 0, RGB(255,255,255))},
             hPlotPen{CreatePen(PS_SOLID, 0, RGB(255,215,0))},
-            hGridPen{CreatePen(PS_DOT, 0, RGB(192, 192, 192))},
-            crTextColor{RGB(0,255,0)},
-            hTextFont{CreateFont(DEFAULT_HEIGHT_FONT, DEFAULT_WIDTH_FONT, 0, 0, FW_NORMAL, 1, 0, 0,
+            hGridPen{CreatePen(PS_DOT, 0, RGB(192,192,192))},
+            crTextColor{RGB(0,255,0)}, crAdInfoColor{RGB(0,255,0)},
+            hTextFont{CreateFont(DEFAULT_HEIGHT_FONT, DEFAULT_WIDTH_FONT, 0, 0, FW_LIGHT, 1, 0, 0,
                                  DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
-                                 PROOF_QUALITY, DEFAULT_PITCH | FF_ROMAN, "Arial")},
+                                 PROOF_QUALITY, FIXED_PITCH | FF_MODERN, "")},
             bfEnableGrid{true}{}
         HBITMAP hBitMap;
-        UINT iMark1, iMark2;
+        UINT iMark1, iMark2, iAdMark1, iAdMark2;
         INT iPrec1, iPrec2;
         HPEN hAxisPen, hPlotPen, hGridPen;
-        COLORREF crTextColor;
+        COLORREF crTextColor, crAdInfoColor;
         HFONT hTextFont;
-        BOOL bfEnableGrid;
+        BOOL bfEnableGrid, bfEnableAdInfo;
+        std::string strAdInfo;
     };
 
     class gBuffer
@@ -52,6 +53,11 @@ namespace gwin
             {
                 buffer.str("");
                 buffer << str;
+                return buffer;
+            }
+            std::stringstream& operator>>(std::string& str)
+            {
+                buffer >> str;
                 return buffer;
             }
             std::string str()
@@ -76,21 +82,54 @@ namespace gwin
 
     std::map<HWND, gPlotInfo> _gMap;
 
-    LRESULT CALLBACK _gWinProcess (HWND, UINT, WPARAM, LPARAM);
-    VOID _gOnCommand(HWND, int, HWND, UINT);
-    VOID _gOnPaint(HWND hWnd);
-
     VOID gWindowMetric(HWND hWnd, LONG *iWidth, LONG *iHeight);
     VOID gClearBitmap(HWND hWnd);
     VOID gTransformPlot(HWND hWnd, HDC &hdc);
     BOOL gMulDrawPlot(HWND hWnd, HDC &hdc, const gVector *vData1, const gMulVector *vMulData2);
     BOOL gDrawPlot(HWND hWnd, HDC &hdc, const gVector *vData1, const gVector *vData2);
+    BOOL gDrawLegend(HWND hWnd, HDC& hdc);
     BOOL gEmbedBitmap(HWND hWnd, HDC &hdc);
+    BOOL gSplit(std::string str, gInfoVector *vInfo);
+
+    LRESULT CALLBACK _gWinProcess (HWND, UINT, WPARAM, LPARAM);
+    VOID _gOnCommand(HWND, int, HWND, UINT);
+    VOID _gOnPaint(HWND hWnd);
+    VOID _gOnLButtonDown(HWND hWnd, BOOL, INT, INT, UINT);
 }
 
 /* ********************** */
 /*  Интерфейс библиотеки  */
 /* ********************** */
+BOOL gwin::gPrecision(HWND hWnd, INT iPrec1, INT iPrec2)
+{
+    _gMap.at(hWnd).iPrec1 = iPrec1;
+    _gMap.at(hWnd).iPrec2 = iPrec2;
+    return TRUE;
+}
+
+BOOL gwin::gMark(HWND hWnd, int iMark1, int iMark2, int iAdMark1, int iAdMark2)
+{
+    if(iMark1 < 0 || iMark2 < 0 || iAdMark1 < 0 || iAdMark2 < 0)
+        return FALSE;
+    _gMap.at(hWnd).iMark1 = iMark1;
+    _gMap.at(hWnd).iMark2 = iMark2;
+    _gMap.at(hWnd).iAdMark1 = iAdMark1;
+    _gMap.at(hWnd).iAdMark2 = iAdMark2;
+    return TRUE;
+}
+
+BOOL gwin::gAdditionalInfo(HWND hWnd, std::string str)
+{
+    if(str.empty())
+    {
+        _gMap.at(hWnd).bfEnableAdInfo = FALSE;
+        return FALSE;
+    }
+    _gMap.at(hWnd).strAdInfo = str;
+    _gMap.at(hWnd).bfEnableAdInfo = TRUE;
+    return TRUE;
+}
+
 HWND gwin::gCreateWindow(HINSTANCE hInst, HWND hWndParent, DWORD style)
 {
     const std::string strClass = "gWinClass";
@@ -115,21 +154,25 @@ BOOL gwin::gClose(HWND hWnd)
 BOOL gwin::gMulData(HWND hWnd, const gVector *vData1, const gMulVector *vMulData)
 {
     /** Проверка полноты **/
-    /*if(vData1->size() != vMulData->at(0).size() || vData1->empty())
-        return FALSE;*/
+    if(vData1->size() == 0)
+        return FALSE;
     /** Подготовка к отрисовке **/
     LONG iWidth, iHeight;
     gWindowMetric(hWnd, &iWidth, &iHeight);
     HDC hdc = CreateCompatibleDC(GetDC(hWnd));
     HBITMAP bitPlot = CreateCompatibleBitmap(GetDC(hWnd), iWidth, iHeight);
     SelectObject(hdc, bitPlot);
-    /** Отрисовка в буфере памяти **/
-    PatBlt(hdc, 0, 0, iWidth, iHeight, BLACKNESS);
     gTransformPlot(hWnd, hdc);
+    /** Отрисовка графика в буфере памяти **/
+    PatBlt(hdc, 0, 0, iWidth, iHeight, BLACKNESS);
     gMulDrawPlot(hWnd, hdc, vData1, vMulData);
-    /** Конец отрисовки **/
+    /** Конец отрисовки графика **/
     gClearBitmap(hWnd);
     _gMap.at(hWnd).hBitMap = bitPlot;
+    /** Отрисовка легенды в буфере памяти **/
+    //PatBlt(hdc, 0, 0, iWidth, iHeight, BLACKNESS);
+    //gMulDrawPlot(hWnd, hdc, vData1, vMulData);
+    /** Конец отрисовки **/
     DeleteDC(hdc);
     InvalidateRect(hWnd, NULL, FALSE);
     return TRUE;
@@ -138,8 +181,8 @@ BOOL gwin::gMulData(HWND hWnd, const gVector *vData1, const gMulVector *vMulData
 BOOL gwin::gData(HWND hWnd, const gVector *vData1, const gVector *vData2)
 {
     /** Проверка полноты **/
-    /*if(vData1->size() != vData2->size() || vData1->empty())
-        return FALSE;*/
+    if(vData1->size() == 0)
+        return FALSE;
     const gMulVector vMulData2{*vData2};
     return gMulData(hWnd, vData1, &vMulData2);
 }
@@ -163,7 +206,7 @@ BOOL gwin::gFont(HWND hWnd, int iHeight, int iWidth, int iAngle, int iWeight, st
     DeleteObject((HFONT)_gMap.at(hWnd).hTextFont);
     _gMap.at(hWnd).hTextFont = CreateFont(iHeight, iWidth, 0, iAngle, iWeight, 1, 0, 0,
                              DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
-                             PROOF_QUALITY, DEFAULT_PITCH | FF_ROMAN, strFontName.c_str());
+                             PROOF_QUALITY, FIXED_PITCH | FF_MODERN, strFontName.c_str());
     return TRUE;
 }
 
@@ -198,12 +241,13 @@ VOID gwin::gTransformPlot(HWND hWnd, HDC &hdc)
 BOOL gwin::gMulDrawPlot(HWND hWnd, HDC &hdc, const gVector *vData1, const gMulVector *vMulData2)
 {
     static CONST LONG iPlotSize = GPLOT_LOGICAL_SIZE; /* Размер графика в логических единицах */
-    HPEN &hAxisPen = _gMap.at(hWnd).hAxisPen,
-         &hPlotPen = _gMap.at(hWnd).hPlotPen,
-         &hGridPen = _gMap.at(hWnd).hGridPen,
+    HPEN hAxisPen = _gMap.at(hWnd).hAxisPen,
+         hPlotPen = _gMap.at(hWnd).hPlotPen,
+         hGridPen = _gMap.at(hWnd).hGridPen,
          hOldPen;
-    INT iIntent = iPlotSize/100;
-    UINT iMark1 = _gMap.at(hWnd).iMark1, iMark2 = _gMap.at(hWnd).iMark2; /* Число рисок */
+    INT iIndent = iPlotSize/100;
+    UINT iMark1 = _gMap.at(hWnd).iMark1, iMark2 = _gMap.at(hWnd).iMark2,
+         iAdMark1 = _gMap.at(hWnd).iAdMark1,  iAdMark2 = _gMap.at(hWnd).iAdMark2;/* Число рисок */
     COLORREF OldTextColor;
     HFONT hOldFont;
     gBuffer buff;
@@ -245,12 +289,12 @@ BOOL gwin::gMulDrawPlot(HWND hWnd, HDC &hdc, const gVector *vData1, const gMulVe
         for(z = min_x, i = 0; i <= iMark1; z += hx, i++)
         {
             x = int((z - min_x)*iPlotSize/(max_x - min_x) + 0.5);
-            MoveToEx(hdc, x, -iIntent+Y, NULL);
-            LineTo(hdc, x, iIntent+Y);
+            MoveToEx(hdc, x, -iIndent+Y, NULL);
+            LineTo(hdc, x, iIndent+Y);
             if(c == 0)
             {
                 buff << z;
-                TextOut(hdc, x-0.5*pIndent.x, y - iIntent, buff.str().c_str(), buff.str().length());
+                TextOut(hdc, x-0.5*pIndent.x, y - iIndent, buff.str().c_str(), buff.str().length());
             }
         }
         /* Размечаем масштаб оси Y */
@@ -261,8 +305,8 @@ BOOL gwin::gMulDrawPlot(HWND hWnd, HDC &hdc, const gVector *vData1, const gMulVe
         for (z = min_y, i = 0; i <= iMark2; z += hy, i++)
         {
             y = int((z - min_y)*iPlotSize/(max_y - min_y) + 0.5);
-            MoveToEx(hdc, -iIntent+X, y, NULL);
-            LineTo(hdc, iIntent+X, y);
+            MoveToEx(hdc, -iIndent+X, y, NULL);
+            LineTo(hdc, iIndent+X, y);
             if(c == 0)
             {
                 buff << z;
@@ -275,25 +319,33 @@ BOOL gwin::gMulDrawPlot(HWND hWnd, HDC &hdc, const gVector *vData1, const gMulVe
     if(_gMap.at(hWnd).bfEnableGrid)
     {
         /* Горизонтальные линии */
-        for(z = min_y + hy; z < max_y; z += hy)
+        for(z = min_y + hy/(iAdMark2+1); z < max_y-0.5*hy/(iAdMark2+1); z += hy/(iAdMark2+1))
         {
             y = int((z - min_y)*iPlotSize/(max_y - min_y) + 0.5);
-            MoveToEx(hdc, iIntent, y, NULL);
-            LineTo(hdc, iPlotSize-iIntent, y);
+            MoveToEx(hdc, iIndent, y, NULL);
+            LineTo(hdc, iPlotSize-iIndent, y);
         }
         /* Вертикальные линии */
-        for(z = min_x + hx; z < max_x; z += hx)
+        for(z = min_x + hx/(iAdMark1+1); z < max_x-0.5*hy z += hx/(iAdMark1+1))
         {
             x = int((z - min_x)*iPlotSize/(max_x - min_x) + 0.5);
-            MoveToEx(hdc, x, iIntent, NULL);
-            LineTo(hdc, x, iPlotSize-iIntent);
+            MoveToEx(hdc, x, iIndent, NULL);
+            LineTo(hdc, x, iPlotSize-iIndent);
         }
     }
     /* Строим график */
     SelectObject(hdc, (HPEN)hPlotPen);
     const gVector &xAxis = *vData1;
+    const int iMaxPlotNumber = vMulData2->size();
+    int iPlotNumber = 1;
     for(const auto &extiter: *vMulData2)
     {
+        if(iMaxPlotNumber > 1)
+        {
+            hPlotPen = CreatePen(PS_SOLID, 0, RGB(255.0*iPlotNumber/iMaxPlotNumber, 0, 0));
+            SelectObject(hdc, (HPEN)hPlotPen);
+            iPlotNumber++;
+        }
         const gVector &yAxis = extiter;
         y = int((yAxis[0] - min_y)*iPlotSize/(max_y - min_y));
         MoveToEx(hdc, 0, y, NULL);
@@ -303,19 +355,20 @@ BOOL gwin::gMulDrawPlot(HWND hWnd, HDC &hdc, const gVector *vData1, const gMulVe
             y = int((yAxis[i] - min_y)*iPlotSize/(max_y - min_y) + 0.5);
             LineTo(hdc, x, y);
         }
+        if(iMaxPlotNumber > 1) DeleteObject(hPlotPen);
     }
     /* Выводим дополнительную информацию */
-    if(!_gMap.at(hWnd).strAdInfo.empty())
+    SetTextColor(hdc, _gMap.at(hWnd).crAdInfoColor);
+    if(_gMap.at(hWnd).bfEnableAdInfo)
     {
-        std::string strAdInfo;
-        std::stringstream buff;
-        buff << _gMap.at(hWnd).strAdInfo;
+        gInfoVector vInfo;
+        gSplit(_gMap.at(hWnd).strAdInfo, &vInfo);
         int s = 0;
-        int uTextHeight = 80;
-        while(std::getline(buff, strAdInfo))
+        for(const auto &it: vInfo)
         {
-            TextOut(hdc, iIndent, iPlotSize - s*uTextHeight, buff.str().data(), buff.str().length());
-            s++;
+            SIZE szText;
+            GetTextExtentPoint32(hdc, it.data(), it.length(), &szText);
+            TextOut(hdc, iPlotSize-szText.cx, iPlotSize - szText.cy*(s++), it.data(), it.length());
         }
     }
     SelectObject(hdc, (HPEN)hOldPen);
@@ -346,6 +399,28 @@ BOOL gwin::gEmbedBitmap(HWND hWnd, HDC &hdc)
     return FALSE;
 }
 
+BOOL gwin::gSplit(std::string str, gInfoVector *vInfo)
+{
+    if(str.empty()) return FALSE;
+    for(size_t i = 0, j = 0, s = 0, len = 0; i < str.length(); i++)
+    {
+        len++;
+        if(str[i] == '\n' || i == str.length()-1)
+        {
+            vInfo->push_back(std::string(str, j, len));
+            j = i + 1;
+            s++;
+            len = 0;
+        }
+    }
+    return TRUE;
+}
+
+gwin::gDrawLegend(HWND hWnd, HDC &hdc)
+{
+
+
+}
 /* *************** */
 /* Оконная функция */
 /* *************** */
@@ -355,10 +430,10 @@ LRESULT CALLBACK gwin::_gWinProcess(HWND hWnd, UINT message, WPARAM wParam, LPAR
     switch (message)
     {
         HANDLE_MSG(hWnd, WM_PAINT, _gOnPaint);
+        HANDLE_MSG(hWnd, WM_LBUTTONDOWN, _gOnLButtonDown);
         //HANDLE_MSG(hWnd, WM_COMMAND, _gOnCommand);
         //HANDLE_MSG(hWnd, WM_TIMER, MainWindow_OnTimer);
         case WM_CREATE:
-
             break;
         default:
             return DefWindowProc (hWnd, message, wParam, lParam);
@@ -375,3 +450,8 @@ VOID gwin::_gOnPaint(HWND hWnd)
     EndPaint(hWnd, &ps);
 }
 
+VOID gwin::_gOnLButtonDown(HWND hWnd, BOOL, INT, INT, UINT)
+{
+    HDC hdc;
+    //gwin::gDrawLegend(hWnd, hdc);
+}

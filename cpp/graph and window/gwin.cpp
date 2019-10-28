@@ -100,6 +100,13 @@ namespace gwin
 /* ********************** */
 /*  Интерфейс библиотеки  */
 /* ********************** */
+BOOL gwin::gPrecision(HWND hWnd, INT iPrec1, INT iPrec2)
+{
+    _gMap.at(hWnd).iPrec1 = iPrec1;
+    _gMap.at(hWnd).iPrec2 = iPrec2;
+    return TRUE;
+}
+
 BOOL gwin::gMark(HWND hWnd, int iMark1, int iMark2, int iAdMark1, int iAdMark2)
 {
     if(iMark1 < 0 || iMark2 < 0 || iAdMark1 < 0 || iAdMark2 < 0)
@@ -312,7 +319,7 @@ BOOL gwin::gMulDrawPlot(HWND hWnd, HDC &hdc, const gVector *vData1, const gMulVe
     if(_gMap.at(hWnd).bfEnableGrid)
     {
         /* Горизонтальные линии */
-        for(z = min_y + hy/(iAdMark2+1); z < max_y; z += hy/(iAdMark2+1))
+        for(z = min_y + hy/(iAdMark2+1); z < max_y-0.5*hy/(iAdMark2+1); z += hy/(iAdMark2+1))
         {
             y = int((z - min_y)*iPlotSize/(max_y - min_y) + 0.5);
             MoveToEx(hdc, iIndent, y, NULL);

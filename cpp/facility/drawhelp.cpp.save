@@ -53,30 +53,34 @@ VOID plotDAQ()
     for(size_t i = 0; i < SignalDAQ.size(); i++)
         vData1.push_back(i*(1.0/rate_DAQ)*1000.0);
     gwin::gData(hGraph_DAQ, &vData1, &SignalDAQ);
-    LeaveCriticalSection(&csRelaxation);
+    LeaveCriticalSection(&csGlobalVariable);
 }
 
 VOID PlotRelax()
 {
+    EnterCriticalSection(&csGlobalVariable);
     gwin::gVector vData1;
     stringstream buffer;
     for(size_t i = 0; i < Relaxation.size(); i++)
         vData1.push_back(i*(1/rate_DAQ)*1000);
     if(index_mode == DLTS && !xAxisDLTS.empty())
         rewrite(buffer) << xAxisDLTS[index_relax] << " K";
-    else if(index_mode == ITS && !itsLowVoltages.empty())
+    else if(index_mode == ITS && !itsLowVoltages.size() != 0)
         rewrite(buffer) << fixed << setprecision(2) << itsTemperature << " K\n"
                         << setprecision(3) << "[" << itsLowVoltages[index_relax] << "," << itsUpVoltages[index_relax] << "] V";
     gwin::gAdditionalInfo(hRelax, buffer.str());
     gwin::gData(hRelax, &vData1, &SavedRelaxations[index_relax]);
+    LeaveCriticalSection(&csGlobalVariable);
 }
 
 VOID PlotDLTS()
 {
+    EnterCriticalSection(&csGlobalVariable);
     if(index_mode == ITS) return;
     gwin::gMulVector vMulData2;
     for(int i = 0; i < CorTime.size(); i++)
         vMulData2.push_back(yAxisDLTS[i]);
     gwin::gMulData(hGraph_DLTS, &xAxisDLTS, &vMulData2);
+    LeaveCriticalSection(&csGlobalVariable);
 }
 

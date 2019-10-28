@@ -11,6 +11,7 @@
 #include <cmath>
 
 namespace gwin{
+
 typedef std::vector<double> gVector;
 typedef std::vector<std::vector<double>> gMulVector;
 typedef std::vector<std::string> gInfoVector;
@@ -24,6 +25,7 @@ BOOL gSize(HWND hWnd, INT x, INT y);
 BOOL gFont(HWND hWnd, int iHeight, int iWidth, int iAngle, int iWeight, std::string strFontName = "");
 BOOL gAdditionalInfo(HWND hWnd, std::string);
 BOOL gMark(HWND hWnd, int iMark1, int iMark2, int iAdMark1, int iAdMark2);
+BOOL gPrecision(HWND hWnd, INT iPrec1, INT iPrec2);
 
 }
 #endif // GWIN_H
