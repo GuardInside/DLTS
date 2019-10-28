@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="DLTS" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Release">
+				<Option output="bin/Release/DLTS" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Release/" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-O2" />
+					<Add option="-std=c++14" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+					<Add library="visa/lib/visa32.lib" />
+					<Add library="DAQmx/lib/NIDAQmx.lib" />
+					<Add library="winmm" />
+				</Linker>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-Wall" />
+			<Add option="-std=c++14" />
+			<Add directory="gsl/include" />
+			<Add directory="headers" />
+		</Compiler>
+		<Linker>
+			<Add library="gdi32" />
+			<Add library="user32" />
+			<Add library="kernel32" />
+			<Add library="comctl32" />
+			<Add library="visa/lib/visa32.lib" />
+			<Add library="DAQmx/lib/NIDAQmx.lib" />
+			<Add library="gsl/lib/libgsl.a" />
+		</Linker>
+		<Unit filename="cpp/GPIB/GPIB.cpp" />
+		<Unit filename="cpp/GPIB/generator.cpp" />
+		<Unit filename="cpp/GPIB/pidtable.cpp" />
+		<Unit filename="cpp/GPIB/thermostat.cpp" />
+		<Unit filename="cpp/data acuisition/daq.cpp" />
+		<Unit filename="cpp/data acuisition/daq_thread.cpp" />
+		<Unit filename="cpp/facility/drawhelp.cpp" />
+		<Unit filename="cpp/facility/utility.cpp" />
+		<Unit filename="cpp/facility/winclasses.cpp" />
+		<Unit filename="cpp/facility/winhelp.cpp" />
+		<Unit filename="cpp/facility/winload.cpp" />
+		<Unit filename="cpp/facility/winstart.cpp" />
+		<Unit filename="cpp/graph and window/adv_settings.cpp" />
+		<Unit filename="cpp/graph and window/arrh_graph.cpp" />
+		<Unit filename="cpp/graph and window/cor_setting.cpp" />
+		<Unit filename="cpp/graph and window/general_setting.cpp" />
+		<Unit filename="cpp/graph and window/gwin.cpp" />
+		<Unit filename="cpp/graph and window/pid_setting.cpp" />
+		<Unit filename="cpp/graph and window/settings.cpp" />
+		<Unit filename="cpp/graph and window/signal_on_diode.cpp" />
+		<Unit filename="cpp/main.cpp" />
+		<Unit filename="cpp/math/commath.cpp" />
+		<Unit filename="cpp/math/interpolation.cpp" />
+		<Unit filename="cpp/math/weighfunc.cpp" />
+		<Unit filename="cpp/variable.cpp" />
+		<Unit filename="headers/GPIB.h" />
+		<Unit filename="headers/daq.h" />
+		<Unit filename="headers/dlts_math.h" />
+		<Unit filename="headers/facility.h" />
+		<Unit filename="headers/graph.h" />
+		<Unit filename="headers/gwin.h" />
+		<Unit filename="headers/interpolation.h" />
+		<Unit filename="headers/resource.h" />
+		<Unit filename="headers/variable.h" />
+		<Unit filename="headers/winf_rename_dlg.h" />
+		<Unit filename="headers/winfunc.h" />
+		<Unit filename="resource/resource.rc">
+			<Option compilerVar="WINDRES" />
+		</Unit>
+		<Extensions>
+			<code_completion />
+			<envvars />
+			<debugger />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>

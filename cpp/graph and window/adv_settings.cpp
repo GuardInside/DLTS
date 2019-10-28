@@ -1,0 +1,62 @@
+#include <winfunc.h>
+
+//Оконная функция диалогового окна расширенных настроек
+BOOL CALLBACK asdlg_proc(HWND hAdvSetDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+    static stringstream buff;
+    switch(uMsg)
+        {
+            case WM_INITDIALOG:
+            {
+                //Вывод информации при инициализации
+                buff << setprecision(2) << fixed;
+                //Вывести текущие настройки DAQ
+                rewrite(buff) << id_DAQ;
+                SetDlgItemText(hAdvSetDlg, ID_EDITCONTROL_DAQ, buff.str().data());
+                //Вывести текущие настройки LakeShore
+                rewrite(buff) << Thermostat.GetID();
+                SetDlgItemText(hAdvSetDlg, ID_EDITCONTROL_LAKESHORE, buff.str().data());
+                //Вывести текущие настройки генератора
+                rewrite(buff) << Generator.GetID();
+                SetDlgItemText(hAdvSetDlg, ID_EDITCONTROL_GENERATOR, buff.str().data());
+                //Вывести текущие настройки пора аналогового входа
+                rewrite(buff) << ai_port;
+                SetDlgItemText(hAdvSetDlg, ID_EDITCONTROL_AI, buff.str().data());
+                //Вывести текущие настройки порта ТТЛ сигнала
+                rewrite(buff) << pfi_ttl_port;
+                SetDlgItemText(hAdvSetDlg, ID_EDITCONTROL_TTL, buff.str().data());
+                //Вывести текущие настройки пора аналогового входа импульсов
+                rewrite(buff) << ai_port_pulse;
+                SetDlgItemText(hAdvSetDlg, ID_EDITCONTROL_AI_PULSE, buff.str().data());
+            }
+            return TRUE;
+            case WM_COMMAND:
+            {
+                switch(LOWORD(wParam))
+                {
+                    case ID_BUTTON_CLOSE_SETTINGS:
+                        EndDialog(hAdvSetDlg, 0);
+                    break;
+                    case ID_BUTTON_APPLY_SETTINGS:
+                        //Применить настройки DAQ
+                        id_DAQ = ApplySettingEditBox(hAdvSetDlg, ID_EDITCONTROL_DAQ);
+                        //Применить настройки LakeShore
+                        Thermostat.GetID() = ApplySettingEditBox(hAdvSetDlg, ID_EDITCONTROL_LAKESHORE);
+                        //Применить настройки генератора
+                        Generator.GetID() = ApplySettingEditBox(hAdvSetDlg, ID_EDITCONTROL_GENERATOR);
+                        //Применить настройки пора аналогового входа
+                        ai_port = ApplySettingEditBox(hAdvSetDlg, ID_EDITCONTROL_AI);
+                        //Применить настройки порта ТТЛ сигнала
+                        pfi_ttl_port = ApplySettingEditBox(hAdvSetDlg, ID_EDITCONTROL_TTL);
+                        //Применить настройки пора аналогового входа
+                        ai_port_pulse = ApplySettingEditBox(hAdvSetDlg, ID_EDITCONTROL_AI_PULSE);
+                        //Применить настройки к физическим устройствам и сохранить файл настроек
+                        ApplySettings();
+                        write_settings();
+                    break;
+                }
+                return TRUE;
+            }
+        }
+        return FALSE;
+}

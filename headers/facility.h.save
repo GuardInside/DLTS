@@ -1,0 +1,47 @@
+#ifndef FACILITY_H_INCLUDED
+#define FACILITY_H_INCLUDED
+#include <string>
+#include <sstream>
+#include <fstream>
+#include <cmath>
+#include <windows.h>
+#include <commctrl.h>
+#include <iomanip>
+#include <commdlg.h>
+#include <process.h>
+#include <GPIB.h>
+#include <daq.h>
+#include <dlts_math.h>
+#include <resource.h>
+#include "gwin.h"
+#include "variable.h"
+using namespace std;
+
+stringstream& rewrite(stringstream& buff);
+UINT    GetDlgItemTextMod(HWND hwnd, int nIDItem, stringstream& str_buf);
+double ApplySettingEditBox(HWND hwnd, int nIDEditBox, int prec = 0);
+string ApplySettingEditBoxString(HWND hwnd, int nIDEditBox);
+bool EmptyEditBox(HWND hwnd, int nIDEditBox);
+
+void write_settings();
+void read_settings();
+//Применяет текущие настройки зон к физическому устройству
+void SetZones();
+//Инициализация сборщика данных, термостата и зон для PID регулировки
+void ApplySettings();
+//Нажата кнопка старта
+void StartButPush(HWND hwnd);
+//Очистка векторов осей DLTS-кривых
+void ClearAxisDLTS();
+//Загружает Save-файл с усредненными сигналами релаксаций, строит DLTS-кривые и график Аррениуса
+unsigned __stdcall DownloadFile(void*);
+unsigned __stdcall SaveFile(void*);
+//Обновление DLTS-кривых
+void RefreshDLTS();
+void SaveRelaxSignal(double MeanTemp, const float64 *result);
+//Увеличивает SetPoint на величину StepTemp и снимает флаг стабилизации
+void prepare_next_set_point();
+/* Возвращает расширение открытого файла */
+string GetExtensionFile(char*, int);
+
+#endif // FACILITY_H_INCLUDED

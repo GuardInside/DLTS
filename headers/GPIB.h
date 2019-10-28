@@ -1,0 +1,86 @@
+#ifndef GPIB_H
+#define GPIB_H
+
+#include <windows.h>
+#include <visatype.h>
+#include <visa.h>
+#include <string>
+#include <sstream>
+#include <variable.h>
+#include <facility.h>
+#include <daq.h>
+
+#define READ_BUFFER_SIZE  64
+#define WRITE_BUFFER_SIZE 64
+#define QUANTITY_ZONE     10
+
+/* Базовый класс */
+class GPIB
+{
+    public:
+        GPIB();
+        /* Инициализация сессии по умолчанию; */
+        void InitSession();
+        /* Записать сообщение в очередь */
+        ViStatus Write(const std::stringstream& mes, ViUInt32*  rcount = nullptr);
+        ViStatus Write(const std::string mes, ViUInt32*  rcount = nullptr);
+        void Read(std::string&);
+        /* Прочитать сообщение-число из очереди */
+        void ReadDigit(double& digit);
+        void ReadDigit(int& digit);
+        int& GetID(){ return ID; }
+    private:
+        ViSession       hResMeneger;
+        ViSession       hInstrument;
+        ViUInt32        read;
+        unsigned char   ViBuffer[READ_BUFFER_SIZE];
+        int             ID;
+        ViStatus Init();
+};
+
+struct GENERATOR: public GPIB
+{
+    GENERATOR(): period{0}, width{0}, voltage_up{0}, voltage_low{0},
+                 begin_voltage{0}, end_voltage{0}, step_voltage{0},
+                 channel{1}, is_active{true}{}
+    /* Применить текущие настройки к прибору */
+    void Apply();
+    /* Измерить параметры импульса */
+    void mesure_pulse();
+
+    double period, width, voltage_up, voltage_low;
+    double voltage_up_measured, voltage_low_measured;
+    /* Для режима ITS */
+    double begin_voltage, end_voltage, step_voltage;
+    unsigned int channel;
+    bool is_active;
+};
+
+struct THERMOSTAT: public GPIB
+{
+    THERMOSTAT(): SetPoint{0}, EndPoint{0}, TempStep{0}, TempDisp{0}{}
+    void Apply();
+    /* Проверка корректности диапазона измерения температуры */
+    bool range_is_correct() const;
+    double SetPoint, EndPoint, TempStep, TempDisp;
+};
+
+struct PIDTABLE
+{
+        PIDTABLE();
+        /* Возвращает идентификатор ресурса */
+        int GetIDRes(const int, const string);
+        UINT GetActuallyHeatRange();
+
+        unsigned int P[QUANTITY_ZONE],
+                     I[QUANTITY_ZONE],
+                     D[QUANTITY_ZONE],
+                     range[QUANTITY_ZONE],
+                     upper_boundary[QUANTITY_ZONE];
+};
+
+extern GENERATOR    Generator;
+extern THERMOSTAT   Thermostat;
+extern PIDTABLE     ZoneTable;
+
+#endif

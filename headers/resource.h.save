@@ -1,0 +1,46 @@
+#ifndef IDC_STATIC
+#define IDC_STATIC (-1)
+#endif
+
+#define ID_ICON                                 101
+#define ID_MAIN_WINDOW                          103
+#define ID_SETTINGS_WINDOW                      104
+#define ID_MENU_MAIN                            111
+#define ID_ICON_GEAR                            113
+#define ID_MENU_RELAXATION_SIGNAL               4000
+#define ID_BUTTON_EXIT                          40000
+#define ID_EDITCONTROL_LAKESHORE                40000
+#define ID_BUTTON_START                         40001
+#define ID_EDITCONTROL_STEP                     40001
+#define ID_EDITCONTROL_DISPERSION               40002
+#define ID_STR_BEGIN                            40002
+#define ID_EDITCONTROL_BEGIN                    40003
+#define ID_EDITCONTROL_DAQ                      40003
+#define ID_EDITCONTROL_END                      40004
+#define ID_STR_DAQ                              40004
+#define ID_BUTTON_APPLY_SETTINGS                40005
+#define ID_STR_CHANNEL_A                        40005
+#define ID_BUTTON_CLOSE_SETTINGS                40006
+#define ID_STR_CHANNEL_B                        40006
+#define ID_STR_POWER                            40007
+#define ID_STR_STEP                             40007
+#define ID_BUTTON_SET                           40008
+#define ID_STR_LAKESHORE                        40008
+#define ID_STR_DISPERSION                       40009
+#define ID_STR_END                              40009
+#define ID_BUTTON_SETTINGS                      40010
+#define ID_STR_AVERAGING                        40010
+#define ID_STR_SAMPLES                          40011
+#define ID_EDITCONTROL_SAMPLES                  40012
+#define ID_STR_RATE                             40013
+#define ID_EDITCONTROL_RATE                     40014
+#define ID_EDITCONTROL_AVERAGING                40015
+#define ID_EDITCONTROL_AI                       40016
+#define ID_STR_AI                               40017
+#define ID_EDITCONTROL_TTL                      40018
+#define ID_STR_TTL                              40019
+#define ID_STATIC1                              40020
+#define ID_STR_RANGE                            40021
+#define ID_STR_GATE                             40022
+#define ID_COMBO_RANGE                          40023
+#define ID_EDITCONTROL_GATE                     40024

@@ -1,0 +1,59 @@
+/** Оконная функция диалогового окна расширенных настроек */
+#include <winfunc.h>
+
+//Оконная функция диалогового окна расширенных настроек
+BOOL CALLBACK asdlg_proc(HWND hAdvSetDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+    static stringstream buff;
+    switch(uMsg)
+        {
+            case WM_INITDIALOG:
+            {
+                //Вывод информации при инициализации
+                buff << setprecision(2) << fixed;
+                //Вывести текущие настройки DAQ
+                rewrite(buff) << id_DAQ;
+                SetDlgItemText(hAdvSetDlg, ID_EDITCONTROL_DAQ, buff.str().data());
+                //Вывести текущие настройки LakeShore
+                rewrite(buff) << id_LakeShore;
+                SetDlgItemText(hAdvSetDlg, ID_EDITCONTROL_LAKESHORE, buff.str().data());
+                //Вывести текущие настройки пора аналогового входа
+                rewrite(buff) << ai_port;
+                SetDlgItemText(hAdvSetDlg, ID_EDITCONTROL_AI, buff.str().data());
+                //Вывести текущие настройки порта ТТЛ сигнала
+                rewrite(buff) << pfi_ttl_port;
+                SetDlgItemText(hAdvSetDlg, ID_EDITCONTROL_TTL, buff.str().data());
+            }
+            return TRUE;
+            case WM_COMMAND:
+            {
+                switch(LOWORD(wParam))
+                {
+                    case ID_BUTTON_CLOSE_SETTINGS:
+                        EndDialog(hAdvSetDlg, 0);
+                    break;
+                    case ID_BUTTON_APPLY_SETTINGS:
+                        //Применить настройки DAQ
+                        if(EmptyEditBox(hAdvSetDlg, ID_EDITCONTROL_DAQ) == false)
+                        id_DAQ = ApplySettingEditBox(hAdvSetDlg, ID_EDITCONTROL_DAQ);
+                        //Применить настройки LakeShore
+                        if(EmptyEditBox(hAdvSetDlg, ID_EDITCONTROL_LAKESHORE) == false)
+                        id_LakeShore = ApplySettingEditBox(hAdvSetDlg, ID_EDITCONTROL_LAKESHORE);
+
+                        //Применить настройки пора аналогового входа
+                        if(EmptyEditBox(hAdvSetDlg, ID_EDITCONTROL_AI) == false)
+                        ai_port = ApplySettingEditBox(hAdvSetDlg, ID_EDITCONTROL_AI);
+                        //Применить настройки порта ТТЛ сигнала
+                        if(EmptyEditBox(hAdvSetDlg, ID_EDITCONTROL_TTL) == false)
+                        pfi_ttl_port = ApplySettingEditBox(hAdvSetDlg, ID_EDITCONTROL_TTL);
+                        //Применить настройки к физическим устройствам и сохранить файл настроек
+                        init_DAQ();
+                        init_wcheck_LakeShore();
+                        write_settings();
+                    break;
+                }
+                return TRUE;
+            }
+        }
+        return FALSE;
+}
