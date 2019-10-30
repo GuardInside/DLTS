@@ -32,16 +32,16 @@ void ApplySettings();
 //Загружает Save-файл с усредненными сигналами релаксаций, строит DLTS-кривые и график Аррениуса
 UINT CALLBACK DownloadFile(void*);
 UINT CALLBACK SaveFile(void*);
+BOOL LoadFile(string strName);
 //Очистка векторов осей DLTS-кривых
-void ClearAxisDLTS();
+void ClearMemmoryDLTS();
 void ClearMemmory();
+void OrderRelaxation();
 //Обновление DLTS-кривых
 void RefreshDLTS();
 void SaveRelaxSignal(double MeanTemp, const vector<double> vData, double dVoltMin, double dVoltMax);
-//Увеличивает SetPoint на величину StepTemp и снимает флаг стабилизации
-void prepare_next_set_point();
 void AddPointsDLTS(double temp);
 /* Возвращает расширение открытого файла */
-string GetExtensionFile(char*, int);
+string GetExtensionFile(string str);
 
 #endif // FACILITY_H_INCLUDED

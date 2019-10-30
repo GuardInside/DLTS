@@ -41,12 +41,14 @@ double double_boxcar(double x, double t1)
 void AddPointsDLTS(double temp)
 {
     EnterCriticalSection(&csGlobalVariable);
-    bool reverse = false;
-    if(!xAxisDLTS.empty() && temp < xAxisDLTS.back())
-        reverse = true;
-    if(!reverse)
-        xAxisDLTS.push_back(temp);
-    else xAxisDLTS.insert(xAxisDLTS.begin(), temp);
+    int offset = 0;
+    for(auto it = xAxisDLTS.begin(); it != xAxisDLTS.end(); it++)
+    {
+        if(temp > *it) offset++;
+        else if(temp == *it)
+            return;
+    }
+    xAxisDLTS.insert(xAxisDLTS.begin() + offset, temp);
     ///Определяем весовую функцию
     double (*w) (double, double) = double_boxcar;
     size_t n = 10000; //количество dt интервалов
@@ -84,9 +86,7 @@ void AddPointsDLTS(double temp)
         }
         I = h*( (f.at(a)*w(a,t1) + f.at(b)*w(b, t1))/2 + I );
         /* Добавляем по точке на каждой из осей */
-        if(!reverse)
-            yAxisDLTS[c].push_back(I);
-        else yAxisDLTS[c].insert(yAxisDLTS[c].begin(), I);
+        yAxisDLTS[c].insert(yAxisDLTS[c].begin() + offset, I);
     }
     LeaveCriticalSection(&csGlobalVariable);
 }

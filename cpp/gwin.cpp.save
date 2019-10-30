@@ -24,12 +24,13 @@ namespace gwin
             iPrec1{DEFAULT_PRECISION}, iPrec2{DEFAULT_PRECISION},
             hAxisPen{CreatePen(PS_SOLID, 0, RGB(255,255,255))},
             hPlotPen{CreatePen(PS_SOLID, 0, RGB(255,215,0))},
-            hGridPen{CreatePen(PS_DOT, 0, RGB(100,100,100))},
+            hGridPen{CreatePen(PS_DOT, 0, RGB(50,50,50))},
             crTextColor{RGB(255,215,0)}, crAdInfoColor{RGB(255,255,255)},
             hTextFont{CreateFont(DEFAULT_HEIGHT_FONT, DEFAULT_WIDTH_FONT, 0, 0, FW_HEAVY, 0, 0, 0,
                                  DEFAULT_CHARSET, OUT_STROKE_PRECIS, CLIP_EMBEDDED,
                                  PROOF_QUALITY, FIXED_PITCH | FF_MODERN, "Courier New")},
-            bfEnableGrid{true}, bfEnableAdInfo{false}, bfEnableScale{true}, bfEnableAxis{true},
+            bfEnableGrid{true}, bfEnableAdInfo{true}, bfEnableScale{true}, bfEnableAxis{true},
+            bfEnableScCor{true},
             dMinX{0.0}, dMaxX{0.0}, dMinY{0.0}, dMaxY{0.0} {}
         HBITMAP hBitMap;
         UINT iMark1, iMark2, iAdMark1, iAdMark2;
@@ -37,7 +38,8 @@ namespace gwin
         HPEN hAxisPen, hPlotPen, hGridPen;
         COLORREF crTextColor, crAdInfoColor;
         HFONT hTextFont;
-        BOOL bfEnableGrid, bfEnableAdInfo, bfEnableScale, bfEnableAxis;
+        BOOL bfEnableGrid, bfEnableAdInfo, bfEnableScale, bfEnableAxis,
+            bfEnableScCor;
         std::string strAdInfo;
         double dMinX, dMaxX, dMinY, dMaxY;
     };
@@ -110,9 +112,11 @@ BOOL gwin::gDefaultPlot(HWND hWnd, std::string message)
     vData2.push_back(0);
     vData2.push_back(1);
     BOOL fbOldEnableScale = _gMap.at(hWnd).bfEnableScale,
-         fbOldEnableAxis  = _gMap.at(hWnd).bfEnableAxis;
+         fbOldEnableAxis  = _gMap.at(hWnd).bfEnableAxis,
+         bfOldEnableGrid  = _gMap.at(hWnd).bfEnableGrid;
     _gMap.at(hWnd).bfEnableScale = FALSE;
     _gMap.at(hWnd).bfEnableAxis = FALSE;
+    _gMap.at(hWnd).bfEnableGrid = FALSE;
     HPEN hOldPlotPen = _gMap.at(hWnd).hPlotPen;
     _gMap.at(hWnd).hPlotPen = CreatePen(PS_NULL, 0, RGB(0,0,0));
     gAdditionalInfo(hWnd, message.data());
@@ -121,6 +125,7 @@ BOOL gwin::gDefaultPlot(HWND hWnd, std::string message)
     _gMap.at(hWnd).hPlotPen = hOldPlotPen;
     _gMap.at(hWnd).bfEnableScale = fbOldEnableScale;
     _gMap.at(hWnd).bfEnableAxis = fbOldEnableAxis;
+    _gMap.at(hWnd).bfEnableGrid = bfOldEnableGrid;
 }
 
 BOOL gwin::gBand(HWND hWnd, double dMinX, double dMaxX, double dMinY, double dMaxY)
@@ -285,7 +290,8 @@ BOOL gwin::gMulDrawPlot(HWND hWnd, HDC &hdc, const gVector *vData1, const gMulVe
          hOldPen;
     BOOL bfEnableScale = _gMap.at(hWnd).bfEnableScale,
          bfEnableAxis  = _gMap.at(hWnd).bfEnableAxis,
-         bfEnableGrid  = _gMap.at(hWnd).bfEnableGrid;
+         bfEnableGrid  = _gMap.at(hWnd).bfEnableGrid,
+         bfEnableScCor = _gMap.at(hWnd).bfEnableScCor;
     INT iIndent = iPlotSize/100;
     UINT iMark1 = _gMap.at(hWnd).iMark1, iMark2 = _gMap.at(hWnd).iMark2,
          iAdMark1 = _gMap.at(hWnd).iAdMark1,  iAdMark2 = _gMap.at(hWnd).iAdMark2;/* Число рисок */
@@ -324,6 +330,15 @@ BOOL gwin::gMulDrawPlot(HWND hWnd, HDC &hdc, const gVector *vData1, const gMulVe
     }
     hx = (max_x - min_x)/iMark1;
     hy = (max_y - min_y)/iMark2;
+    /* Коррекция масштаба */
+    double e = fabs(max_y);
+    int exp = 0;
+    while(e < 0.1 && bfEnableScCor)
+    {
+        e*=10;
+        exp++;
+    }
+    while(exp%3 != 0) exp--;
     /* Сдвигаем начало координат */
     LONG iWidth, iHeight;
     gWindowMetric(hWnd, &iWidth, &iHeight);
@@ -341,11 +356,12 @@ BOOL gwin::gMulDrawPlot(HWND hWnd, HDC &hdc, const gVector *vData1, const gMulVe
     {
         /* Размечаем масштаб оси X */
         if(c == 0) buff.setprecision(_gMap.at(hWnd).iPrec1);
+        const int Y = (iPlotSize + 0.5)*c;
         if(bfEnableAxis)
         {
-        const int Y = (iPlotSize + 0.5)*c;
-        MoveToEx(hdc, 0, 0+Y, NULL);
-        LineTo(hdc, iPlotSize, 0+Y);
+            MoveToEx(hdc, 0, 0+Y, NULL);
+            LineTo(hdc, iPlotSize, 0+Y);
+        }
         for(z = min_x, i = 0; i <= iMark1; z += hx, i++)
         {
             x = int((z - min_x)*iPlotSize/(max_x - min_x) + 0.5);
@@ -362,9 +378,9 @@ BOOL gwin::gMulDrawPlot(HWND hWnd, HDC &hdc, const gVector *vData1, const gMulVe
         }
         /* Размечаем масштаб оси Y */
         if(c == 0) buff.setprecision(_gMap.at(hWnd).iPrec2);
+        const int X = (iPlotSize + 0.5)*c;
         if(bfEnableAxis)
         {
-            const int X = (iPlotSize + 0.5)*c;
             MoveToEx(hdc, 0+X, iPlotSize, NULL);
             LineTo(hdc, 0+X, 0);
         }
@@ -378,7 +394,7 @@ BOOL gwin::gMulDrawPlot(HWND hWnd, HDC &hdc, const gVector *vData1, const gMulVe
             }
             if(c == 0 && bfEnableScale)
             {
-                buff << z;
+                buff << z*pow(10, exp);
                 TextOut(hdc, -pIndent.x, y+0.5*pIndent.y, buff.str().data(), buff.str().length());
             }
         }
@@ -443,17 +459,24 @@ BOOL gwin::gMulDrawPlot(HWND hWnd, HDC &hdc, const gVector *vData1, const gMulVe
     }
     /* Выводим дополнительную информацию */
     SetTextColor(hdc, _gMap.at(hWnd).crAdInfoColor);
+    int s = 0;
+    SIZE szText;
     if(_gMap.at(hWnd).bfEnableAdInfo)
     {
         gInfoVector vInfo;
         gSplit(_gMap.at(hWnd).strAdInfo, &vInfo);
-        int s = 0;
         for(const auto &it: vInfo)
         {
-            SIZE szText;
             GetTextExtentPoint32(hdc, it.data(), it.length(), &szText);
-            TextOut(hdc, iPlotSize-szText.cx, iPlotSize - szText.cy*(s++), it.data(), it.length());
+            TextOut(hdc, iPlotSize-szText.cx-iIndent, iPlotSize - szText.cy*(s++), it.data(), it.length());
         }
+    }
+    /* Выводим масштабирующий множитель */
+    if(exp > 0 && bfEnableScCor)
+    {
+        buff << "y: e-" << exp;
+        GetTextExtentPoint32(hdc, buff.str().data(), buff.str().length(), &szText);
+        TextOut(hdc, iPlotSize-szText.cx-iIndent, iPlotSize - szText.cy*(s++), buff.str().data(), buff.str().length());
     }
     SelectObject(hdc, (HPEN)hOldPen);
     SelectObject(hdc, (HFONT)hOldFont);

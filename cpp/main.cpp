@@ -273,11 +273,11 @@ VOID MainWindow_OnTimer(HWND hwnd, UINT id)
                 else if(stability == false)
                 {
                     /* Рассчитываем Mean-square error */
-                    Dispersion = AverSqFluct(Temperature);
+                    Dispersion = round(AverSqFluct(Temperature), 2);
                     /* Проверяем условие стабилизации первое */
                     if(Dispersion <= Thermostat.TempDisp)
                     {
-                        Mean = mean(Temperature);
+                        Mean = round(mean(Temperature), 2);
                         /* Проверяем условие стабилизации первое второе */
                         if(fabs(Mean - Thermostat.SetPoint) <= Thermostat.TempDisp)
                         {
@@ -348,9 +348,11 @@ UINT CALLBACK Thermostat_Process(void*)
     /* Получаем значение текущей температуры */
     Thermostat.Write("CDAT?");
     Thermostat.ReadDigit(CurrentTemperature);
+    CurrentTemperature = round(CurrentTemperature,2);
     #ifdef TEST_MODE
         srand(time(NULL));
         CurrentTemperature = rand()%50+10;
+        CurrentTemperature = round(CurrentTemperature,2);
     #endif
     /* Сохраняем полученное значение */
     Temperature.push_back(CurrentTemperature);
@@ -392,17 +394,51 @@ UINT CALLBACK ReadAverDAQ(void* mean_temperature)
     double MeanTemp = *((double*)mean_temperature);
     double dVoltMin = 0.0, dVoltMax = 0.0;
     double dBeginVolt = Generator.begin_voltage, dEndVolt = Generator.end_voltage;
+    bool bfPointAlreadyExist = false;
     /* В случае ITS режима, цикл ниже повторяется */
     do
     {
+        #ifndef TEST_MODE
         MyDAQMeasure(&Relaxation, averaging_DAQ, measure_time_DAQ*0.001, ai_port, TRUE);
+        #endif // TEST_MODE
+        #ifdef TEST_MODE
+        Relaxation.clear();
+        for(double t = gate_DAQ*0.0000001; t < measure_time_DAQ*0.001+gate_DAQ*0.0000001; t += 1.0/rate_DAQ)
+            Relaxation.push_back(exp(t*rate_DAQ*0.001));
+        #endif // TEST_MODE
         //Сохраняем релаксации, чтобы иметь возможность переключаться между ними
-        SavedRelaxations.push_back(Relaxation);
-        index_relax = SavedRelaxations.size() - 1; //без единицы, потому что индекс
+        if(index_mode == ITS)
+        {
+            SavedRelaxations.push_back(Relaxation);
+            index_relax = SavedRelaxations.size() - 1;
+        }
         if(index_mode == DLTS)
         {
-            AddPointsDLTS(MeanTemp);                    //Добавляем точку на DLTS
-            prepare_next_set_point();
+            int offset = 0;
+            for(auto it = xAxisDLTS.begin(); it != xAxisDLTS.end(); it++)
+            {
+                if(MeanTemp > *it) offset++;
+                else if(MeanTemp == *it)
+                {
+                    stringstream buf;
+                    buf << *it;
+                    MessageBox(0,buf.str().data(),"",0);
+                    bfPointAlreadyExist = true;
+                    break;
+                }
+            }
+            if(!bfPointAlreadyExist)
+            {
+                AddPointsDLTS(MeanTemp);
+                SavedRelaxations.insert(SavedRelaxations.begin()+offset, Relaxation);
+                index_relax = offset;
+            }
+            stringstream buff;
+            Thermostat.SetPoint += Thermostat.TempStep;
+            buff << "Begin point " << setprecision(2) << Thermostat.SetPoint << " K";
+            SetDlgItemText(hMainWindow, ID_STR_BEGIN, buff.str().data());
+            rewrite(buff) << "SETP " << Thermostat.SetPoint << "K";
+            Thermostat.Write(buff);
         }
         else if(index_mode == ITS)
         {
@@ -423,10 +459,13 @@ UINT CALLBACK ReadAverDAQ(void* mean_temperature)
             buff << setprecision(3) << "[" << dVoltMin << "," << dVoltMax << "]";
             gAdditionalInfo(hRelax, buff.str());
         }
-        SaveRelaxSignal(MeanTemp, Relaxation, dVoltMin, dVoltMax);//Сохраняем результат в файл
-        PlotRelax();
-        PlotDLTS();
-    }while(start == true && stability == true && endofits == false);
+        if(!bfPointAlreadyExist)
+        {
+            SaveRelaxSignal(MeanTemp, Relaxation, dVoltMin, dVoltMax);//Сохраняем результат в файл
+            PlotRelax();
+            PlotDLTS();
+        }
+    }while(index_mode == ITS && start == true && stability == true && endofits == false);
     stability = false;
     return 0;
 }

@@ -3,21 +3,19 @@
 
 void ClearMemmory()
 {
-    ClearAxisDLTS();
-    gwin.swap(SavedRelaxations);
-    vector <double>().swap(Relaxation);
+    ClearMemmoryDLTS();
+    vector<double> ().swap(itsLowVoltages);
+    vector<double> ().swap(itsUpVoltages);
+    gwin::gMulVector().swap(SavedRelaxations);
+    gwin::gVector().swap(Relaxation);
 }
 
-void ClearAxisDLTS()
+void ClearMemmoryDLTS()
 {
-    //EnterCriticalSection(&csGlobalVariable);
     if(yAxisDLTS != nullptr)
             delete []yAxisDLTS;
     yAxisDLTS = new vector<double>[CorTime.size()]; ///Число осей совпадает с числом корреляторов
     vector<double> ().swap(xAxisDLTS);
-    vector<double> ().swap(itsLowVoltages);
-    vector<double> ().swap(itsUpVoltages);
-    //LeaveCriticalSection(&csGlobalVariable);
 }
 
 void RefreshDLTS()
@@ -26,7 +24,7 @@ void RefreshDLTS()
     if(xAxisDLTS.empty())
         return;
     gwin::gVector xAxis = xAxisDLTS;
-    ClearAxisDLTS();
+    ClearMemmoryDLTS();
     UINT32 uSamples = rate_DAQ*measure_time_DAQ*0.001;
     for(size_t i = 0; i < xAxis.size(); i++)
     {
@@ -45,30 +43,29 @@ void RefreshDLTS()
     PlotDLTS();
 }
 
-//Увеличивает SetPoint на величину StepTemp и снимает флаг стабилизации
-void prepare_next_set_point()
-{
-    stringstream buff;
-    Thermostat.SetPoint += Thermostat.TempStep;
-    buff << "SETP " << Thermostat.SetPoint << "K";
-    Thermostat.Write(buff);
-}
-
 void SaveRelaxSignal(double MeanTemp, const vector<double> vData, double dVoltMin, double dVoltMax)
 {
-    EnterCriticalSection(&csGlobalVariable);
+    //EnterCriticalSection(&csGlobalVariable);
     string SavePath = Save + FileSaveName;
     if(index_mode == DLTS) SavePath += ".dlts";
     else if(index_mode == ITS) SavePath += ".its";
-    ofstream file(SavePath.data(), std::ofstream::app);
-    ifstream ifile(SavePath.data());
+    ofstream file;
+    if(bfNewfile)
+    {
+        file.open(SavePath.data());
+        bfNewfile = false;
+        bfAppfile = true;
+    }
+    else if(bfAppfile)
+        file.open(SavePath.data(), std::ofstream::app);
     if(!file.is_open())
     {
-        MessageBox(NULL, "SaveFile wasn't find.", "Error", MB_OK);
+        MessageBox(NULL, "Save file isn't being found.", "Error", MB_OK);
         return;
     }
     //Сохраняем настройки, если файл открыт впервые
     file << setiosflags(ios::fixed) << setprecision(0);
+    ifstream ifile(SavePath.data());
     if(ifile.peek() == EOF)
     {
         file<< averaging_DAQ << " "
@@ -92,16 +89,16 @@ void SaveRelaxSignal(double MeanTemp, const vector<double> vData, double dVoltMi
         if(i != uSamples-1)
             file << endl;
     }
-    LeaveCriticalSection(&csGlobalVariable);
+    //LeaveCriticalSection(&csGlobalVariable);
     ifile.close();
     file.close();
 }
 
 /* Возвращает расширение открытого файла */
-string GetExtensionFile(char *str, int length)
+string GetExtensionFile(string str)
 {
-    for(int i = 0; i < length; i++)
-        if(*(str+i) == '.')
-            return string(str+i, length-i);
+    for(int i = 0; i < str.length(); i++)
+        if(str[i] == '.')
+            return string(str, i);
     return string("Incorrect format");
 }

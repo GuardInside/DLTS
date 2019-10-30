@@ -8,6 +8,8 @@
 #include "variable.h"
 #include "interpolation.h"
 
+/* Округлить до n значащих цифр после запятой */
+double round(double d, int n);
 /* Получить параметры линейной регрессии Y = a + b*X */
 void GetParam(const std::vector <double> &X, const std::vector <double> &Y, double &a, double &b);
 /* Среднее значение чесел в наборе, начиная последнего */

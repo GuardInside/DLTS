@@ -33,13 +33,12 @@ void ApplySettings();
 UINT CALLBACK DownloadFile(void*);
 UINT CALLBACK SaveFile(void*);
 //Очистка векторов осей DLTS-кривых
-void ClearAxisDLTS();
-void C
+void ClearMemmoryDLTS();
+void ClearMemmory();
 //Обновление DLTS-кривых
 void RefreshDLTS();
 void SaveRelaxSignal(double MeanTemp, const vector<double> vData, double dVoltMin, double dVoltMax);
-//Увеличивает SetPoint на величину StepTemp и снимает флаг стабилизации
-void prepare_next_set_point();
+void AddPointsDLTS(double temp);
 /* Возвращает расширение открытого файла */
 string GetExtensionFile(char*, int);
 

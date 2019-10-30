@@ -5,12 +5,10 @@
 #define ID_ICON                                 101
 #define ID_MAIN_WINDOW                          103
 #define ID_SETTINGS_WINDOW                      104
-#define ID_ICON_GEAR                            113
 #define ID_ADVANCED_SETTINGS_WINDOW             116
 #define ID_CORRELATION_SETTINGS_WINDOW          118
 #define ID_ARRHENIUS_WINDOW                     122
 #define ID_PID_SETTINGS_WINDOW                  124
-#define IDI_ICON1                               125
 #define ID_START_WINDOW                         127
 #define ID_BUTTON_ADVANCED_SETTINGS             40000
 #define ID_BUTTON_CONTINUE                      40000

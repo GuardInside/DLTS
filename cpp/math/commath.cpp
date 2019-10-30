@@ -4,6 +4,11 @@
     return (0.0 < val) - (val < 0.0);
 }*/
 
+double round(double d, int n)
+{
+    return int(d*pow(10,n) + 0.5)/pow(10,n);
+}
+
 //ѕолучить параметры линейной регрессии Y = a + b*X
 void GetParam(const vector <double> &X, const vector <double> &Y, double &a, double &b)
 {

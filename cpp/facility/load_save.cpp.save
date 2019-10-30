@@ -1,4 +1,4 @@
-#include <facility.h>
+#include "facility.h"
 #include "variable.h"
 #include "gwin.h"
 #include "graph.h"
@@ -7,9 +7,6 @@ unsigned __stdcall DownloadFile(void*)
 {
     static char load_file[BUFF_SIZE] = "";
     static OPENFILENAME file;
-    double itsUpper_boundary = 0.0, itsLower_boundary = 0.0;
-    ifstream LoadFile;
-    double buff = 0.0, temp = 0.0;
         file.lStructSize = sizeof(OPENFILENAME);
         file.hwndOwner = NULL;
         file.lpstrFilter = "All files(*.*)\0*.*\0DLTS file(*.dlts)\0*.dlts\0ITS file(*.its)\0*.its\0\0";
@@ -21,59 +18,81 @@ unsigned __stdcall DownloadFile(void*)
     if(!GetOpenFileName(&file))
         return -1;
     loading = true; /* вспомогательный флаг */
-    LoadFile.open(load_file);
-    string ext = GetExtensionFile(load_file, strlen(load_file));
-    LoadFile >> averaging_DAQ >> measure_time_DAQ >> rate_DAQ >> gate_DAQ
+    LoadFile(load_file);
+    return 0;
+}
+
+BOOL LoadFile(string strName)
+{
+    ifstream file;
+    file.open(strName);
+    if(!file.is_open())
+        return FALSE;
+    double itsUpper_boundary = 0.0, itsLower_boundary = 0.0;
+    double buff = 0.0, temp = 0.0;
+    string ext = GetExtensionFile(strName);
+    file >> averaging_DAQ >> measure_time_DAQ >> rate_DAQ >> gate_DAQ
              >> Generator.step_voltage >> Generator.begin_voltage >> Generator.end_voltage;
     if(ext == ".dlts")
         index_mode = DLTS;
     else if(ext == ".its")
     {
         index_mode = ITS;
-        LoadFile >> itsTemperature;
+        file >> itsTemperature;
     }
     /** Оценка размера загружаемого файла **/
     UINT uSamples = rate_DAQ*measure_time_DAQ*0.001, uQuantity = 0;
-    ifstream LoadFile2()
+    ifstream LoadFile2;
+    LoadFile2.open(strName.data());
     LoadFile2.seekg (0, LoadFile2.end);
     uQuantity = (UINT)((LoadFile2.tellg()/8.5)/uSamples);
     LoadFile2.close();
+    ClearMemmory();
     /** Загрузка **/
-    ClearAxisDLTS(); //Очищаем DLTS-кривые
-    vector<vector<double>>().swap(SavedRelaxations); //Очищаем Сохраненные ранее релаксации
     int i = 0;
-    while(!LoadFile.eof())
+    while(!file.eof())
     {
         if(index_mode == DLTS)
-            LoadFile >> temp;
+            file >> temp;
         else if(index_mode == ITS)
         {
-            LoadFile >> itsLower_boundary >> itsUpper_boundary;
+            file >> itsLower_boundary >> itsUpper_boundary;
             itsLowVoltages.push_back(itsLower_boundary);
             itsUpVoltages.push_back(itsUpper_boundary);
         }
+        if(index_mode == DLTS && !xAxisDLTS.empty() && temp == xAxisDLTS.back())
+            continue;
         vector <double>().swap(Relaxation);
         UINT uSamples = rate_DAQ*measure_time_DAQ*0.001;
         for(size_t i = 0; i < uSamples; i++)
         {
-            LoadFile >> buff;
+            file >> buff;
             Relaxation.push_back(buff);
         }
         if(index_mode == DLTS)
+        {
+            int offset = 0;
+            for(auto it = xAxisDLTS.begin(); it != xAxisDLTS.end(); it++)
+                if(temp > *it) offset++;
             AddPointsDLTS(temp); //Передаем значение температуры
-        SavedRelaxations.push_back(Relaxation);
+            SavedRelaxations.insert(SavedRelaxations.begin()+offset, Relaxation);
+            index_relax = offset;
+        }
+        if(index_mode == ITS)
+        {
+            SavedRelaxations.push_back(Relaxation);
+            index_relax = SavedRelaxations.size() - 1; //без единицы, потому что индекс
+        }
         SendMessage(hProgress, PBM_SETPOS, 100.0*i/uQuantity, 0);
         i++;
     }
     SendMessage(hProgress, PBM_SETPOS, 0, 0);
     //Индекс используется для просмотра снятых ранее релаксаций
-    index_relax = SavedRelaxations.size() - 1; //без единицы, потому что индекс
-    LoadFile.close();
+    file.close();
     PlotRelax();
     PlotDLTS();
-    return 0;
+    return TRUE;
 }
-
 unsigned __stdcall SaveFile(void*)
 {
     char save_file[BUFF_SIZE];

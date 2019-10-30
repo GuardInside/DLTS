@@ -9,7 +9,6 @@ LRESULT CALLBACK dlwin_proc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
     {
         HANDLE_MSG(hWnd, WM_SHOWWINDOW, StartWnd_OnShow);
         HANDLE_MSG(hWnd, WM_COMMAND, StartWnd_OnCommand);
-        //HANDLE_MSG(hwnd, WM_TIMER, MainWindow_OnTimer);
         case WM_DESTROY:
             PostQuitMessage(0);
             break;
@@ -29,21 +28,24 @@ VOID StartWnd_OnShow(HWND hWnd, BOOL, UINT)
 
 VOID StartWnd_OnCommand(HWND hWnd, int id, HWND, UINT)
 {
-    static BOOL bfNewfile = 0, bfAppfile = -1;
     switch(id)
     {
         case ID_BUTTON_CONTINUE:
-            ::bfNewfile = bfNewfile;
-            ::bfAppfile = bfAppfile;
+            if(IsDlgButtonChecked(hWnd, ID_RADIO_NEW) == BST_CHECKED)
+            {
+                bfNewfile = true;
+                bfAppfile = false;
+            }
+            else if(IsDlgButtonChecked(hWnd, ID_RADIO_APPEND) == BST_CHECKED)
+            {
+                bfNewfile = false;
+                bfAppfile = true;
+            }
+            //Применить настройки имени файла сохранений
+            FileSaveName = ApplySettingEditBoxString(hWnd, ID_EDITCONTROL_SAVE_FILE_NAME);
             StartButPush(hMainWindow);
         case ID_BUTTON_CANCEL:
             DestroyWindow(hWnd);
-            break;
-        case ID_RADIO_NEW:
-        case ID_RADIO_APPEND:
-            bfNewfile != bfNewfile;
-            bfAppfile != bfAppfile;
-            break;
     }
 }
 
@@ -62,17 +64,21 @@ void StartButPush(HWND hwnd)
     EnableWindow(GetDlgItem(hwnd, ID_BUTTON_EXIT), start);
     EnableWindow(GetDlgItem(hwnd, ID_BUTTON_LOAD), start);
     SetDlgItemText(hwnd, ID_BUTTON_START, buff.str().data());
-    if(bfNewfile)
+    if(bfNewfile == true && start == false)
     {
+        MessageBox(0,"clear","",0);
         /* Очистка буферов, если была произведена загрузка */
-        if(loading == true)
-        {
-            loading = false;
-            ClearMemmory();
-            PlotRelax();
-            PlotDLTS();
-        }
-
+        ClearMemmory();
+        gwin::gDefaultPlot(hRelax, "\0");
+        gwin::gDefaultPlot(hGraph_DLTS, "\0");
+    }
+    if(bfAppfile == true && start == false)
+    {
+        string SavePath = Save + FileSaveName;
+        if(index_mode == DLTS) SavePath += ".dlts";
+        else if(index_mode == ITS) SavePath += ".its";
+        //ClearMemmory();
+        LoadFile(SavePath);
     }
     if(start == false)
     {
