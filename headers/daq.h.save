@@ -3,36 +3,13 @@
 #include <windows.h>
 #include <string>
 #include <sstream>
-#include "variable.h"
+#include <vector>
 #include "NIDAQmx.h"
 
-//DAQmxReadAnalog(10, 1, 1, 200000, 0.0000001, DAQmx_Val_Rising, 5, vData2, 10000); //DefaultCall//
 /** Времена в секуднах **/
-INT DAQmxReadAnalog(UINT uDev, UINT uAIPort, INT iTrigPort, float64 dRate, float64 dGate, INT iTrigEdge, UINT uRange, float64 uMesureTime, std::vector<double> *vData, BOOL bfResetError = FALSE);
+INT  DAQmxReadAnalog(UINT uDev, UINT uAIPort, INT iTrigPort, float64 dRate, float64 dGate, INT iTrigEdge, UINT uRange, float64 uMesureTime, std::vector<double> *vData, BOOL bfResetError = FALSE);
 VOID DAQmxClearState();
-using namespace std;
 
-extern TaskHandle hDAQ;
-
-bool check_DAQ(int32 error);
-void init_DAQ();
-
-/* Базовый класс */
-/*struct DataAcquisition
-{
-    public:
-        DataAcquisition(){};
-        bool check(int32 status);
-        bool InitSession(int32 ID, int32 iAnalogInPort, float64 rate, uInt32 time, bool trigger, int32 iTriggerPort, int32 ActiveTriggFront);
-        bool ReadAnalog(vector<double>&, int32*);
-        void GetTimeAxis(vector<double>&);
-        ~DataAcquisition(){ DAQmxClearTask(hTask); }
-    private:
-        TaskHandle hTask;
-        uInt32 uiSamples, uiTime;
-        int32 iError, iID, iActiveTriggFront, iAnalogInPort, iTriggerPort;
-        float64 fRate;
-        bool bTrigger;
-};*/
-
+BOOL MeasureRelax(vector<double> *SignalDAQ, UINT AverNum = 1)
+BOOL MeasurePulse(std::vector<double> *vData, double *dMinVoltage, double *dMaxVoltage);
 #endif // DAQ_H_INCLUDED

@@ -7,13 +7,13 @@
 #include <process.h>
 #include <NIDAQmx.h>
 #include "gwin.h"
+#include "vi.h"
 using namespace std;
 
 /* Активация режима отладки */
 #define TEST_MODE
 
 /* Идентификаторы */
-#define REFRESH_INFO                100 //Сообщение dlg_arrhenius для обновления E и S
 #define WM_NEW_CORTIME              200 //Сообщение win_weight_func для обновления графика
 #define ID_PROGRESS                 999 //Идентификатор прогрессбара
 #define DLTS                        0
@@ -63,6 +63,7 @@ extern vector<vector<double>> SavedRelaxations; //Хранит все сохраненные или заг
 extern size_t index_relax;  //Номер текущей релаксации для отображения
 extern size_t index_range;  //Номер текущего диапазона
 extern size_t index_mode;   //Режим работы программы DLTS или ITS
+extern size_t index_plot_DLTS; //Отображать DLTS или гр. Аррениуса
 extern int32 offset_ai_port;//Смещение номера порта ai_port при отображении в реальном времени
 
 /* Имена файлов с соответствующими настройками */
@@ -81,14 +82,12 @@ extern       string FileSaveName;
 extern const string names_wFunc[];
 
 extern double itsTemperature; /* Температура в режиме ITS */
-extern double CrossSection;
-extern double Energy;
 extern unsigned int aver_time;   //Число рассматриваемых точек для расчета дрейфа температуры dT
 extern unsigned int id_DAQ;
 extern int32 ai_port;
 extern int32 ai_port_pulse;
 extern int32 pfi_ttl_port;
-extern uInt32 samples_DAQ;      //сколько сэмплов на один отсчет
+//extern uInt32 samples_DAQ;      //сколько сэмплов на один отсчет
 extern uInt32 measure_time_DAQ; //Время измерения
 extern uInt32 averaging_DAQ;    //Число отсчетов для получения одного измерения
 extern float64 rate_DAQ;        //отсчетов в секунду
@@ -97,7 +96,10 @@ extern float64 gate_DAQ;
 extern bool start;            //Нажата кнопка старт
 extern bool stability;        //Температура стабилизировалась вблизи сетпоинта
 extern bool loading;          //Были загружены сохраненные релаксации
-extern bool recalculate_dlts; //Пересчитывать ли DLTS график при перерисовки окна
+extern bool endofits;
+extern bool endofdlts;
+extern bool fbDAQ0k;          //DAQ работает в штатном режиме
+extern bool fbThermostat0k;   //Термостат работает в штатном режиме
 /* Параметры коррелятора */
 extern unsigned int CorType;
 extern double correlation_c;
@@ -112,11 +114,6 @@ extern HWND                        hRelax;     //Описатель окна графика релаксац
 extern HWND                        hGraph_DAQ; //Описатель окна графика сигнала с образца в реальном времени
 extern HWND                        hGraph_DLTS;//Описатель окна графика DLTS
 extern HWND                        hProgress;  //Прогресс чтения данных
-extern HWND                        hGraph_Arrhenius;//Описатель окна графика Аррениуса
 extern CRITICAL_SECTION            csDataAcquisition;//Используется всегда при чтении данных DAQ
-extern CRITICAL_SECTION            csPlotDataInRealTime;//Синхронизация отрисовки релаксаций
-extern CRITICAL_SECTION            csPlotTempInRealTime;//Синхронизация отрисовки температуры
-extern CRITICAL_SECTION            csRelaxation;//Синхронизация доступа к сохраненным релаксациям
-extern CRITICAL_SECTION            csDLTS;//Синхронизация доступа к сохраненным DLTS-кривым
-extern
+extern CRITICAL_SECTION            csGlobalVariable;
 #endif // VARIABLE_H_INCLUDED

@@ -652,18 +652,19 @@
 	<sstream>
 	<iomanip>
 
-1572254265 source:c:\users\Виктор\documents\github\dlts\cpp\data acuisition\daq.cpp
+1572376083 source:c:\users\Виктор\documents\github\dlts\cpp\data acuisition\daq.cpp
 	"daq.h"
 	"variable.h"
+	"vi.h"
 
-1572244317 c:\users\Виктор\documents\github\dlts\headers\daq.h
+1572354971 c:\users\Виктор\documents\github\dlts\headers\daq.h
 	<windows.h>
 	<string>
 	<sstream>
 	<vector>
 	"NIDAQmx.h"
 
-1572253435 c:\users\Виктор\documents\github\dlts\headers\variable.h
+1572421541 c:\users\Виктор\documents\github\dlts\headers\variable.h
 	<string>
 	<vector>
 	<sstream>
@@ -671,8 +672,9 @@
 	<process.h>
 	<NIDAQmx.h>
 	"gwin.h"
+	"vi.h"
 
-1572248726 c:\users\Виктор\documents\github\dlts\headers\facility.h
+1572424553 c:\users\Виктор\documents\github\dlts\headers\facility.h
 	<string>
 	<sstream>
 	<fstream>
@@ -681,14 +683,14 @@
 	<commctrl.h>
 	<iomanip>
 	<commdlg.h>
-	<GPIB.h>
+	"vi.h"
 	"daq.h"
 	<dlts_math.h>
 	"resource.h"
 	"gwin.h"
 	"variable.h"
 
-1572244257 c:\users\Виктор\documents\github\dlts\headers\gpib.h
+1572350548 c:\users\Виктор\documents\github\dlts\headers\gpib.h
 	<windows.h>
 	<visatype.h>
 	<visa.h>
@@ -698,14 +700,14 @@
 	<facility.h>
 	<daq.h>
 
-1570975024 c:\users\Виктор\documents\github\dlts\headers\dlts_math.h
+1572424670 c:\users\Виктор\documents\github\dlts\headers\dlts_math.h
 	<fstream>
-	<variable.h>
-	<math.h>
+	<cmath>
 	<vector>
-	<interpolation.h>
 	<gsl/gsl_fit.h>
 	<gsl/gsl_integration.h>
+	"variable.h"
+	"interpolation.h"
 
 1568575550 c:\users\Виктор\documents\github\dlts\headers\interpolation.h
 	<gsl/gsl_interp.h>
@@ -751,7 +753,7 @@
 	<gsl/gsl_math.h>
 	<gsl/gsl_types.h>
 
-1572249245 c:\users\Виктор\documents\github\dlts\headers\resource.h
+1572383801 c:\users\Виктор\documents\github\dlts\headers\resource.h
 
 1572209514 source:c:\users\Виктор\documents\github\dlts\cpp\data acuisition\daq_thread.cpp
 	<threads.h>
@@ -762,25 +764,24 @@
 	<dlts_math.h>
 	<daq.h>
 
-1572256160 source:c:\users\Виктор\documents\github\dlts\cpp\facility\drawhelp.cpp
+1572358701 source:c:\users\Виктор\documents\github\dlts\cpp\facility\drawhelp.cpp
 	"graph.h"
 	"variable.h"
 	"gwin.h"
+	"dlts_math.h"
+	"facility.h"
 
-1572242837 c:\users\Виктор\documents\github\dlts\headers\graph.h
+1572365073 c:\users\Виктор\documents\github\dlts\headers\graph.h
 	<windows.h>
-	<sstream>
-	<iomanip>
-	<interpolation.h>
-	<facility.h>
 
-1572253833 source:c:\users\Виктор\documents\github\dlts\cpp\facility\utility.cpp
+1572423439 source:c:\users\Виктор\documents\github\dlts\cpp\facility\utility.cpp
 	<facility.h>
+	"graph.h"
 
-1572178341 source:c:\users\Виктор\documents\github\dlts\cpp\facility\winclasses.cpp
+1572178342 source:c:\users\Виктор\documents\github\dlts\cpp\facility\winclasses.cpp
 	<winfunc.h>
 
-1572248174 c:\users\Виктор\documents\github\dlts\headers\winfunc.h
+1572420128 c:\users\Виктор\documents\github\dlts\headers\winfunc.h
 	<string>
 	<sstream>
 	<windows.h>
@@ -789,17 +790,18 @@
 	<cmath>
 	"variable.h"
 	<facility.h>
-	<GPIB.h>
+	"vi.h"
 	<daq.h>
-	<resource.h>
+	"resource.h"
 	<graph.h>
 	<dlts_math.h>
 	"gwin.h"
 
-1559493484 source:c:\users\Виктор\documents\github\dlts\cpp\facility\winhelp.cpp
-	<facility.h>
+1572381100 source:c:\users\Виктор\documents\github\dlts\cpp\facility\winhelp.cpp
+	"facility.h"
+	"winfunc.h"
 
-1572253727 source:c:\users\Виктор\documents\github\dlts\cpp\facility\winload.cpp
+1572278672 source:c:\users\Виктор\documents\github\dlts\cpp\facility\winload.cpp
 	<facility.h>
 	"variable.h"
 	"gwin.h"
@@ -808,31 +810,31 @@
 1559496924 source:c:\users\Виктор\documents\github\dlts\cpp\facility\winother.cpp
 	<winfunc.h>
 
-1570447314 source:c:\users\Виктор\documents\github\dlts\cpp\facility\winstart.cpp
+1572287106 source:c:\users\Виктор\documents\github\dlts\cpp\facility\winstart.cpp
 	<facility.h>
 	<GPIB.h>
 
-1572244928 source:c:\users\Виктор\documents\github\dlts\cpp\gpib\generator.cpp
+1572350403 source:c:\users\Виктор\documents\github\dlts\cpp\gpib\generator.cpp
 	<GPIB.h>
 
 1569765436 source:c:\users\Виктор\documents\github\dlts\cpp\gpib\gpib.cpp
 	<GPIB.h>
 
-1569765962 source:c:\users\Виктор\documents\github\dlts\cpp\gpib\pidtable.cpp
+1572348448 source:c:\users\Виктор\documents\github\dlts\cpp\gpib\pidtable.cpp
 	<GPIB.h>
 	<resource.h>
 
-1570970909 source:c:\users\Виктор\documents\github\dlts\cpp\gpib\thermostat.cpp
+1570970910 source:c:\users\Виктор\documents\github\dlts\cpp\gpib\thermostat.cpp
 	<GPIB.h>
 
-1572245372 source:c:\users\Виктор\documents\github\dlts\cpp\graph and window\adv_settings.cpp
+1572245374 source:c:\users\Виктор\documents\github\dlts\cpp\graph and window\adv_settings.cpp
 	<winfunc.h>
 
-1572180392 source:c:\users\Виктор\documents\github\dlts\cpp\graph and window\arrh_graph.cpp
+1572180394 source:c:\users\Виктор\documents\github\dlts\cpp\graph and window\arrh_graph.cpp
 	<graph.h>
 	<winfunc.h>
 
-1572190988 source:c:\users\Виктор\documents\github\dlts\cpp\graph and window\cor_setting.cpp
+1572370730 source:c:\users\Виктор\documents\github\dlts\cpp\graph and window\cor_setting.cpp
 	"winfunc.h"
 	"variable.h"
 
@@ -840,17 +842,17 @@
 	<graph.h>
 	<winfunc.h>
 
-1572254087 source:c:\users\Виктор\documents\github\dlts\cpp\graph and window\general_setting.cpp
+1572378432 source:c:\users\Виктор\documents\github\dlts\cpp\graph and window\general_setting.cpp
 	<winfunc.h>
 
-1572208513 source:c:\users\Виктор\documents\github\dlts\cpp\graph and window\pid_setting.cpp
+1572423554 source:c:\users\Виктор\documents\github\dlts\cpp\graph and window\pid_setting.cpp
 	<winfunc.h>
 
 1572174023 source:c:\users\Виктор\documents\github\dlts\cpp\graph and window\relax_graph.cpp
 	<graph.h>
 	<winfunc.h>
 
-1572250866 source:c:\users\Виктор\documents\github\dlts\cpp\graph and window\settings.cpp
+1572423528 source:c:\users\Виктор\documents\github\dlts\cpp\graph and window\settings.cpp
 	<facility.h>
 
 1572177509 source:c:\users\Виктор\documents\github\dlts\cpp\graph and window\signal_on_diode.cpp
@@ -871,7 +873,7 @@
 1572175641 source:c:\users\Виктор\documents\github\dlts\cpp\graph and window\weight_setting.cpp
 	<winfunc.h>
 
-1572255734 source:c:\users\Виктор\documents\github\dlts\cpp\main.cpp
+1572423649 source:c:\users\Виктор\documents\github\dlts\cpp\main.cpp
 	<windows.h>
 	<windowsx.h>
 	<commctrl.h>
@@ -879,19 +881,18 @@
 	<string>
 	<iomanip>
 	<sstream>
-	<cmath>
 	<stdexcept>
 	<process.h>
 	"gwin.h"
 	"variable.h"
 	"resource.h"
-	<winfunc.h>
-	<GPIB.h>
-	<daq.h>
-	<facility.h>
-	<dlts_math.h>
+	"winfunc.h"
+	"vi.h"
+	"daq.h"
+	"facility.h"
+	"dlts_math.h"
 
-1567968764 source:c:\users\Виктор\documents\github\dlts\cpp\math\commath.cpp
+1572292783 source:c:\users\Виктор\documents\github\dlts\cpp\math\commath.cpp
 	<dlts_math.h>
 
 1559494984 source:c:\users\Виктор\documents\github\dlts\cpp\other\interpolation.cpp
@@ -900,16 +901,16 @@
 1572186156 source:c:\users\Виктор\documents\github\dlts\cpp\other\variable.cpp
 	<variable.h>
 
-1572249245 source:c:\users\Виктор\documents\github\dlts\resource\resource.rc
+1572383801 source:c:\users\Виктор\documents\github\dlts\resource\resource.rc
 	<windows.h>
 	<commctrl.h>
 	<richedit.h>
 	"..\headers\resource.h"
 
-1572256455 source:c:\users\Виктор\documents\github\dlts\cpp\graph and window\gwin.cpp
+1572377571 source:c:\users\Виктор\documents\github\dlts\cpp\graph and window\gwin.cpp
 	"gwin.h"
 
-1572254814 c:\users\Виктор\documents\github\dlts\headers\gwin.h
+1572364685 c:\users\Виктор\documents\github\dlts\headers\gwin.h
 	<windows.h>
 	<windowsx.h>
 	<string>
@@ -922,9 +923,82 @@
 1559494984 source:c:\users\Виктор\documents\github\dlts\cpp\math\interpolation.cpp
 	<interpolation.h>
 
-1572253759 source:c:\users\Виктор\documents\github\dlts\cpp\math\weighfunc.cpp
+1572253760 source:c:\users\Виктор\documents\github\dlts\cpp\math\weighfunc.cpp
 	<dlts_math.h>
 
-1572253435 source:c:\users\Виктор\documents\github\dlts\cpp\variable.cpp
+1572423747 source:c:\users\Виктор\documents\github\dlts\cpp\variable.cpp
+	"variable.h"
+
+1572368174 source:c:\users\Виктор\documents\github\dlts\cpp\facility\load_save.cpp
+	"facility.h"
+	"variable.h"
+	"gwin.h"
+	"graph.h"
+
+1572370250 source:c:\users\Виктор\documents\github\dlts\cpp\facility\plot.cpp
+	"graph.h"
+	"variable.h"
+	"gwin.h"
+	"dlts_math.h"
+	"facility.h"
+
+1572423385 c:\users\Виктор\documents\github\dlts\headers\vi.h
+	<windows.h>
+	<visatype.h>
+	<visa.h>
+	<string>
+	<sstream>
 	<variable.h>
+	<facility.h>
+	<daq.h>
+	"resource.h"
+
+1572373165 source:c:\users\Виктор\documents\github\dlts\cpp\vi\generator.cpp
+	"vi.h"
+
+1572368310 source:c:\users\Виктор\documents\github\dlts\cpp\vi\pidtable.cpp
+	<resource.h>
+	"vi.h"
+
+1572373225 source:c:\users\Виктор\documents\github\dlts\cpp\vi\thermostat.cpp
+	"vi.h"
+
+1572423696 source:c:\users\Виктор\documents\github\dlts\cpp\vi\vi.cpp
+	"vi.h"
+
+1572423528 source:c:\users\Виктор\documents\github\dlts\cpp\graph and window\start_setting.cpp
+	"winfunc.h"
+
+1572376083 source:c:\users\Виктор\documents\github\dlts\cpp\daq.cpp
+	"daq.h"
+	"variable.h"
+	"vi.h"
+
+1572423994 source:c:\users\Виктор\documents\github\dlts\cpp\facility\settings.cpp
+	<facility.h>
+
+1572377571 source:c:\users\Виктор\documents\github\dlts\cpp\gwin.cpp
+	"gwin.h"
+
+1572423696 source:c:\users\Виктор\documents\github\dlts\cpp\vi.cpp
+	"vi.h"
+
+1572245374 source:c:\users\Виктор\documents\github\dlts\cpp\windows\adv_settings.cpp
+	<winfunc.h>
+
+1572378432 source:c:\users\Виктор\documents\github\dlts\cpp\windows\general_setting.cpp
+	<winfunc.h>
+
+1572423554 source:c:\users\Виктор\documents\github\dlts\cpp\windows\pid_setting.cpp
+	<winfunc.h>
+
+1572425289 source:c:\users\Виктор\documents\github\dlts\cpp\windows\start_setting.cpp
+	"winfunc.h"
+
+1572370730 source:c:\users\Виктор\documents\github\dlts\cpp\windows\cor_setting.cpp
+	"winfunc.h"
+	"variable.h"
+
+1572245374 source:c:\users\Виктор\documents\github\dlts\cpp\windows\adv_setting.cpp
+	<winfunc.h>
 

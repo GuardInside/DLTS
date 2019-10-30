@@ -1,5 +1,9 @@
 #include <dlts_math.h>
 
+/*int sgn(double val) {
+    return (0.0 < val) - (val < 0.0);
+}*/
+
 //ѕолучить параметры линейной регрессии Y = a + b*X
 void GetParam(const vector <double> &X, const vector <double> &Y, double &a, double &b)
 {

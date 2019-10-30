@@ -1,28 +1,22 @@
 #ifndef DLTS_MATH_H_INCLUDED
 #define DLTS_MATH_H_INCLUDED
 #include <fstream>
-#include <variable.h>
-#include <math.h>
+#include <cmath>
 #include <vector>
-#include <interpolation.h>
 #include <gsl/gsl_fit.h>
 #include <gsl/gsl_integration.h>
-using namespace std;
+#include "variable.h"
+#include "interpolation.h"
 
-//Получить параметры линейной регрессии Y = a + b*X
-void GetParam(const vector <double> &X, const vector <double> &Y, double &a, double &b);
-//Среднее значение чесел в наборе, начиная последнего
-double mean(const vector<double> &temp);
-//Средняя квадратичная флуктуация
-double AverSqFluct(const vector<double> &temp);
-
-double exp_w(double x, double t1);
-
-double sin_w(double x, double t1);
-
-double lock_in(double x, double t1);
+/* Получить параметры линейной регрессии Y = a + b*X */
+void GetParam(const std::vector <double> &X, const std::vector <double> &Y, double &a, double &b);
+/* Среднее значение чесел в наборе, начиная последнего */
+double mean(const std::vector<double> &temp);
+/* Средняя квадратичная флуктуация */
+double AverSqFluct(const std::vector<double> &temp);
 
 double double_boxcar(double x, double t1);
-
-void AddPointsDLTS(double temp);
+double lock_in(double x, double t1);
+double sin_w(double x, double t1);
+double exp_w(double x, double t1);
 #endif // DLTS_MATH_H_INCLUDED

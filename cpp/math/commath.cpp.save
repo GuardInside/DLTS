@@ -1,5 +1,9 @@
 #include <dlts_math.h>
 
+/*int sgn(double val) {
+    return (0.0 < val) - (val < 0.0);
+}*/
+
 //ѕолучить параметры линейной регрессии Y = a + b*X
 void GetParam(const vector <double> &X, const vector <double> &Y, double &a, double &b)
 {
@@ -43,7 +47,7 @@ double AverSqFluct(const vector<double> &temp)
         return 0.0;
     size_t i = 0;
     double result = 0.0, m = mean(temp);
-    for(vector<double>::const_reverse_iterator it = temp.crbegin(); it != temp.crend() && i < 1000*aver_time/refresh_time; it++)
+    for(vector<double>::const_reverse_iterator it = temp.crbegin(); it != temp.crend() && i < 1000*aver_time/REFRESH_TIME; it++)
     {
         result += pow(*it, 2.0);
         i++;

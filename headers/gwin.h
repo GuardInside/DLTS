@@ -26,6 +26,9 @@ BOOL gFont(HWND hWnd, int iHeight, int iWidth, int iAngle, int iWeight, std::str
 BOOL gAdditionalInfo(HWND hWnd, std::string);
 BOOL gMark(HWND hWnd, int iMark1, int iMark2, int iAdMark1, int iAdMark2);
 BOOL gPrecision(HWND hWnd, INT iPrec1, INT iPrec2);
+BOOL gBand(HWND hWnd, double dMinX, double dMaxX, double dMinY, double dMaxY);
+BOOL gDefaultPlot(HWND hWnd, std::string message);
+//BOOL gPlotColor(HWND hWnd, COLORREF color);
 
 }
 #endif // GWIN_H

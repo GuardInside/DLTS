@@ -5,18 +5,16 @@
 #include <string>
 #include <iomanip>
 #include <sstream>
-#include <cmath>
 #include <stdexcept>
 #include <process.h>
-
 #include "gwin.h"
 #include "variable.h"
 #include "resource.h"
-#include <winfunc.h>
-#include <GPIB.h>
-#include <daq.h>
-#include <facility.h>
-#include <dlts_math.h>
+#include "winfunc.h"
+#include "vi.h"
+#include "daq.h"
+#include "facility.h"
+#include "dlts_math.h"
 
 using namespace std;
 using namespace gwin;
@@ -36,7 +34,7 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszArgu
         /* Регистрируем классы окон */
         CreateClass(hInst, "main window class", mwwin_proc);
         CreateClass(hInst, "main settings window class", stwin_proc);
-        CreateClass(hInst, "Arrhenius graph window class", arwin_proc);
+        CreateClass(hInst, "dialog window class", dlwin_proc);
         /* Считываем все настройки из setting-файла */
         read_settings();
         /* Инициализируем объекты-инструменты             */
@@ -49,6 +47,7 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszArgu
         InitCommonControls();
         /* Создаем окно и переходим в цикл обработки сообщений */
         hMainWindow = CreateDialog(hInstance, MAKEINTRESOURCE(ID_MAIN_WINDOW), 0, nullptr);
+
         while (GetMessage (&messages, NULL, 0, 0))
         {
             TranslateMessage(&messages);
@@ -79,22 +78,26 @@ BOOL MainWindow_OnCreate(HWND hwnd, LPCREATESTRUCT)
     /* Дочернии окна */
     hGraph = gCreateWindow(hInst, hwnd, WS_CHILD|WS_DLGFRAME|WS_VISIBLE);
     gPosition(hGraph, 10, 22);
-    gSize(hGraph, 340, 200);
+    gSize(hGraph, 399, 276);
     gPrecision(hGraph, 0, 2);
+    gDefaultPlot(hGraph, "\0");
     hGraph_DAQ = gCreateWindow(hInst, hwnd, WS_CHILD|WS_DLGFRAME|WS_VISIBLE);
-    gPosition(hGraph_DAQ, 370, 22);
-    gSize(hGraph_DAQ, 340, 200);
+    gPosition(hGraph_DAQ, 422, 22);
+    gSize(hGraph_DAQ, 399, 276);
     gPrecision(hGraph_DAQ, 0, 3);
+    gDefaultPlot(hGraph_DAQ, "\0");
     hRelax = gCreateWindow(hInst, hwnd, WS_CHILD|WS_DLGFRAME|WS_VISIBLE);
-    gPosition(hRelax, 10, 249);
-    gSize(hRelax, 340, 210);
+    gPosition(hRelax, 10, 323);
+    gSize(hRelax, 399, 276);
     gPrecision(hRelax, 0, 3);
+    gDefaultPlot(hRelax, "\0");
     hGraph_DLTS = gCreateWindow(hInst, hwnd, WS_CHILD|WS_DLGFRAME|WS_VISIBLE);
-    gPosition(hGraph_DLTS, 370, 249);
-    gSize(hGraph_DLTS, 340, 210);
-    gPrecision(hRelax, 2, 3);
+    gPosition(hGraph_DLTS, 422, 323);
+    gSize(hGraph_DLTS, 399, 276);
+    gPrecision(hGraph_DLTS, 2, 3);
+    gDefaultPlot(hGraph_DLTS, "\0");
     /* Индикатор выполнения */
-    hProgress = CreateWindow(PROGRESS_CLASS, NULL, WS_VISIBLE | WS_CHILD, 733, 195, 140, 20, hwnd, (HMENU)ID_PROGRESS, hInst, NULL);
+    hProgress = CreateWindow(PROGRESS_CLASS, NULL, WS_VISIBLE | WS_CHILD, 850, 195, 140, 20, hwnd, (HMENU)ID_PROGRESS, hInst, NULL);
         SendMessage(hProgress, PBM_SETRANGE, 0, 100 << 16);
         SendMessage(hProgress, PBM_SETPOS, 0, 0);
     /* Таймеры */
@@ -108,35 +111,32 @@ void MainWindow_OnCommand(HWND hwnd, int id, HWND, UINT)
 {
     static HANDLE thDownload = nullptr, /* Описатель потока для загрузки */
            thSave = nullptr,            /* Описатель потока для сохранения */
-           thSettings = nullptr,        /* Описатель потока для окна настроек */
-           thArrhenius = nullptr;       /* Описатель потока для окна графика Аррениуса */
+           thSettings = nullptr,
+           thStartWnd = nullptr;        /* Описатель потока для окна настроек */
     switch(id)
     {
         case ID_BUTTON_PREVIOUS_AI_PORT:
-            if(offset_ai_port == 0)
+            if(offset_ai_port == 0 || !bfDAQ0k)
                 break;
-            else
-            {
-                EnterCriticalSection(&csGlobalVariable);
-                offset_ai_port--;
-                LeaveCriticalSection(&csGlobalVariable);
-            }
+            offset_ai_port--;
             break;
         case ID_BUTTON_NEXT_AI_PORT:
-            if(offset_ai_port == 1)
+            if(offset_ai_port == 1 || !bfDAQ0k)
                 break;
-            else
-            {
-                EnterCriticalSection(&csGlobalVariable);
-                offset_ai_port++;
-                LeaveCriticalSection(&csGlobalVariable);
-            }
+            offset_ai_port++;
             break;
-        /* График Аррениуса */
-        case ID_BUTTON_GET_ARRHENIUS_GRAPH:
-            thCreateWindow(thArrhenius, ID_ARRHENIUS_WINDOW);
+        case ID_BUTTON_PREVIOUS_DLTS:
+            if(index_plot_DLTS == 0)
+                break;
+            index_plot_DLTS--;
+            PlotDLTS();
             break;
-        break;
+        case ID_BUTTON_NEXT_DLTS:
+            if(index_plot_DLTS == 1)
+                break;
+            index_plot_DLTS++;
+            PlotDLTS();
+            break;
         /* Переключение отображаемых в окне релаксаций */
         case ID_BUTTON_PREVIOUS_RELAXATION:
             if(index_relax == 0 || SavedRelaxations.empty())
@@ -178,7 +178,7 @@ void MainWindow_OnCommand(HWND hwnd, int id, HWND, UINT)
                     rewrite(buff) << "SETP " << CurrentTemperature << "K";
                     Thermostat.Write(buff);
                     /* Установка RANGE в соответствии с текущей зоной */
-                    rewrite(buff) << "RANG " << ZoneTable.GetActuallyHeatRange();
+                    rewrite(buff) << "RANG " << Thermostat.ZoneTable.GetActuallyHeatRange();
                     Thermostat.Write(buff);
                 }
                 else
@@ -187,7 +187,7 @@ void MainWindow_OnCommand(HWND hwnd, int id, HWND, UINT)
                     rewrite(buff) << "SETP " << Thermostat.SetPoint << "K";
                     Thermostat.Write(buff);
                     /* Установка RANGE в соответствии с текущей зоной */
-                    rewrite(buff) << "RANG " << ZoneTable.GetActuallyHeatRange();
+                    rewrite(buff) << "RANG " << Thermostat.ZoneTable.GetActuallyHeatRange();
                     Thermostat.Write(buff);
                 }
                 fix_temp = !fix_temp;
@@ -200,7 +200,10 @@ void MainWindow_OnCommand(HWND hwnd, int id, HWND, UINT)
                 MessageBox(hwnd, "Invalid set point or end point value.", "Warning", MB_ICONWARNING);
                 break;
             }
-            StartButPush(hwnd);
+            if(start == false)
+                thCreateWindow(thStartWnd, ID_START_WINDOW);
+            if(start == true)
+                StartButPush(hwnd);
             break;
         /* Установка начального и конечного значений температуры */
         case ID_BUTTON_SET:
@@ -253,8 +256,8 @@ void MainWindow_OnCommand(HWND hwnd, int id, HWND, UINT)
 
 VOID MainWindow_OnTimer(HWND hwnd, UINT id)
 {
-    static HANDLE thDataAcquisition = nullptr, //Описатель потока для чтения с DAQ по таймеру
-        thThermostatAcquisition = nullptr; //Описатель потока для чтения с термостата по таймеру
+    static HANDLE thDataAcquisition, //Описатель потока для чтения с DAQ по таймеру
+            thThermostatAcquisition; //Описатель потока для чтения с термостата по таймеру
     switch(id)
     {
         case MAIN_TIMER:
@@ -263,16 +266,14 @@ VOID MainWindow_OnTimer(HWND hwnd, UINT id)
                 stringstream buff;
                 buff << setprecision(2) << fixed;
                 double Dispersion = 0.0, Mean = 0.0;
-                if((index_mode == DLTS && Thermostat.SetPoint > Thermostat.EndPoint) ||
-                   (index_mode == ITS && Generator.begin_voltage > Generator.end_voltage))
+                if((index_mode == DLTS && endofdlts == true) ||
+                   (index_mode == ITS && endofits == true))
                 StartButPush(hwnd);
                 //Проверить стабилизацию и запустить второй поток для считывания данных
                 else if(stability == false)
                 {
-                    /* Рассчитываем и выводим Mean-square error */
+                    /* Рассчитываем Mean-square error */
                     Dispersion = AverSqFluct(Temperature);
-                    rewrite(buff) << "Mean-squared error " << Dispersion << " K";
-                    SetDlgItemText(hwnd, ID_STR_DISPERSION, buff.str().data());
                     /* Проверяем условие стабилизации первое */
                     if(Dispersion <= Thermostat.TempDisp)
                     {
@@ -281,19 +282,38 @@ VOID MainWindow_OnTimer(HWND hwnd, UINT id)
                         if(fabs(Mean - Thermostat.SetPoint) <= Thermostat.TempDisp)
                         {
                             stability = true;
-                            hThread_DAQ = (HANDLE)_beginthreadex(nullptr, 0, ReadAverDAQ, &Mean, 0, nullptr);
+                            HANDLE hThread = (HANDLE)_beginthreadex(nullptr, 0, ReadAverDAQ, &Mean, 0, nullptr);
+                            CloseHandle(hThread);
                         }
                     }
                 }
             }
             break;
         case DAQ_TIMER:
-            if(thDataAcquisition == nullptr || WaitForSingleObject(thDataAcquisition, 0) == WAIT_OBJECT_0)
-                thDataAcquisition = (HANDLE)_beginthreadex(nullptr, 0, DataAcquisition_Process, 0, 0, nullptr);
+            if(bfDAQ0k)
+            {
+                if(thDataAcquisition == nullptr || WaitForSingleObject(thDataAcquisition, 0) == WAIT_OBJECT_0)
+                {
+                    CloseHandle(thDataAcquisition);
+                    thDataAcquisition = (HANDLE)_beginthreadex(nullptr, 0, DataAcquisition_Process, 0, 0, nullptr);
+                }
+            }
+            else gDefaultPlot(hGraph_DAQ, "The NIDAQ isn't being initialized.\nYou should change advanced settings.");
             break;
         case THERMOSTAT_TIMER:
-            if(thThermostatAcquisition == nullptr || WaitForSingleObject(thThermostatAcquisition, 0) == WAIT_OBJECT_0)
-                thThermostatAcquisition = (HANDLE)_beginthreadex(nullptr, 0, Thermostat_Process, 0, 0, nullptr);
+            #ifndef TEST_MODE
+            if(fbThermostat0k)
+            {
+                #endif // TEST_MODE
+                if(thThermostatAcquisition == nullptr || WaitForSingleObject(thThermostatAcquisition, 0) == WAIT_OBJECT_0)
+                {
+                    CloseHandle(thThermostatAcquisition);
+                    thThermostatAcquisition = (HANDLE)_beginthreadex(nullptr, 0, Thermostat_Process, 0, 0, nullptr);
+                }
+            #ifndef TEST_MODE
+            }
+            else gDefaultPlot(hGraph_DAQ, "The thermostat LakeShore isn't being initialized.\nYou should change advanced settings.");
+                #endif // TEST_MODE
             break;
     }
 }
@@ -301,41 +321,20 @@ VOID MainWindow_OnTimer(HWND hwnd, UINT id)
 /* Считываем данные с аналогового входа */
 UINT CALLBACK DataAcquisition_Process(void*)
 {
-    EnterCriticalSection(&csGlobalVariable);
 
-    EnterCriticalSection(&csDataAcquisition);
-    DAQmxReadAnalog(id_DAQ, ai_port+offset_ai_port, pfi_ttl_port,
-                    rate_DAQ, gate_DAQ, DAQmx_Val_Rising, index_range, measure_time_DAQ,
-                    &SignalDAQ);
-    LeaveCriticalSection(&csDataAcquisition);
     if(ai_port+offset_ai_port == ai_port_pulse)
     {
-        gVector vData;
-        EnterCriticalSection(&csDataAcquisition);
-        DAQmxReadAnalog(id_DAQ, ai_port_pulse, pfi_ttl_port,
-                    rate_DAQ, gate_DAQ, DAQmx_Val_Rising, index_range, measure_time_DAQ,
-                    &vData);
-        LeaveCriticalSection(&csDataAcquisition);
-        /* Рассчитываем истинные значения амплитуд */
-        double High = 0.0, Low = 0.0;
-        double N = rate_DAQ/1000.0*Generator.period, /* Число сэмплов */
-            SSW = rate_DAQ/1000.0*Generator.width/4; /* Четверть импульса в сэмплах*/
-        /* Пробегаем по точка до импульса */
-        for(int i = 0; i < N/2-SSW; i++)
-            High += vData[i];
-        /* Пробегаем по точка после импульса */
-        for(int i = N/2+4*SSW+SSW; i < N; i++)
-            High += vData[i];
-        High /= N/2-SSW + (N - (N/2+4*SSW+SSW));
-        /* Пробегаем по точка соответствующим импульсу */
-        for(int i = N/2+SSW; i < N/2+3*SSW; i++)
-            Low += vData[i];
-        Low /= 2*SSW;
+        double dMinVoltage = 0.0, dMaxVoltage = 0.0;
+        MeasurePulse(&SignalDAQ, &dMinVoltage, &dMaxVoltage);
         stringstream buff;
-        buff << setprecision(3) << "[" << Low << "," << High << "]";
+        buff << setprecision(3) << "[" << dMinVoltage << "," << dMaxVoltage << "]";
         gAdditionalInfo(hGraph_DAQ, buff.str());
     }
-    LeaveCriticalSection(&csGlobalVariable);
+    else
+    {
+        MyDAQMeasure(&SignalDAQ, 1, measure_time_DAQ*0.001, ai_port);
+        gAdditionalInfo(hGraph_DAQ, "\0");
+    }
     plotDAQ();
     return 0;
 }
@@ -351,15 +350,13 @@ UINT CALLBACK Thermostat_Process(void*)
     Thermostat.ReadDigit(CurrentTemperature);
     #ifdef TEST_MODE
         srand(time(NULL));
-        CurrentTemperature = rand()%20+300; //Для проверки
+        CurrentTemperature = rand()%50+10;
     #endif
-    //EnterCriticalSection(&csPlotTempInRealTime);
     /* Сохраняем полученное значение */
     Temperature.push_back(CurrentTemperature);
     /* Удаляем старое значение */
     if(Temperature.size() > MAX_POINT_TEMP_GRAPH)
         Temperature.erase(Temperature.begin());
-    //LeaveCriticalSection(&csPlotTempInRealTime);
     /* Мощность ТЭНа в процентах */
     Thermostat.Write("HEAT?");
     Thermostat.ReadDigit(HeatPercent);
@@ -368,6 +365,9 @@ UINT CALLBACK Thermostat_Process(void*)
     /* Текущая температура */
     rewrite(buff) << "Temperature " << CurrentTemperature << " K ";
     SetDlgItemText(hMainWindow, ID_STR_CHANNEL_A, buff.str().data());
+    /* Рассчитываем и выводим Mean-square error */
+    rewrite(buff) << "Mean-squared error " << AverSqFluct(Temperature) << " K";
+    SetDlgItemText(hMainWindow, ID_STR_DISPERSION, buff.str().data());
     /* Выводим текущее значение SetPoint */
     Thermostat.Write("SETP?");
     Thermostat.ReadDigit(SetPoint);
@@ -377,44 +377,28 @@ UINT CALLBACK Thermostat_Process(void*)
     gVector vData1;
     for(size_t i = 0; i < Temperature.size(); i++)
         vData1.push_back(i*REFRESH_TIME*0.001);
+    gBand(hGraph, 0, 50, (CurrentTemperature-5)<0?0:(CurrentTemperature-5), (CurrentTemperature+5));
     gData(hGraph, &vData1, &Temperature);
     return 0;
 }
 
 UINT CALLBACK ReadAverDAQ(void* mean_temperature)
 {
+    if(index_mode == DLTS && !Thermostat.range_is_correct())
+    {
+        endofdlts = true;
+        return 0;
+    }
     double MeanTemp = *((double*)mean_temperature);
-    gVector vData, vResult;
-    vData.reserve(samples_DAQ);
-    vResult.reserve(samples_DAQ);
+    double dVoltMin = 0.0, dVoltMax = 0.0;
+    double dBeginVolt = Generator.begin_voltage, dEndVolt = Generator.end_voltage;
     /* В случае ITS режима, цикл ниже повторяется */
     do
     {
-        int progress = 0;
-        gVector(samples_DAQ, 0).swap(vResult);
-        for(uInt32 i = 0; i < averaging_DAQ; i++)
-        {
-            /* Запись данных */
-            EnterCriticalSection(&csDataAcquisition);
-            DAQmxReadAnalog(id_DAQ, ai_port, pfi_ttl_port,
-                    rate_DAQ, gate_DAQ, DAQmx_Val_Rising, index_range, measure_time_DAQ,
-                    &vData);
-            LeaveCriticalSection(&csDataAcquisition);
-            /* Сохранение данных */
-            for(auto it = vData.begin(), resit = vResult.begin(); it != vData.end(); it++, resit++)
-                *resit += *it;
-            /* Обновление информации о ходе записи */
-            progress = 99 * i/(averaging_DAQ);
-            SendMessage(hProgress, PBM_SETPOS, progress, 0);
-        }
-        EnterCriticalSection(&csGlobalVariable);
-            gVector(samples_DAQ, 0).swap(Relaxation);
-            for(auto it = vResult.begin(), resit = Relaxation.begin(); it != vResult.end(); it++, resit++)
-                *resit = (*it)/averaging_DAQ;
-            //Сохраняем релаксации, чтобы иметь возможность переключаться между ними
-            SavedRelaxations.push_back(Relaxation);
-            index_relax = SavedRelaxations.size() - 1; //без единицы, потому что индекс
-        LeaveCriticalSection(&csGlobalVariable);
+        MyDAQMeasure(&Relaxation, averaging_DAQ, measure_time_DAQ*0.001, ai_port, TRUE);
+        //Сохраняем релаксации, чтобы иметь возможность переключаться между ними
+        SavedRelaxations.push_back(Relaxation);
+        index_relax = SavedRelaxations.size() - 1; //без единицы, потому что индекс
         if(index_mode == DLTS)
         {
             AddPointsDLTS(MeanTemp);                    //Добавляем точку на DLTS
@@ -423,19 +407,26 @@ UINT CALLBACK ReadAverDAQ(void* mean_temperature)
         else if(index_mode == ITS)
         {
             /* Вычисляем истинные параметры заполняющего импульса */
-            Generator.mesure_pulse();
+            MeasurePulse(NULL, &dVoltMin, &dVoltMax);
             if(Generator.begin_voltage + Generator.step_voltage > Generator.end_voltage)
-                break; /* Выход из цикла while */
+            {
+                Generator.begin_voltage = dBeginVolt;
+                Generator.end_voltage = dEndVolt;
+                Generator.Apply();
+                endofits = true;
+                stability = false;
+                break; // Выход из цикла while
+            }
             Generator.begin_voltage += Generator.step_voltage;
             Generator.Apply();
+            stringstream buff;
+            buff << setprecision(3) << "[" << dVoltMin << "," << dVoltMax << "]";
+            gAdditionalInfo(hRelax, buff.str());
         }
-        SaveRelaxSignal(MeanTemp, vResult);          //Сохраняем результат в файл
-        stability = false;
-        SendMessage(hProgress, PBM_SETPOS, 0, 0);   //Очищаем Progress Bar
+        SaveRelaxSignal(MeanTemp, Relaxation, dVoltMin, dVoltMax);//Сохраняем результат в файл
         PlotRelax();
         PlotDLTS();
-        InvalidateRect((HWND)hGraph_Arrhenius, NULL, FALSE);
-    }while(index_mode == ITS);
+    }while(start == true && stability == true && endofits == false);
+    stability = false;
     return 0;
 }
-

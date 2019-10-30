@@ -8,7 +8,7 @@
 #include <sstream>
 #include <variable.h>
 #include <facility.h>
-#include 
+#include <daq.h>
 
 #define READ_BUFFER_SIZE  64
 #define WRITE_BUFFER_SIZE 64
@@ -20,14 +20,14 @@ class GPIB
     public:
         GPIB();
         /* Инициализация сессии по умолчанию; */
-        void InitSession();
+        VOID InitSession();
         /* Записать сообщение в очередь */
         ViStatus Write(const std::stringstream& mes, ViUInt32*  rcount = nullptr);
         ViStatus Write(const std::string mes, ViUInt32*  rcount = nullptr);
-        void Read(std::string&);
+        VOID Read(std::string&);
         /* Прочитать сообщение-число из очереди */
-        void ReadDigit(double& digit);
-        void ReadDigit(int& digit);
+        VOID ReadDigit(double& digit);
+        VOID ReadDigit(int& digit);
         int& GetID(){ return ID; }
     private:
         ViSession       hResMeneger;
@@ -44,24 +44,19 @@ struct GENERATOR: public GPIB
                  begin_voltage{0}, end_voltage{0}, step_voltage{0},
                  channel{1}, is_active{true}{}
     /* Применить текущие настройки к прибору */
-    void Apply();
-    /* Измерить параметры импульса */
-    void mesure_pulse();
+    VOID Apply();
 
     double period, width, voltage_up, voltage_low;
-    double voltage_up_measured, voltage_low_measured;
     /* Для режима ITS */
     double begin_voltage, end_voltage, step_voltage;
     unsigned int channel;
     bool is_active;
-    private:
-        DataAcquisition DAQPulseVoltageInst;
 };
 
 struct THERMOSTAT: public GPIB
 {
     THERMOSTAT(): SetPoint{0}, EndPoint{0}, TempStep{0}, TempDisp{0}{}
-    void Apply();
+    VOID Apply();
     /* Проверка корректности диапазона измерения температуры */
     bool range_is_correct() const;
     double SetPoint, EndPoint, TempStep, TempDisp;
@@ -69,20 +64,12 @@ struct THERMOSTAT: public GPIB
 
 struct PIDTABLE
 {
+        unsigned int P[QUANTITY_ZONE], I[QUANTITY_ZONE], D[QUANTITY_ZONE],
+                     range[QUANTITY_ZONE], upper_boundary[QUANTITY_ZONE];
         PIDTABLE();
         /* Возвращает идентификатор ресурса */
         int GetIDRes(const int, const string);
         UINT GetActuallyHeatRange();
-
-        unsigned int P[QUANTITY_ZONE],
-                     I[QUANTITY_ZONE],
-                     D[QUANTITY_ZONE],
-                     range[QUANTITY_ZONE],
-                     upper_boundary[QUANTITY_ZONE];
 };
-
-extern GENERATOR    Generator;
-extern THERMOSTAT   Thermostat;
-extern PIDTABLE     ZoneTable;
 
 #endif

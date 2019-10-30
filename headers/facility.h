@@ -8,7 +8,7 @@
 #include <commctrl.h>
 #include <iomanip>
 #include <commdlg.h>
-#include <GPIB.h>
+#include "vi.h"
 #include "daq.h"
 #include <dlts_math.h>
 #include "resource.h"
@@ -29,18 +29,18 @@ void read_settings();
 void SetZones();
 //Инициализация сборщика данных, термостата и зон для PID регулировки
 void ApplySettings();
-//Нажата кнопка старта
-void StartButPush(HWND hwnd);
-//Очистка векторов осей DLTS-кривых
-void ClearAxisDLTS();
 //Загружает Save-файл с усредненными сигналами релаксаций, строит DLTS-кривые и график Аррениуса
 UINT CALLBACK DownloadFile(void*);
 UINT CALLBACK SaveFile(void*);
+//Очистка векторов осей DLTS-кривых
+void ClearAxisDLTS();
+void ClearMemmory();
 //Обновление DLTS-кривых
 void RefreshDLTS();
-void SaveRelaxSignal(double MeanTemp, const vector<double>);
+void SaveRelaxSignal(double MeanTemp, const vector<double> vData, double dVoltMin, double dVoltMax);
 //Увеличивает SetPoint на величину StepTemp и снимает флаг стабилизации
 void prepare_next_set_point();
+void AddPointsDLTS(double temp);
 /* Возвращает расширение открытого файла */
 string GetExtensionFile(char*, int);
 
