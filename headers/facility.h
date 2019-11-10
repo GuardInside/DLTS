@@ -29,18 +29,19 @@ void read_settings();
 void SetZones();
 //Инициализация сборщика данных, термостата и зон для PID регулировки
 void ApplySettings();
-//Загружает Save-файл с усредненными сигналами релаксаций, строит DLTS-кривые и график Аррениуса
-UINT CALLBACK DownloadFile(void*);
-UINT CALLBACK SaveFile(void*);
-BOOL LoadFile(string strName);
+/* Функции для сохранения и загрузки save-файлов */
+VOID DownloadWindow();
+UINT CALLBACK LoadFile(PVOID);
+VOID SaveWindow();
+UINT CALLBACK SaveFile(PVOID);
 //Очистка векторов осей DLTS-кривых
 void ClearMemmoryDLTS();
 void ClearMemmory();
 void OrderRelaxation();
 //Обновление DLTS-кривых
 void RefreshDLTS();
-void SaveRelaxSignal(double MeanTemp, const vector<double> vData, double dVoltMin, double dVoltMax);
-void AddPointsDLTS(double temp);
+void SaveRelaxSignal(double MeanTemp, const vector<double> *vData, double dVoltMin, double dVoltMax);
+void AddPointsDLTS(const vector<double> *vRelaxation, const double temp);
 /* Возвращает расширение открытого файла */
 string GetExtensionFile(string str);
 

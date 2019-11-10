@@ -1,12 +1,12 @@
 #include "variable.h"
 
-vector<double>      Temperature;
-vector<double>      Relaxation;
-vector<double>      SignalDAQ;
-vector<double>      xAxisDLTS;
-vector<double>      *yAxisDLTS = nullptr;
-vector<double>      CorTime;
-vector<double>      itsUpVoltages, itsLowVoltages;  /* Хранит значения напряжений импульсов */
+vector<double>          xAxisDLTS;
+vector<double>          *yAxisDLTS = nullptr;
+vector<double>          xAxisAr;
+vector<vector<double>>  yAxisAr;
+vector<double>          CorTime;
+vector<double>          itsUpVoltages;
+vector<double>          itsLowVoltages;  /* Хранит значения напряжений импульсов */
 
 vector<vector<double>>      SavedRelaxations;//Хранит все сохраненные и загруженные релаксации/
 size_t index_relax = 0; //Номер текущей релаксации для отображения
@@ -38,13 +38,9 @@ float64 gate_DAQ = 0.0;      //
 /* Флаги */
 bool start = false;            //Нажата кнопка старт
 bool stability = false;        //Температура стабилизировалась вблизи сетпоинта
-bool loading = false;          //Были загружены сохраненные релаксации
-bool endofits = false;
-bool endofdlts = false;
 bool bfDAQ0k = true;          //DAQ работает в штатном режиме
 bool fbThermostat0k = true;   //Термостат работает в штатном режиме
 bool bfNewfile = true;        //
-bool bfAppfile = false;
 /* Параметры коррелятора */
 unsigned int CorType = DoubleBoxCar;
 double correlation_c = 0.0;
@@ -57,6 +53,6 @@ HWND                        hGraph;     //Описатель окна графика температуры
 HWND                        hRelax;     //Описатель окна графика релаксации
 HWND                        hGraph_DAQ; //Описатель окна графика сигнала с DAQ
 HWND                        hGraph_DLTS;//Описатель окна графика DLTS
-HWND                        hProgress;//Прогресс чтения данных
+HWND                        hProgress;  //Прогресс чтения данных
 CRITICAL_SECTION            csDataAcquisition;//Используется всегда при чтении данных DAQ
-CRITICAL_SECTION            csGlobalVariable;
+HANDLE                      hDownloadEvent;

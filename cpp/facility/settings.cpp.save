@@ -1,5 +1,24 @@
 #include <facility.h>
 
+BOOL CALLBACK SuccessWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    switch(message)
+    {
+    case WM_INITDIALOG:
+        SetTimer(hWnd, 0, 800, NULL);
+        return TRUE;
+    case WM_TIMER:
+        EndDialog(hWnd, 0);
+        return TRUE;
+    }
+    return FALSE;
+}
+
+UINT CALLBACK dlg_success(PVOID)
+{
+    return DialogBox(hInst, MAKEINTRESOURCE(ID_SUCCESS_WINDOW), HWND_DESKTOP, SuccessWndProc);
+}
+
 void write_settings()
 {
     ofstream file(SettingsFile.data());
@@ -12,8 +31,8 @@ void write_settings()
         << averaging_DAQ << " " << ai_port << " " << ai_port_pulse << " " << pfi_ttl_port << " "
         << gate_DAQ << " " << FileSaveName << " " << index_mode << " " << aver_time << " " << index_range << " "
         << Generator.period << " " << Generator.width << " "
-        << Generator.voltage_up << " " << Generator.voltage_low << " " << Generator.is_active << " "
-        << Generator.step_voltage << " " << Generator.begin_voltage << " " << Generator.end_voltage;
+        << Generator.amplitude << " " << Generator.bias << " " << Generator.is_active << " "
+        << Generator.step_voltage << " " << Generator.begin_amplitude << " " << Generator.end_amplitude;
     else
         MessageBox(NULL, "The settings file wasn't found.", "Information", MB_ICONINFORMATION);
     if(CorFile.is_open())
@@ -34,8 +53,8 @@ void write_settings()
         {
             //ZONE XX,±SSS.S,R,PPP,III,DDD
             PIDFile << i << " " << Thermostat.ZoneTable.upper_boundary[i] << " "
-                      << Thermostat.ZoneTable.P[i] << " " << Thermostat.ZoneTable.I[i] << " " << ZoneTable.D[i]
-                      << " " << ZoneTable.range[i];
+                      << Thermostat.ZoneTable.P[i] << " " << Thermostat.ZoneTable.I[i] << " " << Thermostat.ZoneTable.D[i]
+                      << " " << Thermostat.ZoneTable.range[i];
             if(i != QUANTITY_ZONE)
                 PIDFile << endl;
         }
@@ -45,6 +64,8 @@ void write_settings()
     PIDFile.close();
     CorFile.close();
     file.close();
+    HANDLE hThreadSuccess = (HANDLE)_beginthreadex(NULL, 0, dlg_success, NULL, 0, NULL);
+    CloseHandle(hThreadSuccess);
 }
 
 void read_settings()
@@ -61,8 +82,8 @@ void read_settings()
         >> Thermostat.TempStep >> Thermostat.TempDisp
         >> id_DAQ >> measure_time_DAQ >> rate_DAQ >> averaging_DAQ >> ai_port >> ai_port_pulse >> pfi_ttl_port
         >> gate_DAQ >> FileSaveName >> index_mode >> aver_time >> index_range
-        >> Generator.period >> Generator.width >> Generator.voltage_up >> Generator.voltage_low
-        >> Generator.is_active >> Generator.step_voltage >> Generator.begin_voltage >> Generator.end_voltage;
+        >> Generator.period >> Generator.width >> Generator.amplitude >> Generator.bias
+        >> Generator.is_active >> Generator.step_voltage >> Generator.begin_amplitude >> Generator.end_amplitude;
     else
         MessageBox(NULL, "The settings file wasn't found. It'll be created when you set new settings.", "Information", MB_ICONINFORMATION);
     if(CorFile.is_open())
@@ -86,9 +107,9 @@ void read_settings()
         {
             PIDFile >> i;
             //ZONE XX,±SSS.S,R,PPP,III,DDD
-            PIDFile >> ZoneTable.upper_boundary[i]
-                    >> ZoneTable.P[i] >> ZoneTable.I[i] >> ZoneTable.D[i]
-                    >> ZoneTable.range[i];
+            PIDFile >> Thermostat.ZoneTable.upper_boundary[i]
+                    >> Thermostat.ZoneTable.P[i] >> Thermostat.ZoneTable.I[i] >> Thermostat.ZoneTable.D[i]
+                    >> Thermostat.ZoneTable.range[i];
         }
     }
     else
@@ -100,13 +121,6 @@ void read_settings()
 
 /* Применяет текущие настройки зон к физическому устройству */
 /* Применяются при нажатии на кнопку старт */
-/*ZONE XX,±SSS.S,R,PPP,III,DDD
-        GAIN 65 [term] instructs the Model 330 to set control gain to 65. Gain corresponds to the
-            Proportional (P) portion of the PID Autotuning control algorithm.
-        Enter an integer from 0 to 999. Reset corresponds to the Integral (I) portion of the PID
-            Autotuning control algorithm.
-        Enter an integer from 0 through 200. Rate corresponds to the Differential (D) portion of the.
-            PID Autotuning control algorithm.*/
 void SetZones()
 {
     stringstream buff;
@@ -117,9 +131,9 @@ void SetZones()
     /* Применяем настройки зон */
     for(int i = 0; i < QUANTITY_ZONE; i++)
     {
-        rewrite(buff) << "ZONE " << i+1 << ",+" << ZoneTable.upper_boundary[i] << ","
-                      << ZoneTable.range[i] << "," << ZoneTable.P[i] << ","
-                      << ZoneTable.I[i] << "," << ZoneTable.D[i];
+        rewrite(buff) << "ZONE " << i+1 << ",+" << Thermostat.ZoneTable.upper_boundary[i] << ","
+                      << Thermostat.ZoneTable.range[i] << "," << Thermostat.ZoneTable.P[i] << ","
+                      << Thermostat.ZoneTable.I[i] << "," << Thermostat.ZoneTable.D[i];
         Thermostat.Write(buff);
     }
 }

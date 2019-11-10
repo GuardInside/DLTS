@@ -22,13 +22,10 @@ using namespace std;
 #define BUFF_SIZE                   256 //Размер строкового буффера для работы со строками в стиле С
 
 /* Идентификаторы таймеров */
-#define MAIN_TIMER                  0
 #define DAQ_TIMER                   1
 #define THERMOSTAT_TIMER            2
 
-
 /* Настройки таймеров */
-#define REFRESH_TIME                500 //Период главного таймера. Если опрашиваем оба канала > 500 ms
 #define REFRESH_TIME_DAQ            500 //Интервала между повторными считываниями DataAcquisition
 #define REFRESH_TIME_THERMOSTAT     500 //Интервала между повторными считываниями LakeShore
 
@@ -41,6 +38,9 @@ using namespace std;
 #define MAX_POINT_RELAX_GRAPH       100 //Количество точек на графике релаксации
 #define RANGE_SIZE                  4   //Число диапазонов напряжений для АЦП
 #define RANGE_HEATING_SIZE          4   //Число уровней нагрева ТЭН'а
+#define VOLTAGE_PRECISION           4   //Вольт
+#define THERMO_PRECISION            2   //Кельвин
+#define TIME_PRECISION              4   //Секунды
 
 /* Физические константы */
 #define BOLTZMANN                   (8.6173303e-5)      //эВ/К
@@ -51,13 +51,13 @@ using namespace std;
 
 enum CORTYPE{DoubleBoxCar, LockIn, ExpW, SinW};
 
-extern vector<double> Temperature;
-extern vector<double> Relaxation;
-extern vector<double> SignalDAQ;
-extern vector<double> xAxisDLTS;
-extern vector<double> *yAxisDLTS;
-extern vector<double> CorTime;
-extern vector<double> itsUpVoltages, itsLowVoltages;  /* Хранит значения напряжений импульсов в режиме ITS */
+extern vector<double>           xAxisDLTS;
+extern vector<double>           *yAxisDLTS;
+extern vector<double>           xAxisAr;
+extern vector<vector<double>>   yAxisAr;
+extern vector<double>           CorTime;
+extern vector<double>           itsUpVoltages;
+extern vector<double>           itsLowVoltages;  /* Хранит значения напряжений импульсов в режиме ITS */
 
 extern vector<vector<double>> SavedRelaxations; //Хранит все сохраненные или загруженные релаксации
 extern size_t index_relax;  //Номер текущей релаксации для отображения
@@ -95,11 +95,9 @@ extern float64 gate_DAQ;
 /* Флаги */
 extern bool start;            //Нажата кнопка старт
 extern bool stability;        //Температура стабилизировалась вблизи сетпоинта
-extern bool loading;          //Были загружены сохраненные релаксации
-extern bool endofits;
-extern bool endofdlts;
-extern bool fbDAQ0k;          //DAQ работает в штатном режиме
+extern bool bfDAQ0k;          //DAQ работает в штатном режиме
 extern bool fbThermostat0k;   //Термостат работает в штатном режиме
+extern bool bfNewfile;        //Создавать ли новый файл при старте эксперимента?
 /* Параметры коррелятора */
 extern unsigned int CorType;
 extern double correlation_c;
@@ -107,13 +105,12 @@ extern double correlation_width;
 extern double* correlation_t1;
 /* Описатели объектов */
 extern HINSTANCE                   hInst;      //Описатель текущего приложения
-extern HANDLE                      hThread_DAQ;//Описатель потока DAQ
 extern HWND                        hMainWindow;
 extern HWND                        hGraph;     //Описатель окна графика температуры
-extern HWND                        hRelax;     //Описатель окна графика релаксации
 extern HWND                        hGraph_DAQ; //Описатель окна графика сигнала с образца в реальном времени
+extern HWND                        hRelax;     //Описатель окна графика релаксации
 extern HWND                        hGraph_DLTS;//Описатель окна графика DLTS
 extern HWND                        hProgress;  //Прогресс чтения данных
 extern CRITICAL_SECTION            csDataAcquisition;//Используется всегда при чтении данных DAQ
-extern CRITICAL_SECTION            csGlobalVariable;
+extern HANDLE                      hDownloadEvent;
 #endif // VARIABLE_H_INCLUDED

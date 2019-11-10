@@ -1,4 +1,9 @@
+#include <algorithm>
+#include <cctype>
+
 #include "gwin.h"
+
+
 #define DEFAULT_HEIGHT_FONT 80
 #define DEFAULT_WIDTH_FONT  20
 #define DEFAULT_PRECISION   3
@@ -30,7 +35,7 @@ namespace gwin
                                  DEFAULT_CHARSET, OUT_STROKE_PRECIS, CLIP_EMBEDDED,
                                  PROOF_QUALITY, FIXED_PITCH | FF_MODERN, "Courier New")},
             bfEnableGrid{true}, bfEnableAdInfo{true}, bfEnableScale{true}, bfEnableAxis{true},
-            bfEnableScCor{true},
+            bfEnableScCor{true}, bfEnableCross{false},
             dMinX{0.0}, dMaxX{0.0}, dMinY{0.0}, dMaxY{0.0} {}
         HBITMAP hBitMap;
         UINT iMark1, iMark2, iAdMark1, iAdMark2;
@@ -39,9 +44,10 @@ namespace gwin
         COLORREF crTextColor, crAdInfoColor;
         HFONT hTextFont;
         BOOL bfEnableGrid, bfEnableAdInfo, bfEnableScale, bfEnableAxis,
-            bfEnableScCor;
+            bfEnableScCor, bfEnableCross;
         std::string strAdInfo;
         double dMinX, dMaxX, dMinY, dMaxY;
+        gVector vCrossX, vCrossY;
     };
 
     class gBuffer
@@ -93,7 +99,7 @@ namespace gwin
     BOOL gDrawPlot(HWND hWnd, HDC &hdc, const gVector *vData1, const gVector *vData2);
     BOOL gDrawLegend(HWND hWnd, HDC& hdc);
     BOOL gEmbedBitmap(HWND hWnd, HDC &hdc);
-    BOOL gSplit(std::string str, gInfoVector *vInfo);
+    BOOL gSplit(const std::string &str, gInfoVector *vInfo);
 
     LRESULT CALLBACK _gWinProcess (HWND, UINT, WPARAM, LPARAM);
     VOID _gOnCommand(HWND, int, HWND, UINT);
@@ -104,6 +110,16 @@ namespace gwin
 /* ********************** */
 /*  Интерфейс библиотеки  */
 /* ********************** */
+BOOL gwin::gCross(HWND hWnd, const gVector *vData1, const gVector *vData2)
+{
+    if(vData1->size() == 0 || vData2->size() == 0 || vData1->size() != vData2->size())
+        return FALSE;
+    _gMap.at(hWnd).bfEnableCross = true;
+    _gMap.at(hWnd).vCrossX = *vData1;
+    _gMap.at(hWnd).vCrossY = *vData2;
+    return TRUE;
+}
+
 BOOL gwin::gDefaultPlot(HWND hWnd, std::string message)
 {
     gwin::gVector vData1, vData2;
@@ -126,6 +142,7 @@ BOOL gwin::gDefaultPlot(HWND hWnd, std::string message)
     _gMap.at(hWnd).bfEnableScale = fbOldEnableScale;
     _gMap.at(hWnd).bfEnableAxis = fbOldEnableAxis;
     _gMap.at(hWnd).bfEnableGrid = bfOldEnableGrid;
+    return TRUE;
 }
 
 BOOL gwin::gBand(HWND hWnd, double dMinX, double dMaxX, double dMinY, double dMaxY)
@@ -193,6 +210,7 @@ BOOL gwin::gClose(HWND hWnd)
     _gMap.erase(hWnd);
     return DestroyWindow(hWnd);
 }
+
 
 BOOL gwin::gMulData(HWND hWnd, const gVector *vData1, const gMulVector *vMulData)
 {
@@ -331,7 +349,7 @@ BOOL gwin::gMulDrawPlot(HWND hWnd, HDC &hdc, const gVector *vData1, const gMulVe
     hx = (max_x - min_x)/iMark1;
     hy = (max_y - min_y)/iMark2;
     /* Коррекция масштаба */
-    double e = fabs(max_y);
+    double e = fabs(max_y) > fabs(min_y)? fabs(max_y) : fabs(min_y);
     int exp = 0;
     while(e < 0.1 && bfEnableScCor)
     {
@@ -438,7 +456,13 @@ BOOL gwin::gMulDrawPlot(HWND hWnd, HDC &hdc, const gVector *vData1, const gMulVe
                 y = int(iPlotSize + 0.5);
             else if(yAxis[0] < min_y)
                 y = int(0.0 + 0.5);
-        MoveToEx(hdc, 0, y, NULL);
+        if(xAxis[0] >= min_x && xAxis[0] <= max_x)
+            x = int((xAxis[0] - min_x)*iPlotSize/(max_x - min_x) + 0.5);
+        else if(xAxis[0] > max_x)
+            x = int(iPlotSize + 0.5);
+        else if(xAxis[0] < min_x)
+            x = 0;
+        MoveToEx(hdc, x, y, NULL);
         for(i = 1; i < xAxis.size(); i++)
         {
             if(xAxis[i] >= min_x && xAxis[i] <= max_x)
@@ -446,16 +470,40 @@ BOOL gwin::gMulDrawPlot(HWND hWnd, HDC &hdc, const gVector *vData1, const gMulVe
             else if(xAxis[i] > max_x)
                 x = int(iPlotSize + 0.5);
             else if(xAxis[i] < min_x)
-                x = int(0.0 + 0.5);
+                x = int(0.0);
             if(yAxis[i] >= min_y && yAxis[i] <= max_y)
                 y = int((yAxis[i] - min_y)*iPlotSize/(max_y - min_y) + 0.5);
             else if(yAxis[i] > max_y)
                 y = int(iPlotSize + 0.5);
             else if(yAxis[i] < min_y)
-                y = int(0.0 + 0.5);
+                y = 0;
             LineTo(hdc, x, y);
         }
         if(iMaxPlotNumber > 1) DeleteObject(hPlotPen);
+    }
+    /* Выводим кресты */
+    if(_gMap.at(hWnd).bfEnableCross == true)
+    {
+        const gVector &xAxis = _gMap.at(hWnd).vCrossX;
+        const gVector &yAxis = _gMap.at(hWnd).vCrossY;
+        for(auto X = xAxis.begin(), Y = yAxis.begin();
+            X != xAxis.end() || Y != yAxis.end(); X++, Y++)
+        {
+            if(*X >= min_x && *X <= max_x)
+                x = int((*X - min_x)*iPlotSize/(max_x - min_x) + 0.5);
+            else if(*X > max_x)
+                x = int(iPlotSize + 0.5);
+            else if(*X < min_x)
+                x = int(0.0);
+            if(*Y >= min_y && *Y <= max_y)
+                y = int((*Y - min_y)*iPlotSize/(max_y - min_y) + 0.5);
+            else if(*Y > max_y)
+                y = int(iPlotSize + 0.5);
+            else if(*Y < min_y)
+                y = 0;
+            SelectBrush(hdc, GetStockBrush(WHITE_BRUSH));
+            Ellipse(hdc, x-iIndent, y+iIndent*2, x+iIndent*2, y-iIndent*2);
+        }
     }
     /* Выводим дополнительную информацию */
     SetTextColor(hdc, _gMap.at(hWnd).crAdInfoColor);
@@ -506,28 +554,22 @@ BOOL gwin::gEmbedBitmap(HWND hWnd, HDC &hdc)
     return FALSE;
 }
 
-BOOL gwin::gSplit(std::string str, gInfoVector *vInfo)
-{
-    if(str.empty()) return FALSE;
-    for(size_t i = 0, j = 0, s = 0, len = 0; i < str.length(); i++)
-    {
-        len++;
-        if(str[i] == '\n' || i == str.length()-1)
-        {
-            vInfo->push_back(std::string(str, j, len));
-            j = i + 1;
-            s++;
-            len = 0;
+//break a sentence into words
+BOOL gwin::gSplit(const std::string& s, gInfoVector *vInfo){
+    if(s.empty()) return FALSE;
+    typedef std::string::const_iterator iter;
+    iter i = s.begin();
+    while(i!=s.end()){
+        i = std::find_if(i, s.end(), [=](char c){ return !std::isspace(c); }); // find the beginning of a word
+        iter j= std::find_if(i, s.end(), [=](char c){return (c == '\n')? true : false; }); // find the end of the same word
+        if(i!=s.end()){
+            vInfo->push_back(std::string(i, j)); //insert the word into vector
+            i = j; // repeat 1,2,3 on the rest of the line.
         }
     }
     return TRUE;
 }
 
-gwin::gDrawLegend(HWND hWnd, HDC &hdc)
-{
-
-
-}
 /* *************** */
 /* Оконная функция */
 /* *************** */
@@ -557,8 +599,15 @@ VOID gwin::_gOnPaint(HWND hWnd)
     EndPaint(hWnd, &ps);
 }
 
-VOID gwin::_gOnLButtonDown(HWND hWnd, BOOL, INT, INT, UINT)
+VOID gwin::_gOnLButtonDown(HWND hWnd, BOOL, INT x, INT y, UINT)
 {
-    HDC hdc;
-    //gwin::gDrawLegend(hWnd, hdc);
+    //static CONST LONG iPlotSize = GPLOT_LOGICAL_SIZE;
+    //if(_gMap.find(hWnd) == _gMap.end())
+    //    return;
+    //LONG iWidth, iHeight;
+    //gWindowMetric(hWnd, &iWidth, &iHeight);
+    //_gMap.at(hWnd).vCrossX
+    //int(x*GPLOT_LOGICAL_SIZE/iWidth+0.5) << std::endl << int(y*GPLOT_LOGICAL_SIZE/iHeight+0.5);
+    //gAdditionalInfo(hWnd, buff.str().data());
+    //InvalidateRect(hWnd, NULL, FALSE);
 }

@@ -3,27 +3,23 @@
 #define ID_COMBOBOX_MODE          201
 #define WM_INITDLG                WM_USER
 
-BOOL SettingsWindow_OnCreate(HWND, LPCREATESTRUCT);
-VOID SettingsWindow_OnCommand(HWND, int, HWND, UINT);
+BOOL SettingsWindow_OnInit(HWND, HWND, LPARAM);
+BOOL SettingsWindow_OnCommand(HWND, int, HWND, UINT);
 
 /* Оконная функция окна настроек */
-LRESULT CALLBACK stwin_proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK stwin_proc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)
     {
-        HANDLE_MSG(hwnd, WM_CREATE, SettingsWindow_OnCreate);
+        HANDLE_MSG(hwnd, WM_INITDIALOG, SettingsWindow_OnInit);
         HANDLE_MSG(hwnd, WM_COMMAND, SettingsWindow_OnCommand);
-        case WM_DESTROY:
-            PostQuitMessage(0);
-            break;
-        default:
-            return DefWindowProc (hwnd, message, wParam, lParam);
     }
-    return 0;
+    return FALSE;
 }
 
 
-BOOL SettingsWindow_OnCreate(HWND hwnd, LPCREATESTRUCT)
+//BOOL SettingsWindow_OnCreate(HWND hwnd, LPCREATESTRUCT)
+BOOL SettingsWindow_OnInit(HWND hwnd, HWND, LPARAM)
 {
     HWND hComboBox_range, hComboBox_mode;
     //Вывести возможны настройки диапазонов напряжений
@@ -43,7 +39,7 @@ BOOL SettingsWindow_OnCreate(HWND hwnd, LPCREATESTRUCT)
     return TRUE;
 }
 
-void SettingsWindow_OnCommand(HWND hwnd, int ID, HWND, UINT codeNotify)
+BOOL SettingsWindow_OnCommand(HWND hwnd, int ID, HWND, UINT codeNotify)
 {
     switch(ID)
     {
@@ -83,21 +79,21 @@ void SettingsWindow_OnCommand(HWND hwnd, int ID, HWND, UINT codeNotify)
                 //Вывести текущие настройки ширины импульсов
                 rewrite(buff) << Generator.width;
                 SetDlgItemText(hwnd, ID_EDITCONTROL_WIDTHPULSE, buff.str().data());
-                //Вывести текущие настройки верхней границы импульса в вольтах
+                //Вывести текущие настройки амплитуды импульса в вольтах
                 rewrite(buff) << setprecision(3);
-                rewrite(buff) << Generator.voltage_up;
+                rewrite(buff) << Generator.amplitude;
                 SetDlgItemText(hwnd, ID_EDITCONTROL_UPPERBOUNDERY, buff.str().data());
-                //Вывести текущие настройки нижней границы импульса в вольтах
-                rewrite(buff) << Generator.voltage_low;
+                //Вывести текущие настройки смещения импульса в вольтах
+                rewrite(buff) << Generator.bias;
                 SetDlgItemText(hwnd, ID_EDITCONTROL_LOWERBOUNDERY, buff.str().data());
                 //Вывести текущие настройки шага ITS в вольтах
                 rewrite(buff) << Generator.step_voltage;
                 SetDlgItemText(hwnd, ID_EDITCONTROL_STEP_VOLTAGE, buff.str().data());
                 //Вывести текущие настройки старта ITS в вольтах
-                rewrite(buff) << Generator.begin_voltage;
+                rewrite(buff) << Generator.begin_amplitude;
                 SetDlgItemText(hwnd, ID_EDITCONTROL_BEGIN_VOLTAGE, buff.str().data());
                 //Вывести текущие настройки конца ITS в вольтах
-                rewrite(buff) << Generator.end_voltage;
+                rewrite(buff) << Generator.end_amplitude;
                 SetDlgItemText(hwnd, ID_EDITCONTROL_END_VOLTAGE, buff.str().data());
                 rewrite(buff) << setprecision(2);
                 //Вывести текущие настройки режима генератора (SULA\AGILENT)
@@ -119,20 +115,20 @@ void SettingsWindow_OnCommand(HWND hwnd, int ID, HWND, UINT codeNotify)
                 EnableWindow(GetDlgItem(hwnd, ID_EDITCONTROL_BEGIN_VOLTAGE), !state);
                 EnableWindow(GetDlgItem(hwnd, ID_EDITCONTROL_END_VOLTAGE),   !state);
             }
-        break;
+        return TRUE;
         /* Показать окно с сигналом, идущим на образец */
         case ID_BUTTON_PID_SETTINGS:
             DialogBox(hInst, MAKEINTRESOURCE(ID_PID_SETTINGS_WINDOW), hwnd, (DLGPROC)pidlg_proc);
-        break;
+        return TRUE;
         case ID_BUTTON_ADVANCED_SETTINGS:
             DialogBox(hInst, MAKEINTRESOURCE(ID_ADVANCED_SETTINGS_WINDOW), hwnd, (DLGPROC)asdlg_proc);
-        break;
+        return TRUE;
         case ID_BUTTON_CORRELATION_SETTINGS:
             DialogBox(hInst, MAKEINTRESOURCE(ID_CORRELATION_SETTINGS_WINDOW), hwnd, (DLGPROC)csdlg_proc);
-        break;
+        return TRUE;
         case ID_BUTTON_CLOSE_SETTINGS:
             DestroyWindow(hwnd);
-        break;
+        return TRUE;
         /* Изменилось состояние чекбокса */
         case ID_CHECKBOX_USE_GENERATOR:
             {
@@ -145,7 +141,7 @@ void SettingsWindow_OnCommand(HWND hwnd, int ID, HWND, UINT codeNotify)
                 EnableWindow(GetDlgItem(hwnd, ID_EDITCONTROL_LOWERBOUNDERY), state);
                 Generator.is_active = state;
             }
-        break;
+        return TRUE;
         case ID_COMBOBOX_MODE:
             if(codeNotify == CBN_SELCHANGE)
             {
@@ -159,7 +155,7 @@ void SettingsWindow_OnCommand(HWND hwnd, int ID, HWND, UINT codeNotify)
                 EnableWindow(GetDlgItem(hwnd, ID_EDITCONTROL_BEGIN_VOLTAGE), !state);
                 EnableWindow(GetDlgItem(hwnd, ID_EDITCONTROL_END_VOLTAGE),   !state);
             }
-            break;
+            return TRUE;
         case ID_BUTTON_APPLY_SETTINGS:
             {
                 bool alright = true;
@@ -169,9 +165,12 @@ void SettingsWindow_OnCommand(HWND hwnd, int ID, HWND, UINT codeNotify)
                     MessageBox(hwnd, "Gate should be more than 0.0", "Warning", MB_ICONWARNING);
                     break;
                 }*/
-                /* Настройки LakeShore */
+                /* Общие настройки */
+                //Применить настройки имени файла сохранений
+                FileSaveName = ApplySettingEditBoxString(hwnd, ID_EDITCONTROL_FILE_SAVE_NAME);
                 //Применить настройки режима работы программы
                 index_mode = SendMessage(GetDlgItem(hwnd, ID_COMBOBOX_MODE), CB_GETCURSEL, 0, 0);
+                /* Настройки LakeShore */
                 //Применить настройки шага стабилизации
                 Thermostat.TempStep = ApplySettingEditBox(hwnd, ID_EDITCONTROL_STEP, 2);
                 //Применить настройки допустимого разброса
@@ -196,22 +195,22 @@ void SettingsWindow_OnCommand(HWND hwnd, int ID, HWND, UINT codeNotify)
                 Generator.width = ApplySettingEditBox(hwnd, ID_EDITCONTROL_WIDTHPULSE, 2);
                 if(Generator.width >= Generator.period) alright = false;
                 //Применить настройки верхней границы импульса в вольтах
-                Generator.voltage_up = ApplySettingEditBox(hwnd, ID_EDITCONTROL_UPPERBOUNDERY, 3);
-                if(Generator.voltage_up > MAX_VOLTAGE_PULSE || Generator.voltage_up < MIN_VOLTAGE_PULSE) alright = false;
+                Generator.amplitude = ApplySettingEditBox(hwnd, ID_EDITCONTROL_UPPERBOUNDERY, 3);
+                if(Generator.amplitude > MAX_VOLTAGE_PULSE || Generator.amplitude < MIN_VOLTAGE_PULSE) alright = false;
                 //Применить настройки нижней границы импульса в вольтах
-                Generator.voltage_low = ApplySettingEditBox(hwnd, ID_EDITCONTROL_LOWERBOUNDERY, 3);
-                if(Generator.voltage_low < MIN_VOLTAGE_PULSE || Generator.voltage_low > MAX_VOLTAGE_PULSE) alright = false;
-                //Применить настройки шага ITS в вольтах
-                Generator.step_voltage = ApplySettingEditBox(hwnd, ID_EDITCONTROL_STEP_VOLTAGE, 3);
-                //Применить настройки начала ITS в вольтах
-                Generator.begin_voltage = ApplySettingEditBox(hwnd, ID_EDITCONTROL_BEGIN_VOLTAGE, 3);
-                if(Generator.begin_voltage < MIN_VOLTAGE_PULSE || Generator.begin_voltage > MAX_VOLTAGE_PULSE || Generator.begin_voltage <= Generator.voltage_low) alright = false;
-                //Применить настройки конца ITS в вольтах
-                Generator.end_voltage = ApplySettingEditBox(hwnd, ID_EDITCONTROL_END_VOLTAGE, 3);
-                if(Generator.end_voltage > MAX_VOLTAGE_PULSE || Generator.end_voltage < MIN_VOLTAGE_PULSE) alright = false;
-                /* Общие настройки */
-                //Применить настройки имени файла сохранений
-                FileSaveName = ApplySettingEditBoxString(hwnd, ID_EDITCONTROL_FILE_SAVE_NAME);
+                Generator.bias = ApplySettingEditBox(hwnd, ID_EDITCONTROL_LOWERBOUNDERY, 3);
+                if(Generator.bias < MIN_VOLTAGE_PULSE || Generator.voltage_low > MAX_VOLTAGE_PULSE) alright = false;
+                if(index_mode == ITS)
+                {
+                    //Применить настройки шага ITS в вольтах
+                    Generator.step_voltage = ApplySettingEditBox(hwnd, ID_EDITCONTROL_STEP_VOLTAGE, 3);
+                    //Применить настройки начала ITS в вольтах
+                    Generator.begin_voltage = ApplySettingEditBox(hwnd, ID_EDITCONTROL_BEGIN_VOLTAGE, 3);
+                    if(Generator.begin_voltage < MIN_VOLTAGE_PULSE || Generator.begin_voltage > MAX_VOLTAGE_PULSE || Generator.begin_voltage <= Generator.voltage_low) alright = false;
+                    //Применить настройки конца ITS в вольтах
+                    Generator.end_voltage = ApplySettingEditBox(hwnd, ID_EDITCONTROL_END_VOLTAGE, 3);
+                    if(Generator.end_voltage > MAX_VOLTAGE_PULSE || Generator.end_voltage < MIN_VOLTAGE_PULSE) alright = false;
+                }
                 //Применить настройки к физическим устройствам и сохранить файл настроек при условии их корректности
                 if(alright == true)
                 {
@@ -221,6 +220,7 @@ void SettingsWindow_OnCommand(HWND hwnd, int ID, HWND, UINT codeNotify)
                 else
                     MessageBox(hwnd, "Incorrect settings.\nYou should be more careful.", "Warning", MB_ICONWARNING);
             }
-        break;
+        return TRUE;
     }
+    return FALSE;
 }

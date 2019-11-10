@@ -8,6 +8,8 @@
 #include "variable.h"
 #include "interpolation.h"
 
+/* Поиск минимума */
+double GoldSerch(double a, double b, double eps, interp &Fun);
 /* Округлить до n значащих цифр после запятой */
 double round(double d, int n);
 /* Получить параметры линейной регрессии Y = a + b*X */

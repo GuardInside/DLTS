@@ -46,9 +46,9 @@ struct GENERATOR: public VI
     /* Применить текущие настройки к прибору */
     VOID Apply();
 
-    double period, width, voltage_up, voltage_low;
+    double period, width, amplitude, bias;
     /* Для режима ITS */
-    double begin_voltage, end_voltage, step_voltage;
+    double begin_amplitude, end_amplitude, step_voltage;
     unsigned int channel;
     bool is_active;
 };
@@ -70,7 +70,7 @@ struct THERMOSTAT: public VI
         VOID Apply();
         /* Проверка корректности диапазона измерения температуры */
         bool range_is_correct() const;
-        double SetPoint, EndPoint, TempStep, TempDisp;
+        double BeginPoint, EndPoint, TempStep, TempDisp;
         PIDTABLE ZoneTable;
 };
 

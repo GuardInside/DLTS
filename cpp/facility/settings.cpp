@@ -1,5 +1,24 @@
 #include <facility.h>
 
+BOOL CALLBACK SuccessWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    switch(message)
+    {
+    case WM_INITDIALOG:
+        SetTimer(hWnd, 0, 800, NULL);
+        return TRUE;
+    case WM_TIMER:
+        EndDialog(hWnd, 0);
+        return TRUE;
+    }
+    return FALSE;
+}
+
+UINT CALLBACK dlg_success(PVOID)
+{
+    return DialogBox(hInst, MAKEINTRESOURCE(ID_SUCCESS_WINDOW), HWND_DESKTOP, SuccessWndProc);
+}
+
 void write_settings()
 {
     ofstream file(SettingsFile.data());
@@ -12,8 +31,8 @@ void write_settings()
         << averaging_DAQ << " " << ai_port << " " << ai_port_pulse << " " << pfi_ttl_port << " "
         << gate_DAQ << " " << FileSaveName << " " << index_mode << " " << aver_time << " " << index_range << " "
         << Generator.period << " " << Generator.width << " "
-        << Generator.voltage_up << " " << Generator.voltage_low << " " << Generator.is_active << " "
-        << Generator.step_voltage << " " << Generator.begin_voltage << " " << Generator.end_voltage;
+        << Generator.amplitude << " " << Generator.bias << " " << Generator.is_active << " "
+        << Generator.step_voltage << " " << Generator.begin_amplitude << " " << Generator.end_amplitude;
     else
         MessageBox(NULL, "The settings file wasn't found.", "Information", MB_ICONINFORMATION);
     if(CorFile.is_open())
@@ -45,6 +64,8 @@ void write_settings()
     PIDFile.close();
     CorFile.close();
     file.close();
+    HANDLE hThreadSuccess = (HANDLE)_beginthreadex(NULL, 0, dlg_success, NULL, 0, NULL);
+    CloseHandle(hThreadSuccess);
 }
 
 void read_settings()
@@ -61,8 +82,8 @@ void read_settings()
         >> Thermostat.TempStep >> Thermostat.TempDisp
         >> id_DAQ >> measure_time_DAQ >> rate_DAQ >> averaging_DAQ >> ai_port >> ai_port_pulse >> pfi_ttl_port
         >> gate_DAQ >> FileSaveName >> index_mode >> aver_time >> index_range
-        >> Generator.period >> Generator.width >> Generator.voltage_up >> Generator.voltage_low
-        >> Generator.is_active >> Generator.step_voltage >> Generator.begin_voltage >> Generator.end_voltage;
+        >> Generator.period >> Generator.width >> Generator.amplitude >> Generator.bias
+        >> Generator.is_active >> Generator.step_voltage >> Generator.begin_amplitude >> Generator.end_amplitude;
     else
         MessageBox(NULL, "The settings file wasn't found. It'll be created when you set new settings.", "Information", MB_ICONINFORMATION);
     if(CorFile.is_open())

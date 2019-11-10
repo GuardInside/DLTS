@@ -1,0 +1,21 @@
+#include <GPIB.h>
+
+/* Объект-термостат */
+THERMOSTAT Thermostat;
+
+void THERMOSTAT::Apply()
+{
+    /* Считываем данные с канала А */
+    Write("CCHN A");
+}
+
+bool THERMOSTAT::range_is_correct() const
+{
+    /* Установка флага корректности диапазона измерения температуры */
+    if(EndPoint >= SetPoint && TempStep >= 0)
+        return true;
+    else if(EndPoint <= BeginPoint && TempStep <= 0)
+        return true;
+    else temp_range = false;
+    return false;
+}

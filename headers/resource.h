@@ -10,6 +10,8 @@
 #define ID_ARRHENIUS_WINDOW                     122
 #define ID_PID_SETTINGS_WINDOW                  124
 #define ID_START_WINDOW                         127
+#define ID_SUCCESS_WINDOW                       131
+#define ID_CTRL_S                               134
 #define ID_BUTTON_ADVANCED_SETTINGS             40000
 #define ID_BUTTON_CONTINUE                      40000
 #define ID_BUTTON_EXIT                          40000
@@ -18,6 +20,7 @@
 #define ID_STR_ARRHENIUS_CROSS_SECTION          40000
 #define ID_STR_BOXCAR_WIDTH                     40000
 #define ID_STR_WEIGHT_FUNCTION_NAME             40000
+#define WM_CTRL_S                               40000
 #define ID_BUTTON_CANCEL                        40001
 #define ID_BUTTON_START                         40001
 #define ID_EDITCONTROL_C                        40001
@@ -74,7 +77,6 @@
 #define ID_STR_1                                40014
 #define ID_STR_SETPOINT                         40014
 #define ID_BUTTON_NEXT_WEIGHT_FUNC              40015
-#define ID_BUTTON_SAVE                          40015
 #define ID_EDITCONTROL_AVERAGING                40015
 #define ID_EDITCONTROL_UBOUNDARY_7              40015
 #define ID_CHECKBOX_FIX_TEMPERATURE             40016

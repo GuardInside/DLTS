@@ -1,4 +1,5 @@
 #include "vi.h"
+#include <cmath>
 using namespace std;
 
 GENERATOR  Generator("Pulse generator Agilent");
@@ -93,13 +94,13 @@ void GENERATOR::Apply()
     rewrite(Buff) << ":HOLD VOLT";
         Write(Buff);
     if(index_mode == DLTS)
-        rewrite(Buff) << ":VOLT1:HIGH " << (voltage_up)/(K) << "V";
+        rewrite(Buff) << ":VOLT1:HIGH " << round((amplitude)/(K), 3) << "V";
     else if(index_mode == ITS)
-        rewrite(Buff) << ":VOLT1:HIGH " << (begin_voltage)/(K) << "V";
+        rewrite(Buff) << ":VOLT1:HIGH " << round((begin_amplitude)/(K), 3) << "V";
     Write(Buff);
-    rewrite(Buff) << ":HOLD VOLT";
-        Write(Buff);
-    rewrite(Buff) << ":VOLT1:LOW " << voltage_low/(K) << "V";
+    //rewrite(Buff) << ":HOLD VOLT";
+        //Write(Buff);
+    rewrite(Buff) << ":VOLT1:LOW " << bias/(K) << "V";
         Write(Buff);
     rewrite(Buff) << ":OUTPUT" << channel << " ON";
         Write(Buff);
@@ -118,9 +119,9 @@ void THERMOSTAT::Apply()
 /* Проверка корректности диапазона измерения температуры */
 bool THERMOSTAT::range_is_correct() const
 {
-    if(EndPoint >= SetPoint && TempStep >= 0)
+    if(EndPoint >= BeginPoint && TempStep >= 0)
         return true;
-    else if(EndPoint <= SetPoint && TempStep <= 0)
+    else if(EndPoint <= BeginPoint && TempStep <= 0)
         return true;
     return false;
 }

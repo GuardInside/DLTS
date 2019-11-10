@@ -10,6 +10,8 @@
 #include <iomanip>
 #include <cmath>
 
+//#define GWIN_FLAG_CROSS  0x100
+
 namespace gwin{
 
 typedef std::vector<double> gVector;
@@ -28,7 +30,7 @@ BOOL gMark(HWND hWnd, int iMark1, int iMark2, int iAdMark1, int iAdMark2);
 BOOL gPrecision(HWND hWnd, INT iPrec1, INT iPrec2);
 BOOL gBand(HWND hWnd, double dMinX, double dMaxX, double dMinY, double dMaxY);
 BOOL gDefaultPlot(HWND hWnd, std::string message);
-//BOOL gPlotColor(HWND hWnd, COLORREF color);
+BOOL gCross(HWND hWnd, const gVector *vData1, const gVector *vData2);
 
 }
 #endif // GWIN_H

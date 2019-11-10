@@ -1,4 +1,5 @@
 #include <dlts_math.h>
+#include "gwin.h"
 
 double exp_w(double x, double t1)
 {
@@ -38,9 +39,14 @@ double double_boxcar(double x, double t1)
     return 0.0;
 }
 
-void AddPointsDLTS(double temp)
+double test_func(double x, double t1)
 {
-    EnterCriticalSection(&csGlobalVariable);
+    return 1.0;
+}
+
+void AddPointsDLTS(const vector<double> *vRelaxation, const double temp)
+{
+    /* Проверка на существование точки и выбор смещение для вставки новой */
     int offset = 0;
     for(auto it = xAxisDLTS.begin(); it != xAxisDLTS.end(); it++)
     {
@@ -49,44 +55,36 @@ void AddPointsDLTS(double temp)
             return;
     }
     xAxisDLTS.insert(xAxisDLTS.begin() + offset, temp);
-    ///Определяем весовую функцию
-    double (*w) (double, double) = double_boxcar;
-    size_t n = 10000; //количество dt интервалов
+    /* Определяем весовую функцию */
+    double (*w) (double, double) = NULL;
     switch(CorType)
     {
-        case DoubleBoxCar:
-            /* каждый импульс будет состоять из 50 интервалов интегрирования */
-            n = (measure_time_DAQ*1000)/(correlation_width/50);
-        break;
-        case LockIn: w = lock_in;
-        break;
-        case ExpW: w = exp_w;
-        break;
-        case SinW: w = sin_w;
-        break;
+        case DoubleBoxCar:  w = double_boxcar;  break;
+        case LockIn:        w = lock_in;        break;
+        case ExpW:          w = exp_w;          break;
+        case SinW:          w = sin_w;          break;
     }
-    double T_g = (gate_DAQ/1000000);                //для повышения читабельности
-    double dt = 1.0/rate_DAQ;
-    vector<double> TimeAxis;
-    for(size_t i = 0; i < Relaxation.size(); i++)
-        TimeAxis.push_back(i*dt + T_g);
-    interp f(TimeAxis, Relaxation, Relaxation.size(), gsl_interp_cspline);
     /* Вводим обозначения */
-    double I = 0.0;                                     //значение интеграла
-    double a = T_g, b = T_g + Relaxation.size()*dt;     //нижний и верхний пределы, используются только в весовой функции
-    /* Вычисляем диаметр разбиения */
-    double h = (b-a)/n;                                 //шаг сетки,он же диаметр разбиения
-    for(size_t c = 0; c < CorTime.size(); c++)  //Пробегаемся по всем корреляторам
+    size_t n = 2*vRelaxation->size();                   //Число узлов инегрироания
+    double T_g = (0.000001*gate_DAQ);                   //Запаздывание начала отсчета
+    double dt = pow(rate_DAQ, -1);                      //Шаг дискретизации
+    double a = T_g, b = T_g + (n-1)*dt;                 //Нижний и верхний пределы
+    double h = (b-a)/(n-1);                             //Шаг сетки
+    double I = 0.0;                                     //Значение интеграла
+    /* Восстанавливаем ось времени */
+    vector<double> TimeAxis;
+    for(size_t i = 0; i < vRelaxation->size(); i++)
+        TimeAxis.push_back(i*dt + T_g);
+    interp f(TimeAxis, *vRelaxation, vRelaxation->size(), gsl_interp_linear);
+    try{
+    for(size_t c = 0; c < CorTime.size(); c++)          //Пробегаемся по всем корреляторам
     {
-        double t1 = CorTime[c]/1000;
-        for(double x_i = a+h; x_i <= a+h*(n-1); x_i += h)          //Метод трапеций
-        {
+        double t1 = 0.001*CorTime[c];
+        for(double x_i = a; x_i <= a+h*(n-1); x_i += h) //Метод трапеций
             if(w(x_i,t1) != 0.0)
-                I += f.at(x_i) * w(x_i,t1);
-        }
-        I = h*( (f.at(a)*w(a,t1) + f.at(b)*w(b, t1))/2 + I );
+                I += h*(f.at(x_i)*w(x_i,t1) + f.at(x_i+h)*w(x_i+h, t1))/2;
         /* Добавляем по точке на каждой из осей */
         yAxisDLTS[c].insert(yAxisDLTS[c].begin() + offset, I);
     }
-    LeaveCriticalSection(&csGlobalVariable);
+    }catch(std::exception &e){ MessageBox(0, e.what(), "", 0); }
 }

@@ -20,8 +20,9 @@
 /* *************** */
 
 LRESULT CALLBACK mwwin_proc(HWND, UINT, WPARAM, LPARAM); //Main dialog window
-LRESULT CALLBACK stwin_proc(HWND, UINT, WPARAM, LPARAM); //General settings dialog
-LRESULT CALLBACK dlwin_proc(HWND, UINT, WPARAM, LPARAM); //Start dialog window
+
+INT_PTR CALLBACK stwin_proc(HWND, UINT, WPARAM, LPARAM);
+INT_PTR CALLBACK srwin_proc(HWND, UINT, WPARAM, LPARAM);
 
 BOOL    CALLBACK asdlg_proc(HWND, UINT, WPARAM, LPARAM); //Advanced Settings
 BOOL    CALLBACK csdlg_proc(HWND, UINT, WPARAM, LPARAM); //Correlation Settings dialog window
@@ -30,12 +31,11 @@ BOOL    CALLBACK pidlg_proc(HWND, UINT, WPARAM, LPARAM); //PID settings dialog
 ATOM CreateClass(HINSTANCE, std::string, WNDPROC);
 
 /* ******************************************* */
-/* Функции создания диалога в отдельном потоке */
+/*  */
 /* ******************************************* */
 
-UINT CALLBACK fMain_thCreateWindow(void*);
-VOID thCreateWindow(HANDLE&, int);
+UINT CALLBACK dlg_success(PVOID);
 
-VOID StartButPush(HWND hwnd);
+VOID StartButPush();
 
 #endif // WINFUNC_H_INCLUDED

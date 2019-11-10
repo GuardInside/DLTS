@@ -30,16 +30,18 @@ void SetZones();
 //Инициализация сборщика данных, термостата и зон для PID регулировки
 void ApplySettings();
 //Загружает Save-файл с усредненными сигналами релаксаций, строит DLTS-кривые и график Аррениуса
-UINT CALLBACK DownloadFile(void*);
+VOID DownloadWindow();
 UINT CALLBACK SaveFile(void*);
+UINT CALLBACK LoadFile(PVOID);
 //Очистка векторов осей DLTS-кривых
 void ClearMemmoryDLTS();
 void ClearMemmory();
+void OrderRelaxation();
 //Обновление DLTS-кривых
 void RefreshDLTS();
-void SaveRelaxSignal(double MeanTemp, const vector<double> vData, double dVoltMin, double dVoltMax);
-void AddPointsDLTS(double temp);
+void SaveRelaxSignal(double MeanTemp, const vector<double> *vData, double dVoltMin, double dVoltMax);
+void AddPointsDLTS(const vector<double> *vRelaxation, const double temp);
 /* Возвращает расширение открытого файла */
-string GetExtensionFile(char*, int);
+string GetExtensionFile(string str);
 
 #endif // FACILITY_H_INCLUDED

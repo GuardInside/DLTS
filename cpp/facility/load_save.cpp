@@ -1,38 +1,59 @@
+#include <sstream>
+#include <string>
+#include <exception>
+
 #include "facility.h"
 #include "variable.h"
 #include "gwin.h"
 #include "graph.h"
 
-unsigned __stdcall DownloadFile(void*)
+using namespace std;
+
+UINT SaveRelax();
+UINT SaveDLTS();
+UINT SaveArrhenius();
+
+static char LoadFileName[BUFF_SIZE];
+static char SaveFileName[BUFF_SIZE];
+
+VOID DownloadWindow()
 {
-    static char load_file[BUFF_SIZE] = "";
-    static OPENFILENAME file;
+    OPENFILENAME file = {0};
         file.lStructSize = sizeof(OPENFILENAME);
         file.hwndOwner = NULL;
         file.lpstrFilter = "All files(*.*)\0*.*\0DLTS file(*.dlts)\0*.dlts\0ITS file(*.its)\0*.its\0\0";
-        file.lpstrFile = load_file;
+        file.lpstrFile = LoadFileName;
         file.nMaxFile = BUFF_SIZE;
         file.lpstrInitialDir = ".\\save\\";
         file.lpstrDefExt = NULL;
         file.Flags = OFN_HIDEREADONLY+OFN_NOCHANGEDIR;
     if(!GetOpenFileName(&file))
-        return -1;
-    loading = true; /* вспомогательный флаг */
-    LoadFile(load_file);
-    return 0;
+        return;
+    /* Установка новго имени файла для сохранений */
+    FileSaveName.clear();
+    for(WORD i = file.nFileOffset; i < (file.nFileExtension-1); i++)
+        FileSaveName.push_back(LoadFileName[i]);
+    HANDLE thDownload = (HANDLE)_beginthreadex(NULL, 0, LoadFile, NULL, 0, NULL);
+    CloseHandle(thDownload);
 }
 
-BOOL LoadFile(string strName)
+UINT CALLBACK LoadFile(PVOID)
 {
+    /* Собираем путь к файлу */
+    string strName = Save + FileSaveName;
+    if(index_mode == DLTS) strName += ".dlts";
+    else if(index_mode == ITS) strName += ".its";
     ifstream file;
     file.open(strName);
     if(!file.is_open())
         return FALSE;
+    /* Создаем событие-флаг */
+    ResetEvent(hDownloadEvent);
     double itsUpper_boundary = 0.0, itsLower_boundary = 0.0;
     double buff = 0.0, temp = 0.0;
     string ext = GetExtensionFile(strName);
     file >> averaging_DAQ >> measure_time_DAQ >> rate_DAQ >> gate_DAQ
-             >> Generator.step_voltage >> Generator.begin_voltage >> Generator.end_voltage;
+         >> Generator.amplitude >> Generator.bias;
     if(ext == ".dlts")
         index_mode = DLTS;
     else if(ext == ".its")
@@ -62,25 +83,25 @@ BOOL LoadFile(string strName)
         }
         if(index_mode == DLTS && !xAxisDLTS.empty() && temp == xAxisDLTS.back())
             continue;
-        vector <double>().swap(Relaxation);
+        vector <double> vRelaxation;
         UINT uSamples = rate_DAQ*measure_time_DAQ*0.001;
         for(size_t i = 0; i < uSamples; i++)
         {
             file >> buff;
-            Relaxation.push_back(buff);
+            vRelaxation.push_back(buff);
         }
         if(index_mode == DLTS)
         {
             int offset = 0;
             for(auto it = xAxisDLTS.begin(); it != xAxisDLTS.end(); it++)
                 if(temp > *it) offset++;
-            AddPointsDLTS(temp); //Передаем значение температуры
-            SavedRelaxations.insert(SavedRelaxations.begin()+offset, Relaxation);
+            AddPointsDLTS(&vRelaxation, temp); //Передаем значение температуры
+            SavedRelaxations.insert(SavedRelaxations.begin()+offset, vRelaxation);
             index_relax = offset;
         }
         if(index_mode == ITS)
         {
-            SavedRelaxations.push_back(Relaxation);
+            SavedRelaxations.push_back(vRelaxation);
             index_relax = SavedRelaxations.size() - 1; //без единицы, потому что индекс
         }
         SendMessage(hProgress, PBM_SETPOS, 100.0*i/uQuantity, 0);
@@ -91,68 +112,127 @@ BOOL LoadFile(string strName)
     file.close();
     PlotRelax();
     PlotDLTS();
+    SetEvent(hDownloadEvent);
     return TRUE;
 }
-unsigned __stdcall SaveFile(void*)
+
+VOID SaveWindow()
 {
-    char save_file[BUFF_SIZE];
-    strcpy(save_file, FileSaveName.data());
-    static OPENFILENAME file;
-    ofstream SaveFile;
-    string ext, filter;
-    if(index_mode == DLTS)
-    {
-        filter = "DLTS file(*.dlts)\0*.dlts\0\0";
-        ext = "dlts";
-    }
-    if(index_mode == ITS)
-    {
-        filter = "ITS file(*.its)\0*.its\0\0";
-        ext = "its";
-    }
+    strcpy(SaveFileName, FileSaveName.data()); /* Имя файла по умолчанию */
+    const string ext = "txt", filter = "*.txt\0\0";
+    OPENFILENAME file = {0};
         file.lStructSize = sizeof(OPENFILENAME);
         file.hwndOwner = NULL;
         file.lpstrFilter = filter.data();
-        file.lpstrFile = save_file;
+        file.lpstrFile = SaveFileName;
         file.nMaxFile = BUFF_SIZE;
         file.lpstrInitialDir = ".\\save\\";
         file.lpstrDefExt = ext.data();
         file.Flags = OFN_NOCHANGEDIR;
     if(!GetSaveFileName(&file))
+        return;
+    /* Установка новго имени файла для сохранений */
+    HANDLE thSave = (HANDLE)_beginthreadex(NULL, 0, SaveFile, NULL, 0, NULL);
+    CloseHandle(thSave);
+}
+
+UINT CALLBACK SaveFile(PVOID)
+{
+    if(SavedRelaxations.empty())
         return -1;
-    EnterCriticalSection(&csGlobalVariable);
-    SaveFile.open(save_file);
-    SaveFile << setiosflags(ios::fixed) << setprecision(0);
-    SaveFile << averaging_DAQ << " "
-             << measure_time_DAQ << " "
-             << rate_DAQ << " "
-             << gate_DAQ << endl << setprecision(3)
-             << Generator.step_voltage << " "
-             << Generator.begin_voltage << " "
-             << Generator.end_voltage << endl;
-    if(index_mode == ITS)
-        SaveFile << setprecision(2) << itsTemperature << endl;
-    int progress = 0;
-    for(size_t i = 0; i < SavedRelaxations.size(); i++)
+    /* Проверка ключей */
+    WORD wFlag = 0x00;
+    if(string(SaveFileName).find("_DLTS") != string::npos)
+        wFlag = 0x01;
+    if(string(SaveFileName).find("_AR") != string::npos)
+        wFlag = 0x10;
+    /* Действие в соответствии с ключом */
+    if(wFlag == 0x01)
+        return SaveDLTS();
+    else if(wFlag == 0x10)
+        return SaveArrhenius();
+    return SaveRelax();
+}
+
+UINT SaveArrhenius()
+{
+    if(xAxisAr.size() == 0)
     {
-        if(index_mode == DLTS)
-            SaveFile << setprecision(2) << xAxisDLTS[i] << endl;
-        else if(index_mode == ITS)
-            SaveFile << setprecision(3) << itsLowVoltages[i] << " " << itsUpVoltages[i] << endl;
-        SaveFile << setprecision(6);
-        for(size_t j = 0; j < SavedRelaxations[i].size(); j++)
+        MessageBox(NULL, "You should select the Arrhenius plot.", "Information", MB_OK | MB_ICONEXCLAMATION);
+        return -2;
+    }
+    ofstream file;
+    file.open(SaveFileName, ios_base::trunc);
+    int progress = 0;
+    size_t uSample = xAxisAr.size();
+    /* Шапка таблицы */
+    file << "X\tY\tY_MSQ" << endl << fixed;
+    /* Таблица */
+    for(size_t i = 0; i < uSample; i++)
+    {
+        file << setprecision(2) << xAxisAr.at(i) << setprecision(2);
+        for(size_t j = 0; j < yAxisAr.size(); j++)
         {
-            SaveFile << SavedRelaxations[i][j];
-            if(j != SavedRelaxations[i].size() - 1)
-                SaveFile << endl;
+            file << '\t' << yAxisAr.at(j).at(i);
         }
-        if(i != SavedRelaxations.size() - 1)
-            SaveFile << endl;
-        progress = 99*i/(SavedRelaxations.size());
+        file << endl;
+        progress = 99*i/(uSample);
         SendMessage(hProgress, PBM_SETPOS, progress, 0);
     }
     SendMessage(hProgress, PBM_SETPOS, 0, 0);
-    LeaveCriticalSection(&csGlobalVariable);
-    SaveFile.close();
+    file.close();
+    return 0;
+}
+
+UINT SaveRelax()
+{
+    ofstream file;
+    file.open(SaveFileName, ios_base::trunc);
+    int progress = 0;
+    size_t uSample = SavedRelaxations.at(0).size();
+    double dt = 1000.0/rate_DAQ; /* ms */
+    /* Шапка таблицы */
+    file << fixed << setprecision(THERMO_PRECISION);
+    file << "[ms]";
+    for(size_t j = 0; j < SavedRelaxations.size(); j++)
+        file << '\t' << xAxisDLTS.at(j);
+    file << endl;
+    for(size_t i = 0; i < uSample; i++)
+    {
+        file << setprecision(TIME_PRECISION) << (0.001*gate_DAQ + i*dt)
+             << setprecision(VOLTAGE_PRECISION);
+        for(size_t j = 0; j < SavedRelaxations.size(); j++)
+        {
+            file << '\t' << SavedRelaxations.at(j).at(i);
+        }
+        file << endl;
+        progress = 99*i/(uSample);
+        SendMessage(hProgress, PBM_SETPOS, progress, 0);
+    }
+    SendMessage(hProgress, PBM_SETPOS, 0, 0);
+    file.close();
+    return 0;
+}
+
+UINT SaveDLTS()
+{
+    ofstream file;
+    file.open(SaveFileName, ios_base::trunc);
+    int progress = 0;
+    size_t uSample = xAxisDLTS.size();
+    file << fixed;
+    for(size_t i = 0; i < uSample; i++)
+    {
+        file << setprecision(THERMO_PRECISION) << xAxisDLTS.at(i) << setprecision(10);
+        for(size_t j = 0; j < CorTime.size(); j++)
+        {
+            file << '\t' << yAxisDLTS[j].at(i);
+        }
+        file << endl;
+        progress = 99*i/(uSample);
+        SendMessage(hProgress, PBM_SETPOS, progress, 0);
+    }
+    SendMessage(hProgress, PBM_SETPOS, 0, 0);
+    file.close();
     return 0;
 }

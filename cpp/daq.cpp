@@ -68,7 +68,6 @@ INT DAQmxReadAnalog(UINT uDev, UINT uAIPort, INT iTrigPort, float64 dRate, float
         #ifndef TEST_MODE
         MessageBox(0, cstrBuffer, "DAQmx", 0);
         #endif // TEST_MODE
-        DAQmxClearTask(hTask);
         delete[] cstrBuffer;
         delete[] Data;
         return -1;
@@ -77,7 +76,6 @@ INT DAQmxReadAnalog(UINT uDev, UINT uAIPort, INT iTrigPort, float64 dRate, float
     vector<double>().swap(*vData);
     for(int32 i = 0; i < iRead; i++)
         vData->push_back(Data[i]);
-    DAQmxClearTask(hTask);
     delete[] Data;
     return 0;
 }
@@ -86,10 +84,7 @@ BOOL MyDAQMeasure(vector<double> *vResult, UINT AverNum, double time, UINT AIPor
 {
     if(vResult == NULL || AverNum < 1) return FALSE;
     vector<double> vData;
-    UINT32 uSamples = rate_DAQ*time;
     vResult->clear();
-    vResult->reserve(uSamples);
-    vData.reserve(uSamples);
     for(UINT i = 0; i < AverNum; i++)
     {
         EnterCriticalSection(&csDataAcquisition);
@@ -97,14 +92,11 @@ BOOL MyDAQMeasure(vector<double> *vResult, UINT AverNum, double time, UINT AIPor
                     rate_DAQ, gate_DAQ*0.000001, DAQmx_Val_Rising, index_range, time,
                     &vData);
         LeaveCriticalSection(&csDataAcquisition);
-        #ifndef TEST_MODE
-        //if(uSamples != vData.size())
-            //MessageBox(0,"uSamples != vData.size()", "Error", 0);
-        #endif // TEST_MODE
-        for(size_t j = 0; j < vData.size(); j++)
-            vResult->at(j) += vData.at(j);
-        if(bfProgress)
-            SendMessage(hProgress, PBM_SETPOS, 100.0*i/AverNum, 0);
+        if(i == 0) for(const auto &it: vData) vResult->push_back(it);
+        else for(size_t i = 0; i < vData.size(); i++)
+            vResult->at(i) += vData[i];
+        if(bfProgress) SendMessage(hProgress, PBM_SETPOS, 100.0*i/AverNum, 0);
+        vData.clear();
     }
     for(auto &it: *vResult)
         it = it/AverNum;
@@ -115,27 +107,25 @@ BOOL MyDAQMeasure(vector<double> *vResult, UINT AverNum, double time, UINT AIPor
 
 BOOL MeasurePulse(vector<double> *vData, double *dMinVoltage, double *dMaxVoltage)
 {
-    static CONST UINT T_NUM = 2;
-    if(vData != NULL)
-        MyDAQMeasure(vData, averaging_DAQ, Generator.period*T_NUM*0.001, ai_port_pulse);
+    static CONST UINT T_NUM = 2, A_NUM = 1;
+    *dMinVoltage = 0.0;
+    *dMaxVoltage = 0.0;
+    vector<double> vData2;
+    MyDAQMeasure(&vData2, A_NUM, Generator.period*T_NUM*0.001, ai_port_pulse);
     /* Рассчитываем истинные значения амплитуд */
-    double N = rate_DAQ/1000.0*Generator.period, /* Число сэмплов */
-        SSW = rate_DAQ/1000.0*Generator.width/4; /* Четверть импульса в сэмплах*/
+    double N = rate_DAQ/1000.0*Generator.period*T_NUM, /* Число сэмплов */
+        SSW = rate_DAQ/1000.0*Generator.width; /* Ширина импульса в сэмплах*/
     /* Пробегаем по точка до импульса */
-    for(int i = 0; i < N/2-SSW; i++)
-        *dMaxVoltage += SignalDAQ[i];
+    for(int i = 0; i < N/2-2*SSW; i++)
+        *dMaxVoltage += vData2[i];
     /* Пробегаем по точкам после импульса */
-    for(int i = N/2+4*SSW+SSW; i < N; i++)
-        *dMaxVoltage += SignalDAQ[i];
-    *dMaxVoltage /= N/2-SSW + (N - (N/2+4*SSW+SSW));
+    for(int i = N/2+SSW; i < N-2*SSW; i++)
+        *dMaxVoltage += vData2[i];
+    *dMaxVoltage /= (N/2-2*SSW) + ((N-2*SSW)-(N/2+SSW));
     /* Пробегаем по точка соответствующим импульсу */
-    for(int i = N/2+SSW; i < N/2+3*SSW; i++)
-        *dMinVoltage += SignalDAQ[i];
-    *dMinVoltage /= 2*SSW;
-    {
-        /*stringstream buff;
-        buff << vData.size() << endl << N << endl << SSW;
-        MessageBox(0,buff.str().data(), "",0);*/
-    }
+    for(int i = N/2-SSW+SSW/4; i < N/2-SSW/4; i++)
+        *dMinVoltage += vData2[i];
+    *dMinVoltage /= N/2-SSW/4 - (N/2-SSW+SSW/4);
+    if(vData != NULL) *vData = vData2;
     return TRUE;
 }

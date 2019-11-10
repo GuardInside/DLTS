@@ -4,10 +4,9 @@
 void ClearMemmory()
 {
     ClearMemmoryDLTS();
-    vector<double> ().swap(itsLowVoltages);
-    vector<double> ().swap(itsUpVoltages);
+    itsLowVoltages.clear();
+    itsUpVoltages.clear();
     gwin::gMulVector().swap(SavedRelaxations);
-    gwin::gVector().swap(Relaxation);
 }
 
 void ClearMemmoryDLTS()
@@ -15,7 +14,7 @@ void ClearMemmoryDLTS()
     if(yAxisDLTS != nullptr)
             delete []yAxisDLTS;
     yAxisDLTS = new vector<double>[CorTime.size()]; ///Число осей совпадает с числом корреляторов
-    vector<double> ().swap(xAxisDLTS);
+    xAxisDLTS.clear();
 }
 
 void RefreshDLTS()
@@ -25,27 +24,19 @@ void RefreshDLTS()
         return;
     gwin::gVector xAxis = xAxisDLTS;
     ClearMemmoryDLTS();
-    UINT32 uSamples = rate_DAQ*measure_time_DAQ*0.001;
     for(size_t i = 0; i < xAxis.size(); i++)
     {
-        vector <double>().swap(Relaxation);
-        for(size_t j = 0; j < uSamples; j++)
-            Relaxation.push_back(SavedRelaxations[i][j]);
-        AddPointsDLTS(xAxis[i]);
+        AddPointsDLTS(&SavedRelaxations[i], xAxis[i]);
         /* Обновление информации о ходе записи */
         progress = 99 * i/(xAxis.size());
         SendMessage(hProgress, PBM_SETPOS, progress, 0);
     }
-    vector <double>().swap(Relaxation);
-    for(size_t i = 0; i < uSamples; i++)
-        Relaxation.push_back(SavedRelaxations[index_relax][i]);
     SendMessage(hProgress, PBM_SETPOS, 0, 0);
     PlotDLTS();
 }
 
-void SaveRelaxSignal(double MeanTemp, const vector<double> vData, double dVoltMin, double dVoltMax)
+void SaveRelaxSignal(double MeanTemp, const vector<double> *vData, double dVoltMin, double dVoltMax)
 {
-    //EnterCriticalSection(&csGlobalVariable);
     string SavePath = Save + FileSaveName;
     if(index_mode == DLTS) SavePath += ".dlts";
     else if(index_mode == ITS) SavePath += ".its";
@@ -54,9 +45,8 @@ void SaveRelaxSignal(double MeanTemp, const vector<double> vData, double dVoltMi
     {
         file.open(SavePath.data());
         bfNewfile = false;
-        bfAppfile = true;
     }
-    else if(bfAppfile)
+    else
         file.open(SavePath.data(), std::ofstream::app);
     if(!file.is_open())
     {
@@ -71,25 +61,23 @@ void SaveRelaxSignal(double MeanTemp, const vector<double> vData, double dVoltMi
         file<< averaging_DAQ << " "
             << measure_time_DAQ << " "
             << rate_DAQ << " "
-            << gate_DAQ << endl << setprecision(3)
-            << Generator.step_voltage << " "
-            << Generator.begin_voltage << " "
-            << Generator.end_voltage << endl;
-        if(index_mode == ITS) file << setprecision(2) << MeanTemp << endl;
+            << gate_DAQ << endl << setprecision(VOLTAGE_PRECISION)
+            << Generator.amplitude << " "
+            << Generator.bias << endl;
+        if(index_mode == ITS) file << setprecision(THREMO_) << MeanTemp << endl;
     }
     else file << endl;
     if(index_mode == DLTS) file << setprecision(2) << MeanTemp << endl;
     else if(index_mode == ITS) /* Должен записывать истинное, а не установленное значение */
-        file << setprecision(3) << dVoltMin << " " << dVoltMax << endl;
-    file << setprecision(6);
+        file << setprecision(VOLTAGE_PRECISION) << dVoltMin << " " << dVoltMax << endl;
+    file << setprecision(VOLTAGE_PRECISION);
     UINT32 uSamples = rate_DAQ*measure_time_DAQ*0.001;
     for(uInt32 i = 0; i < uSamples; i++)
     {
-        file << vData.at(i);
+        file << vData->at(i);
         if(i != uSamples-1)
             file << endl;
     }
-    //LeaveCriticalSection(&csGlobalVariable);
     ifile.close();
     file.close();
 }
@@ -97,7 +85,7 @@ void SaveRelaxSignal(double MeanTemp, const vector<double> vData, double dVoltMi
 /* Возвращает расширение открытого файла */
 string GetExtensionFile(string str)
 {
-    for(int i = 0; i < str.length(); i++)
+    for(size_t i = 0; i < str.length(); i++)
         if(str[i] == '.')
             return string(str, i);
     return string("Incorrect format");
