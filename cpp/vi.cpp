@@ -74,7 +74,7 @@ void GENERATOR::Apply()
 {
     static const double K = 2.3;
     stringstream Buff;
-    rewrite(Buff) << ":OUTPUT" << channel << " OFF";
+    rewrite(Buff) << ":OUTPUT" << channel << " OFF"; /* Channel out of range */
         Write(Buff);
     /* Временные настройки. Время в мс */
     rewrite(Buff) << ":PULSE:PER " << period*1000000 << "NS";
@@ -82,11 +82,11 @@ void GENERATOR::Apply()
     rewrite(Buff) << ":PULSE:WIDTH " << width*1000000 << "NS";
         Write(Buff);
     /* Настройки, скрытые от пользователя */
-    rewrite(Buff) << ":OUTP1:IMP 50OHM";
+    rewrite(Buff) << ":OUTP" << channel << ":IMP 50OHM";
         Write(Buff);
-    rewrite(Buff) << ":OUTP1:IMP:EXT 1000000OHM";
+    rewrite(Buff) << ":OUTP" << channel << ":IMP:EXT 1000000OHM";
         Write(Buff);
-    rewrite(Buff) << ":PULS:DOUB" << channel << " OFF";
+    rewrite(Buff) << ":PULS:DOUB" << channel << " OFF"; /* Channel out of range */
         Write(Buff);
     rewrite(Buff) << ":PULS:TRIG1:VOLT TTL";
         Write(Buff);
@@ -94,15 +94,15 @@ void GENERATOR::Apply()
     rewrite(Buff) << ":HOLD VOLT";
         Write(Buff);
     if(index_mode == DLTS)
-        rewrite(Buff) << ":VOLT1:HIGH " << round((amplitude)/(K), 3) << "V";
+        rewrite(Buff) << ":VOLT" << channel << ":HIGH " << -1.0*round((amplitude)/(K), 3) << "V";
     else if(index_mode == ITS)
-        rewrite(Buff) << ":VOLT1:HIGH " << round((begin_amplitude)/(K), 3) << "V";
+        rewrite(Buff) << ":VOLT" << channel << ":HIGH " << -1.0*round((begin_amplitude)/(K), 3) << "V";
     Write(Buff);
-    //rewrite(Buff) << ":HOLD VOLT";
-        //Write(Buff);
-    rewrite(Buff) << ":VOLT1:LOW " << bias/(K) << "V";
+    rewrite(Buff) << ":HOLD VOLT";
         Write(Buff);
-    rewrite(Buff) << ":OUTPUT" << channel << " ON";
+    rewrite(Buff) << ":VOLT" << channel << ":LOW " << -1.0*bias/(K) << "V";
+        Write(Buff);
+    rewrite(Buff) << ":OUTPUT" << channel << " ON"; /* Channel out of range */
         Write(Buff);
 }
 

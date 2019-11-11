@@ -21,19 +21,26 @@
 
 LRESULT CALLBACK mwwin_proc(HWND, UINT, WPARAM, LPARAM); //Main dialog window
 
-INT_PTR CALLBACK stwin_proc(HWND, UINT, WPARAM, LPARAM);
-INT_PTR CALLBACK srwin_proc(HWND, UINT, WPARAM, LPARAM);
+INT_PTR CALLBACK stwin_proc(HWND, UINT, WPARAM, LPARAM); //Оконная функция окна настроек
+INT_PTR CALLBACK srwin_proc(HWND, UINT, WPARAM, LPARAM); //Оконная функция окна запроса старта
+INT_PTR CALLBACK aswin_proc(HWND, UINT, WPARAM, LPARAM); //Оконная функция окна запроса старта
 
 BOOL    CALLBACK asdlg_proc(HWND, UINT, WPARAM, LPARAM); //Advanced Settings
 BOOL    CALLBACK csdlg_proc(HWND, UINT, WPARAM, LPARAM); //Correlation Settings dialog window
 BOOL    CALLBACK pidlg_proc(HWND, UINT, WPARAM, LPARAM); //PID settings dialog
 
+
 ATOM CreateClass(HINSTANCE, std::string, WNDPROC);
 
-/* ******************************************* */
-/*  */
-/* ******************************************* */
+/* **************************** */
+/* Функции отображения графиков */
+/* **************************** */
 
+VOID plotDAQ(gwin::gVector *vData1, gwin::gVector *vData2);
+VOID PlotRelax();
+VOID PlotDLTS();
+
+/* **************************** */
 UINT CALLBACK dlg_success(PVOID);
 
 VOID StartButPush();

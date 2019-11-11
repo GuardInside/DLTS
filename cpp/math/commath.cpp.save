@@ -1,4 +1,5 @@
 #include <dlts_math.h>
+#include "interpolation.h"
 
 /*int sgn(double val) {
     return (0.0 < val) - (val < 0.0);
@@ -67,6 +68,9 @@ void GetParam(const vector <double> &X, const vector <double> &Y, double &a, dou
     b = c1;
     delete []x;
     delete []y;
+    stringstream buff;
+            buff << "angle: " << a << "\n" << b <<"\n" << cov00 <<;
+            MessageBox(NULL, buff.str().data(),"",0);
 }
 
 //Среднее значение чесел в наборе, начиная последнего

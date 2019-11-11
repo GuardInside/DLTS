@@ -32,6 +32,7 @@ UINT CALLBACK ReadDLTS(void*);
 
 HWND hSettinWnd = NULL;     /* Описатель окна настроек */
 HWND hStartRequest = NULL;  /* Описатель окна запроса на старт */
+HWND hArSettingWnd = NULL;  /* Описатель окна настроек графика Аррениуса */
 double MeanTemp = 0.0;
 
 int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszArgument, int nCmdShow)
@@ -55,7 +56,9 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszArgu
 
         while (GetMessage(&messages, NULL, 0, 0))
         {
-            if(!IsDialogMessage(hSettinWnd, &messages) && !IsDialogMessage(hStartRequest, &messages))
+            if(!IsDialogMessage(hSettinWnd, &messages) &&
+               !IsDialogMessage(hStartRequest, &messages) &&
+               !IsDialogMessage(hArSettingWnd, &messages))
             {
                 TranslateMessage(&messages);
                 DispatchMessage(&messages);
@@ -123,9 +126,11 @@ void MainWindow_OnCommand(HWND hwnd, int id, HWND, UINT)
             if(offset_ai_port == 0 || !bfDAQ0k)
                 break;
             offset_ai_port--;
+            SetFocus(hMainWindow);
             break;
         case ID_BUTTON_NEXT_AI_PORT:
             if(offset_ai_port == 1 || !bfDAQ0k)
+                break;
             offset_ai_port++;
             SetFocus(hMainWindow);
             break;
@@ -161,6 +166,10 @@ void MainWindow_OnCommand(HWND hwnd, int id, HWND, UINT)
         /* Загрузить файл */
         case ID_BUTTON_LOAD:
             DownloadWindow();
+            break;
+        case ID_BUTTON_AR_SETTINGS:
+            if(!IsWindow(hArSettingWnd))
+                hArSettingWnd = CreateDialog(hInst, MAKEINTRESOURCE(ID_AR_SETTINGS_WINDOW), HWND_DESKTOP, aswin_proc);
             break;
         /* Настройки */
         case ID_BUTTON_SETTINGS:

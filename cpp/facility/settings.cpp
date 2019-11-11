@@ -24,6 +24,7 @@ void write_settings()
     ofstream file(SettingsFile.data());
     ofstream CorFile(SettingsCorFile.data());
     ofstream PIDFile(SettingsPIDFile.data());
+    ofstream ArFile(SettingsArFile.data());
     if(file.is_open())
         file << Thermostat.GetID() << " "  << Generator.GetID() << " "
         << Thermostat.TempStep << " " << Thermostat.TempDisp << " "
@@ -61,6 +62,11 @@ void write_settings()
     }
     else
         MessageBox(NULL, "The PID settings file wasn't found.", "Information", MB_ICONINFORMATION);
+    if(ArFile.is_open())
+    {
+        ArFile << dEfMass << " " << dFactorG << endl <<  dLeftBorderGold << " " << dRightBorderGold;
+    }
+    ArFile.close();
     PIDFile.close();
     CorFile.close();
     file.close();
@@ -76,6 +82,8 @@ void read_settings()
     ifstream CorFile(SettingsCorFile.data());
     /* Для ПИД настроек */
     ifstream PIDFile(SettingsPIDFile.data());
+    /* Для настроек построения гр. Аррениуса */
+    ifstream ArFile(SettingsArFile.data());
     double buff = 0.0;
     if(file.is_open())
         file >> Thermostat.GetID() >> Generator.GetID()
@@ -114,6 +122,11 @@ void read_settings()
     }
     else
         MessageBox(NULL, "The PID settings file wasn't found.", "Information", MB_ICONINFORMATION);
+    if(ArFile.is_open())
+    {
+         ArFile >> dEfMass >> dFactorG >>  dLeftBorderGold >> dRightBorderGold;
+    }
+    ArFile.close();
     PIDFile.close();
     CorFile.close();
     file.close();

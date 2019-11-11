@@ -52,6 +52,7 @@
 		<Unit filename="cpp/variable.cpp" />
 		<Unit filename="cpp/vi.cpp" />
 		<Unit filename="cpp/windows/adv_setting.cpp" />
+		<Unit filename="cpp/windows/arrhenius_setting.cpp" />
 		<Unit filename="cpp/windows/cor_setting.cpp" />
 		<Unit filename="cpp/windows/general_setting.cpp" />
 		<Unit filename="cpp/windows/pid_setting.cpp" />
@@ -59,7 +60,6 @@
 		<Unit filename="headers/daq.h" />
 		<Unit filename="headers/dlts_math.h" />
 		<Unit filename="headers/facility.h" />
-		<Unit filename="headers/graph.h" />
 		<Unit filename="headers/gwin.h" />
 		<Unit filename="headers/interpolation.h" />
 		<Unit filename="headers/resource.h" />

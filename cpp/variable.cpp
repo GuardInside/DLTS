@@ -21,8 +21,14 @@ const string        strHeatingRange[] = {"Off", "Low", "Med", "High"};
 const string        SettingsFile  = "settings\\settings.txt";
 const string        SettingsCorFile = "settings\\correlations.txt";
 const string        SettingsPIDFile = "settings\\PID.txt";
+const string        SettingsArFile = "settings\\AR.txt";
 const string        Save = "save\\";
       string        FileSaveName;
+
+double dEfMass = MASS_ELECTRON;
+double dFactorG = G_CONSTANT;
+double dLeftBorderGold = 0.0;
+double dRightBorderGold = 0.0;
 
 double itsTemperature = 0.0; /* Температура в режиме ITS */
 unsigned int aver_time = 15; //Число рассматриваемых временной интервал для расчета дрейфа температуры dT в секундах

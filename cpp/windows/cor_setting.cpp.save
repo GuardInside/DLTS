@@ -14,6 +14,9 @@ BOOL CALLBACK csdlg_proc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     {
         HANDLE_MSG(hWnd, WM_INITDIALOG, CorWindow_OnInit);
         HANDLE_MSG(hWnd, WM_COMMAND, CorWindow_OnCommand); //Останется ли сообщение с стеке?
+        case ID_BUTTON_CLOSE_SETTINGS:
+            
+        return TRUE;
     }
     return FALSE;
 }
@@ -61,6 +64,7 @@ BOOL CorWindow_OnInit(HWND hWnd, HWND, WPARAM)
 VOID CorWindow_OnCommand(HWND hWnd, INT id, HWND, UINT)
 {
     stringstream buff;
+    static UINT CorType = ::CorType;
     switch(id)
     {
         case ID_BUTTON_PREVIOUS_WEIGHT_FUNC:
@@ -137,6 +141,7 @@ VOID CorWindow_OnCommand(HWND hWnd, INT id, HWND, UINT)
             break;
          case ID_BUTTON_APPLY_SETTINGS:
             {
+                ::CorType = CorType;
                 char cstrBuff[BUFF_SIZE];
                 double time = 0.0;
                 //Применить настройки ширины импульсов
@@ -157,7 +162,6 @@ VOID CorWindow_OnCommand(HWND hWnd, INT id, HWND, UINT)
                 yAxisDLTS = new vector<double>[CorTime.size()]; ///Число осей совпадает с числом корреляторов
                 write_settings();
                 RefreshDLTS();
-                InvalidateRect(hGraph_Arrhenius, NULL, FALSE);
             }
             break;
     }

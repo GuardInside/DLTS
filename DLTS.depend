@@ -11,7 +11,7 @@
 	<vector>
 	"NIDAQmx.h"
 
-1573412803 c:\users\Виктор\documents\github\dlts\headers\variable.h
+1573457674 c:\users\Виктор\documents\github\dlts\headers\variable.h
 	<string>
 	<vector>
 	<sstream>
@@ -111,7 +111,7 @@
 	<stdlib.h>
 	<gsl/gsl_types.h>
 
-1573392494 c:\users\Виктор\documents\github\dlts\headers\resource.h
+1573456644 c:\users\Виктор\documents\github\dlts\headers\resource.h
 
 1573404192 source:c:\users\Виктор\documents\github\dlts\cpp\facility\load_save.cpp
 	<sstream>
@@ -122,11 +122,11 @@
 	"gwin.h"
 	"graph.h"
 
-1573153525 c:\users\Виктор\documents\github\dlts\headers\graph.h
+1573456121 c:\users\Виктор\documents\github\dlts\headers\graph.h
 	<windows.h>
 	"gwin.h"
 
-1573402977 source:c:\users\Виктор\documents\github\dlts\cpp\facility\plot.cpp
+1573458889 source:c:\users\Виктор\documents\github\dlts\cpp\facility\plot.cpp
 	"graph.h"
 	"variable.h"
 	"gwin.h"
@@ -134,7 +134,7 @@
 	"facility.h"
 	"interpolation.h"
 
-1573242613 source:c:\users\Виктор\documents\github\dlts\cpp\facility\settings.cpp
+1573457896 source:c:\users\Виктор\documents\github\dlts\cpp\facility\settings.cpp
 	<facility.h>
 
 1573397724 source:c:\users\Виктор\documents\github\dlts\cpp\facility\utility.cpp
@@ -145,7 +145,7 @@
 	"facility.h"
 	"winfunc.h"
 
-1573237372 c:\users\Виктор\documents\github\dlts\headers\winfunc.h
+1573456223 c:\users\Виктор\documents\github\dlts\headers\winfunc.h
 	<string>
 	<sstream>
 	<windows.h>
@@ -165,7 +165,7 @@
 	<dlts_math.h>
 	"gwin.h"
 
-1573401237 source:c:\users\Виктор\documents\github\dlts\cpp\variable.cpp
+1573457769 source:c:\users\Виктор\documents\github\dlts\cpp\variable.cpp
 	"variable.h"
 
 1573237943 source:c:\users\Виктор\documents\github\dlts\cpp\vi.cpp
@@ -175,7 +175,7 @@
 1572513509 source:c:\users\Виктор\documents\github\dlts\cpp\windows\adv_setting.cpp
 	<winfunc.h>
 
-1572513509 source:c:\users\Виктор\documents\github\dlts\cpp\windows\cor_setting.cpp
+1573456664 source:c:\users\Виктор\documents\github\dlts\cpp\windows\cor_setting.cpp
 	"winfunc.h"
 	"variable.h"
 
@@ -188,7 +188,7 @@
 1573328892 source:c:\users\Виктор\documents\github\dlts\cpp\windows\start_setting.cpp
 	"winfunc.h"
 
-1573392494 source:c:\users\Виктор\documents\github\dlts\resource\resource.rc
+1573456644 source:c:\users\Виктор\documents\github\dlts\resource\resource.rc
 	<windows.h>
 	<commctrl.h>
 	<richedit.h>
@@ -199,14 +199,14 @@
 	<cctype>
 	"gwin.h"
 
-1573383018 source:c:\users\Виктор\documents\github\dlts\cpp\math\commath.cpp
+1573415893 source:c:\users\Виктор\documents\github\dlts\cpp\math\commath.cpp
 	<dlts_math.h>
 	"interpolation.h"
 
 1573381319 source:c:\users\Виктор\documents\github\dlts\cpp\math\interpolation.cpp
 	<interpolation.h>
 
-1573404704 source:c:\users\Виктор\documents\github\dlts\cpp\main.cpp
+1573459006 source:c:\users\Виктор\documents\github\dlts\cpp\main.cpp
 	<windows.h>
 	<windowsx.h>
 	<commctrl.h>
@@ -234,4 +234,7 @@
 	<stdio.h>
 	<errno.h>
 	<gsl/gsl_types.h>
+
+1573458600 source:c:\users\Виктор\documents\github\dlts\cpp\windows\arrhenius_setting.cpp
+	"winfunc.h"
 

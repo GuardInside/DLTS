@@ -11,7 +11,7 @@
 using namespace std;
 
 /* Активация режима отладки */
-#define TEST_MODE
+//#define TEST_MODE
 
 /* Идентификаторы */
 #define WM_NEW_CORTIME              200 //Сообщение win_weight_func для обновления графика
@@ -45,8 +45,8 @@ using namespace std;
 /* Физические константы */
 #define BOLTZMANN                   (8.6173303e-5)      //эВ/К
 #define PLANCKS_CONSTANT_H          (4.135667662e-15)   //эВ*с
-#define G_CONSTANT                  2                   //Фактор вырождения g = 2*s + 1
-#define MASS_ELECTRON               (9.10938188e-28)    //г
+#define G_CONSTANT                  1                   //Фактор вырождения g = 2*s + 1 [Arb.]. По умолчанию.
+#define MASS_ELECTRON               (9.10938188e-28)    //[г] По умолчанию.
 #define PI                          3.1415926535897932384626433832795
 
 enum CORTYPE{DoubleBoxCar, LockIn, ExpW, SinW};
@@ -78,8 +78,14 @@ extern const string range[];
 extern const string strHeatingRange[];
 /* Имя файла для сохранения FileSaveName.txt */
 extern       string FileSaveName;
+extern const string SettingsArFile = "settings\\AR.txt";
 /* Имена весовых функций */
 extern const string names_wFunc[];
+
+extern double dEfMass;
+extern double dFactorG;
+extern double dLeftBorderGold;
+extern double dRightBorderGold;
 
 extern double itsTemperature; /* Температура в режиме ITS */
 extern unsigned int aver_time;   //Число рассматриваемых точек для расчета дрейфа температуры dT

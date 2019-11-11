@@ -14,29 +14,6 @@ ATOM CreateClass(HINSTANCE hInst, string strName, WNDPROC proc)
     return RegisterClassEx(&wcex);
 }
 
-/* Точка входа в поток, создающий окно */
-UINT CALLBACK fMain_thCreateWindow(void* DLG_ID)
-{
-    MSG messages;
-    CreateDialog(hInst, MAKEINTRESOURCE(*(int*)DLG_ID), 0, 0);
-    while(GetMessage(&messages, NULL, 0, 0))
-    {
-        TranslateMessage(&messages);
-        DispatchMessage(&messages);
-    }
-    return 0;
-}
-
-void thCreateWindow(HANDLE& thMain, int DLG_ID)
-{
-    DWORD status = 0;
-    if(thMain != nullptr)
-        GetExitCodeThread(thMain, &status);
-    if(thMain == nullptr || status != STILL_ACTIVE)
-        thMain = (HANDLE)_beginthreadex(nullptr, 0, fMain_thCreateWindow, &DLG_ID, 0, nullptr);
-}
-
-
 stringstream& rewrite(stringstream& buff)
 {
     buff.str("");
@@ -58,8 +35,8 @@ double ApplySettingEditBox(HWND hwnd, int nIDEditBox, int prec)
     buff << setprecision(prec) << fixed;
     GetDlgItemTextMod(hwnd, nIDEditBox, buff);
     result = atof(buff.str().data());
-    rewrite(buff) << result;
-    SetDlgItemText(hwnd, nIDEditBox, buff.str().data());
+    //rewrite(buff) << result;
+    //SetDlgItemText(hwnd, nIDEditBox, buff.str().data());
     return result;
 }
 

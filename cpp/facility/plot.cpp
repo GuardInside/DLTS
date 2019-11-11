@@ -7,9 +7,6 @@
 
 VOID plotDAQ(gwin::gVector *vData1, gwin::gVector *vData2)
 {
-    stringstream buffer;
-    buffer << "AI: " << ai_port + offset_ai_port;
-    gwin::gAdditionalInfo(hGraph_DAQ, buffer.str());
     gwin::gData(hGraph_DAQ, vData1, vData2);
 }
 
@@ -43,12 +40,24 @@ VOID PlotDLTS()
     }
     if(index_plot_DLTS == 0 || index_plot_DLTS == 1)
     {
+        /* Точность определения пика */
+        static const double eps = 0.01;
         /* Поиск максимума методом золотого сечения */
         gwin::gVector vMinData1, vMinData2;
+        double dRightBorder = ::dRightBorderGold;
+        double dLeftBorder = ::dLeftBorderGold;
+        /* Если границы заданы как нулевые */
+        if(dRightBorder == 0.0 && dLeftBorder == 0.0 ||
+           dLeftBorder < xAxisDLTS.at(0) || dRightBorder > xAxisDLTS.at(xAxisDLTS.size()-1))
+        {
+            /* Устанавливаем границы по умолчанию */
+            dLeftBorder = xAxisDLTS.at(0);
+            dRightBorder = xAxisDLTS.at(xAxisDLTS.size()-1);
+        }
         for(size_t i = 0; i < CorTime.size(); i++)
         {
             interp f(xAxisDLTS, yAxisDLTS[i],xAxisDLTS.size(), gsl_interp_linear);
-            double dMin = GoldSerch(xAxisDLTS.at(0), xAxisDLTS.at(xAxisDLTS.size()-1), 0.01, f);
+            double dMin = GoldSerch(dLeftBorder, dRightBorder, eps, f);
             vMinData1.push_back(dMin);
             vMinData2.push_back(f.at(dMin));
         }
@@ -63,7 +72,7 @@ VOID PlotDLTS()
         }
         else if(index_plot_DLTS == 1) /* График Аррениуса */
         {
-            static const double B = sqrt(3)*pow(2, 5/2)/G_CONSTANT*(MASS_ELECTRON*pow(BOLTZMANN,2)/pow(PLANCKS_CONSTANT_H,3))*pow(PI, 3/2);
+            double B = sqrt(3.0)*pow(2.0, 2.5)*pow(::dFactorG,-1)*(::dEfMass*pow(BOLTZMANN,2)*pow(PLANCKS_CONSTANT_H,-3))*pow(PI, 1.5);
             gwin::gVector vData1, vData2, vData3;
             for(size_t i = 0; i < CorTime.size(); i++)
             {
@@ -86,13 +95,13 @@ VOID PlotDLTS()
                             return;
                         }
                 }
-                vData1.push_back(pow(T_max*BOLTZMANN,-1.0));
-                vData2.push_back( -log( tau*pow(T_max,2.0) ) );
+                vData1.push_back(pow(T_max*BOLTZMANN,-1));
+                vData2.push_back( -log( tau*pow(T_max, 2) ) );
             }
             double a = 0.0, b = 0.0, Energy = 0.0, CrossSection = 0.0;
             GetParam(vData1, vData2, a, b);
             Energy = (-1)*b;
-            CrossSection = exp(b)/B;
+            CrossSection = exp(-a)*pow(B, -1);
             for(const auto &x: vData1)
                 vData3.push_back(a+b*x);
             gwin::gMulVector vMulData;

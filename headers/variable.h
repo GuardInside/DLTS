@@ -45,8 +45,8 @@ using namespace std;
 /* Физические константы */
 #define BOLTZMANN                   (8.6173303e-5)      //эВ/К
 #define PLANCKS_CONSTANT_H          (4.135667662e-15)   //эВ*с
-#define G_CONSTANT                  2                   //Фактор вырождения g = 2*s + 1
-#define MASS_ELECTRON               (9.10938188e-28)    //г
+#define G_CONSTANT                  1                   //Фактор вырождения g = 2*s + 1 [Arb.]. По умолчанию.
+#define MASS_ELECTRON               (9.10938188e-28)    //[г] По умолчанию.
 #define PI                          3.1415926535897932384626433832795
 
 enum CORTYPE{DoubleBoxCar, LockIn, ExpW, SinW};
@@ -70,6 +70,7 @@ extern int32 offset_ai_port;//Смещение номера порта ai_port при отображении в ре
 extern const string SettingsFile;
 extern const string SettingsCorFile;
 extern const string SettingsPIDFile;
+extern const string SettingsArFile;
 /* Имя папки с сохраненными релаксациями */
 extern const string Save;
 /* Диапазоны измерений напряжения DAQ */
@@ -80,6 +81,11 @@ extern const string strHeatingRange[];
 extern       string FileSaveName;
 /* Имена весовых функций */
 extern const string names_wFunc[];
+
+extern double dEfMass;
+extern double dFactorG;
+extern double dLeftBorderGold;
+extern double dRightBorderGold;
 
 extern double itsTemperature; /* Температура в режиме ITS */
 extern unsigned int aver_time;   //Число рассматриваемых точек для расчета дрейфа температуры dT

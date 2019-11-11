@@ -42,7 +42,7 @@ class VI
 
 struct GENERATOR: public VI
 {
-    GENERATOR(std::string arg_ViName){ ViName = arg_ViName; };
+    GENERATOR(std::string arg_ViName){ ViName = arg_ViName; channel = 1; };
     /* Применить текущие настройки к прибору */
     VOID Apply();
 

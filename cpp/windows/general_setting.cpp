@@ -206,7 +206,7 @@ BOOL SettingsWindow_OnCommand(HWND hwnd, int ID, HWND, UINT codeNotify)
                     Generator.step_voltage = ApplySettingEditBox(hwnd, ID_EDITCONTROL_STEP_VOLTAGE, 3);
                     //Применить настройки начала ITS в вольтах
                     Generator.begin_amplitude = ApplySettingEditBox(hwnd, ID_EDITCONTROL_BEGIN_VOLTAGE, 3);
-                    if(Generator.begin_amplitude < MIN_VOLTAGE_PULSE || Generator.begin_amplitude > MAX_VOLTAGE_PULSE || Generator.begin_amplitude <= Generator.bias) alright = false;
+                    if(Generator.begin_amplitude < MIN_VOLTAGE_PULSE || Generator.begin_amplitude > MAX_VOLTAGE_PULSE || Generator.begin_amplitude >= Generator.bias) alright = false;
                     //Применить настройки конца ITS в вольтах
                     Generator.end_amplitude = ApplySettingEditBox(hwnd, ID_EDITCONTROL_END_VOLTAGE, 3);
                     if(Generator.end_amplitude > MAX_VOLTAGE_PULSE || Generator.end_amplitude < MIN_VOLTAGE_PULSE) alright = false;
