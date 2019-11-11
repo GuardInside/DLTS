@@ -7,9 +7,6 @@
 
 VOID plotDAQ(gwin::gVector *vData1, gwin::gVector *vData2)
 {
-    stringstream buffer;
-    buffer << "AI: " << ai_port + offset_ai_port;
-    gwin::gAdditionalInfo(hGraph_DAQ, buffer.str());
     gwin::gData(hGraph_DAQ, vData1, vData2);
 }
 
@@ -21,7 +18,7 @@ VOID PlotRelax()
         vData1.push_back(0.001*gate_DAQ + i*(1/rate_DAQ)*1000); /* ms */
     if(index_mode == DLTS && !xAxisDLTS.empty())
         rewrite(buffer) << xAxisDLTS[index_relax] << " K";
-    else if(index_mode == ITS && !itsLowVoltages.empty())
+    else if(index_mode == ITS && !itsBiasVoltages.empty())
         rewrite(buffer) << fixed << setprecision(2) << "T [K] = " << itsTemperature << endl
                         << setprecision(3) << "Bias [V] = " << itsUpVoltages[index_relax] << endl << "Amp [V] =  " << itsLowVoltages[index_relax];
     gwin::gAdditionalInfo(hRelax, buffer.str());
@@ -47,10 +44,11 @@ VOID PlotDLTS()
         static const double eps = 0.01;
         /* Поиск максимума методом золотого сечения */
         gwin::gVector vMinData1, vMinData2;
-        double dRightBorder = xAxisDLTS.at(0);
+        double dRightBorder = ::dRightBorderGold;
         double dLeftBorder = ::dLeftBorderGold;
         /* Если границы заданы как нулевые */
-        if(dRightBorder == 0.0 && dLeftBorder == 0.0 || dLeftBorder < xAxisDLTS.at(0) || dRightBorder > )
+        if(dRightBorder == 0.0 && dLeftBorder == 0.0 ||
+           dLeftBorder < xAxisDLTS.at(0) || dRightBorder > xAxisDLTS.at(xAxisDLTS.size()-1))
         {
             /* Устанавливаем границы по умолчанию */
             dLeftBorder = xAxisDLTS.at(0);
@@ -74,7 +72,7 @@ VOID PlotDLTS()
         }
         else if(index_plot_DLTS == 1) /* График Аррениуса */
         {
-            const double B = sqrt(3.0)*pow(2.0, 2.5)*pow(::dFactorG,-1)*(::dEfMass*pow(BOLTZMANN,2)*pow(PLANCKS_CONSTANT_H,-3))*pow(PI, 1.5);
+            double B = sqrt(3.0)*pow(2.0, 2.5)*pow(::dFactorG,-1)*(::dEfMass*pow(BOLTZMANN,2)*pow(PLANCKS_CONSTANT_H,-3))*pow(PI, 1.5);
             gwin::gVector vData1, vData2, vData3;
             for(size_t i = 0; i < CorTime.size(); i++)
             {

@@ -4,8 +4,8 @@
 void ClearMemmory()
 {
     ClearMemmoryDLTS();
-    itsLowVoltages.clear();
-    itsUpVoltages.clear();
+    itsBiasVoltages.clear();
+    itsAmpVoltages.clear();
     gwin::gMulVector().swap(SavedRelaxations);
 }
 
@@ -35,7 +35,7 @@ void RefreshDLTS()
     PlotDLTS();
 }
 
-void SaveRelaxSignal(double MeanTemp, const vector<double> *vData, double dVoltMin, double dVoltMax)
+void SaveRelaxSignal(double MeanTemp, const vector<double> *vData, double dBias, double dAmp)
 {
     string SavePath = Save + FileSaveName;
     if(index_mode == DLTS) SavePath += ".dlts";
@@ -69,7 +69,7 @@ void SaveRelaxSignal(double MeanTemp, const vector<double> *vData, double dVoltM
     else file << endl;
     if(index_mode == DLTS) file << setprecision(THERMO_PRECISION) << MeanTemp << endl;
     else if(index_mode == ITS) /* Должен записывать истинное, а не установленное значение */
-        file << setprecision(VOLTAGE_PRECISION) << dVoltMin << " " << dVoltMax << endl;
+        file << setprecision(VOLTAGE_PRECISION) << dBias << " " << dAmp << endl;
     file << setprecision(VOLTAGE_PRECISION);
     UINT32 uSamples = rate_DAQ*measure_time_DAQ*0.001;
     for(uInt32 i = 0; i < uSamples; i++)

@@ -168,7 +168,7 @@ void MainWindow_OnCommand(HWND hwnd, int id, HWND, UINT)
             DownloadWindow();
             break;
         case ID_BUTTON_AR_SETTINGS:
-            if(!IsWindow(hArSettingWnd))
+            //if(!IsWindow(hArSettingWnd))
                 hArSettingWnd = CreateDialog(hInst, MAKEINTRESOURCE(ID_AR_SETTINGS_WINDOW), HWND_DESKTOP, aswin_proc);
             break;
         /* Настройки */
@@ -202,7 +202,9 @@ void MainWindow_OnCommand(HWND hwnd, int id, HWND, UINT)
                     rewrite(buff) << "SETP " << dPrevTemp << "K";
                     Thermostat.Write(buff);
                     /* Установка RANGE в соответствии с текущей зоной */
-                    rewrite(buff) << "RANG " << Thermostat.ZoneTable.GetActuallyHeatRange();
+                    if(start == true)
+                        rewrite(buff) << "RANG " << Thermostat.ZoneTable.GetActuallyHeatRange();
+                    else rewrite(buff) << "RANG 0";
                     Thermostat.Write(buff);
                 }
                 (fix_temp == true)? fix_temp = false : fix_temp = true;
@@ -258,10 +260,9 @@ void MainWindow_OnCommand(HWND hwnd, int id, HWND, UINT)
                     /* Установка значений глобальных переменных */
                     Thermostat.BeginPoint = BeginPoint;
                     Thermostat.EndPoint = EndPoint;
-                    break;
                 }
-                break;
             }
+            break;
         /* Выход */
         case ID_BUTTON_EXIT:
             DestroyWindow(hwnd);
@@ -315,18 +316,20 @@ VOID MainWindow_OnTimer(HWND hwnd, UINT id)
 UINT CALLBACK DataAcquisition_Process(void*)
 {
     gwin::gVector vData1, vData2;
+    stringstream buff;
     if(ai_port+offset_ai_port == ai_port_pulse)
     {
         double dMinVoltage = 0.0, dMaxVoltage = 0.0;
         MeasurePulse(&vData2, &dMinVoltage, &dMaxVoltage);
-        stringstream buff;
-        buff << fixed << setprecision(3) << "Bias [V] =  " << dMaxVoltage << endl << "Amp [V] = " << dMinVoltage;
+        buff << fixed << "AI: " << ai_port + offset_ai_port << endl
+             << setprecision(3) << "Bias [V] =  " << dMaxVoltage << endl << "Amp [V] = " << dMinVoltage;
         gAdditionalInfo(hGraph_DAQ, buff.str());
     }
     else
     {
         MyDAQMeasure(&vData2, 1, measure_time_DAQ*0.001, ai_port);
-        gAdditionalInfo(hGraph_DAQ, "\0");
+        buff << fixed << "AI: " << ai_port + offset_ai_port << endl;
+        gAdditionalInfo(hGraph_DAQ, buff.str());
     }
     for(size_t i = 0; i < vData2.size(); i++)
         vData1.push_back(0.001*gate_DAQ + i*(1.0/rate_DAQ)*1000.0);
@@ -374,15 +377,14 @@ UINT Thermostat_Process()
     SetDlgItemText(hMainWindow, ID_STR_DISPERSION, buff.str().data());
 
     /* Проверяем условие стабилизации первое */
-    if(start == true && !stability && dAverSqFluct <= Thermostat.TempDisp)
+    if(start == true && stability == false && dAverSqFluct <= Thermostat.TempDisp)
     {
         double dMean = round(mean(vTemp), 2);
-
         /* Проверяем условие стабилизации второе */
-        if(fabs(dMean - SetPoint) <= Thermostat.TempDisp) //dAverSqFluct?
+        if(fabs(dMean - Thermostat.BeginPoint) <= Thermostat.TempDisp) //dAverSqFluct?
         {
-            ::MeanTemp = dMean;
             stability = true;
+            ::MeanTemp = dMean;
             if(index_mode == DLTS)
                 _beginthreadex(NULL, 0, ReadDLTS, NULL, 0, NULL);
             else if(index_mode == ITS)
@@ -456,36 +458,50 @@ UINT CALLBACK ReadITS(void*)
 {
     try{
     WaitForSingleObject(hDownloadEvent, INFINITE);
-    double dVoltMin = 0.0, dVoltMax = 0.0;
-    double dBeginVolt = Generator.begin_amplitude;
+    double dVoltBias = 0.0, dVoltAmp = 0.0;
+    double dBeginAmplitude = Generator.begin_amplitude;
     vector<double> Relaxation;
     bool endofits = false;
     /* В случае ITS режима, цикл ниже повторяется */
-    while(endofits == false && start == true && stability == true);
+    while(endofits == false && start == true)
     {
+        Relaxation.clear();
+        #ifndef TEST_MODE
         MyDAQMeasure(&Relaxation, averaging_DAQ, measure_time_DAQ*0.001, ai_port, TRUE);
+        #endif // TEST_MODE
+        /* Создаем релаксацию руками */
+        #ifdef TEST_MODE
+        for(double t = gate_DAQ*0.0000001; t < measure_time_DAQ*0.001; t += 1.0/rate_DAQ)
+            Relaxation.push_back(-0.025*exp(-t/((8.9737+Generator.begin_amplitude)*0.001) + 0.5755));
+        #endif // TEST_MODE
         /* Сохраняем релаксации, чтобы иметь возможность переключаться между ними */
         SavedRelaxations.push_back(Relaxation);
         index_relax = SavedRelaxations.size() - 1;
         /* Вычисляем истинные параметры заполняющего импульса */
-        MeasurePulse(NULL, &dVoltMin, &dVoltMax);
-        itsLowVoltages.push_back(dVoltMin);
-        itsUpVoltages.push_back(dVoltMax);
+        MeasurePulse(NULL, &dVoltBias, &dVoltAmp);
+        itsBiasVoltages.push_back(dVoltBias);
+        itsAmpVoltages.push_back(dVoltAmp);
         /* Подготавливаем следующее измерение */
         Generator.begin_amplitude += Generator.step_voltage;
-        if(Generator.begin_amplitude > Generator.end_amplitude)
+        stringstream buf;
+        buf << Generator.begin_amplitude << " " << Generator.end_amplitude;
+        MessageBox(0, buf.str().data(),"",0);
+        if(Generator.begin_amplitude < Generator.end_amplitude)
         {
-            Generator.begin_amplitude = dBeginVolt;
+            Generator.begin_amplitude = dBeginAmplitude;
             endofits = true;
         }
         Generator.Apply();
         /* Сохраняем релаксацию в файл */
-        SaveRelaxSignal(::MeanTemp, &Relaxation, dVoltMin, dVoltMax);
+        SaveRelaxSignal(::MeanTemp, &Relaxation, dVoltBias, dVoltAmp);
         /* Отрисовываем график */
         PlotRelax();
     }
+    /* Сбрасываем флаг стабилизации */
     } catch(out_of_range  &e){ MessageBox(0, e.what(), "Exception in ReadITS", 0); }
       catch(...){ MessageBox(0, "Some exception.", "Exception in ReadITS", 0); }
-    StartButPush();
+    MessageBox(0,"","",0);
+    if(start == true)
+        StartButPush();
     return 0;
 }

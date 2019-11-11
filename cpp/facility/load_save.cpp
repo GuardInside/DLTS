@@ -40,18 +40,16 @@ VOID DownloadWindow()
 UINT CALLBACK LoadFile(PVOID)
 {
     /* Собираем путь к файлу */
-    string strName = Save + FileSaveName;
-    if(index_mode == DLTS) strName += ".dlts";
-    else if(index_mode == ITS) strName += ".its";
+    string ext = GetExtensionFile(LoadFileName);
+    string strName = Save + FileSaveName + ext;
     ifstream file;
     file.open(strName);
     if(!file.is_open())
         return FALSE;
     /* Создаем событие-флаг */
     ResetEvent(hDownloadEvent);
-    double itsUpper_boundary = 0.0, itsLower_boundary = 0.0;
+    double itsBias = 0.0, itsAmp = 0.0;
     double buff = 0.0, temp = 0.0;
-    string ext = GetExtensionFile(strName);
     file >> averaging_DAQ >> measure_time_DAQ >> rate_DAQ >> gate_DAQ
          >> Generator.amplitude >> Generator.bias;
     if(ext == ".dlts")
@@ -77,9 +75,9 @@ UINT CALLBACK LoadFile(PVOID)
             file >> temp;
         else if(index_mode == ITS)
         {
-            file >> itsLower_boundary >> itsUpper_boundary;
-            itsLowVoltages.push_back(itsLower_boundary);
-            itsUpVoltages.push_back(itsUpper_boundary);
+            file >> itsBias >> itsAmp;
+            itsBiasVoltages.push_back(itsBias);
+            itsAmpVoltages.push_back(itsAmp);
         }
         if(index_mode == DLTS && !xAxisDLTS.empty() && temp == xAxisDLTS.back())
             continue;

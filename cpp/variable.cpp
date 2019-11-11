@@ -5,8 +5,8 @@ vector<double>          *yAxisDLTS = nullptr;
 vector<double>          xAxisAr;
 vector<vector<double>>  yAxisAr;
 vector<double>          CorTime;
-vector<double>          itsUpVoltages;
-vector<double>          itsLowVoltages;  /* Хранит значения напряжений импульсов */
+vector<double>          itsAmpVoltages;
+vector<double>          itsBiasVoltages;  /* Хранит значения напряжений импульсов */
 
 vector<vector<double>>      SavedRelaxations;//Хранит все сохраненные и загруженные релаксации/
 size_t index_relax = 0; //Номер текущей релаксации для отображения
@@ -31,7 +31,6 @@ double dLeftBorderGold = 0.0;
 double dRightBorderGold = 0.0;
 
 double itsTemperature = 0.0; /* Температура в режиме ITS */
-unsigned int aver_time = 15; //Число рассматриваемых временной интервал для расчета дрейфа температуры dT в секундах
 unsigned int id_DAQ = 0;
 int32 ai_port = 0;
 int32 ai_port_pulse = 0;

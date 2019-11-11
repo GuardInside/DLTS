@@ -105,35 +105,35 @@ BOOL MyDAQMeasure(vector<double> *vResult, UINT AverNum, double time, UINT AIPor
     return TRUE;
 }
 
-BOOL MeasurePulse(vector<double> *vData, double *dMinVoltage, double *dMaxVoltage)
+BOOL MeasurePulse(vector<double> *vData, double *dVoltBias, double *dVoltAmp)
 {
     static CONST UINT T_NUM = 2, A_NUM = 1;
     static const double dV = 0.1;
-    *dMinVoltage = 0.0;
-    *dMaxVoltage = 0.0;
+    *dVoltBias = 0.0;
+    *dVoltAmp = 0.0;
     UINT uiCount1 = 0, uiCount2 = 0;
     vector<double> vData2;
     MyDAQMeasure(&vData2, A_NUM, Generator.period*T_NUM*0.001, ai_port_pulse);
     /* Рассчитываем истинные значения амплитуд */
     for(const auto &v: vData2)
     {
-        if(fabs(v) >= fabs(Generator.bias)*(1.0-dV) && fabs(v) <= fabs(Generator.bias)*(1.0+dV) )
+        if(v >= Generator.bias-dV && v <= Generator.bias+dV)
         {
-            *dMaxVoltage += v;
+            *dVoltBias += v;
             uiCount2++;
         }
-        else if(fabs(v) >= fabs(Generator.amplitude)*(1.0-dV) && fabs(v) <= fabs(Generator.amplitude)*(1.0+dV) )
+        else if(v >= Generator.amplitude-dV && v <= Generator.amplitude+dV)
         {
-            *dMinVoltage += v;
+            *dVoltAmp += v;
             uiCount1++;
         }
     }
     if(uiCount1 != 0)
-        *dMinVoltage /= uiCount1;
-    else *dMinVoltage = 0.0;
+        *dVoltAmp /= uiCount1;
+    else *dVoltAmp = 0.0;
     if(uiCount2 != 0)
-        *dMaxVoltage /= uiCount2;
-    else *dMaxVoltage = 0.0;
+        *dVoltBias /= uiCount2;
+    else *dVoltBias = 0.0;
     if(vData != NULL) *vData = vData2;
     return TRUE;
 }

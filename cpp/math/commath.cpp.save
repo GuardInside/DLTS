@@ -68,9 +68,6 @@ void GetParam(const vector <double> &X, const vector <double> &Y, double &a, dou
     b = c1;
     delete []x;
     delete []y;
-    stringstream buff;
-            buff << "angle: " << a << "\n" << b <<"\n" << cov00 <<;
-            MessageBox(NULL, buff.str().data(),"",0);
 }
 
 //Среднее значение чесел в наборе, начиная последнего
@@ -80,7 +77,7 @@ double mean(const std::vector<double> &temp)
         return 0.0;
     size_t i = 0;
     double result = 0.0;
-    for(vector<double>::const_reverse_iterator it = temp.crbegin(); it != temp.crend() && i < 1000*aver_time/REFRESH_TIME_THERMOSTAT; it++)
+    for(vector<double>::const_reverse_iterator it = temp.crbegin(); it != temp.crend() && i < 1000*AVERAGING_TIME/REFRESH_TIME_THERMOSTAT; it++)
     {
         result += *it;
         i++;

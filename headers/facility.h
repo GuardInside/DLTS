@@ -40,7 +40,7 @@ void ClearMemmory();
 void OrderRelaxation();
 //Обновление DLTS-кривых
 void RefreshDLTS();
-void SaveRelaxSignal(double MeanTemp, const vector<double> *vData, double dVoltMin, double dVoltMax);
+void SaveRelaxSignal(double MeanTemp, const vector<double> *vData, double dBias, double dAmp);
 void AddPointsDLTS(const vector<double> *vRelaxation, const double temp);
 /* Возвращает расширение открытого файла */
 string GetExtensionFile(string str);

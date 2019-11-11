@@ -30,7 +30,7 @@ void write_settings()
         << Thermostat.TempStep << " " << Thermostat.TempDisp << " "
         << id_DAQ << " " << measure_time_DAQ << " " << rate_DAQ << " "
         << averaging_DAQ << " " << ai_port << " " << ai_port_pulse << " " << pfi_ttl_port << " "
-        << gate_DAQ << " " << FileSaveName << " " << index_mode << " " << aver_time << " " << index_range << " "
+        << gate_DAQ << " " << FileSaveName << " " << index_mode << " " << index_range << " "
         << Generator.period << " " << Generator.width << " "
         << Generator.amplitude << " " << Generator.bias << " " << Generator.is_active << " "
         << Generator.step_voltage << " " << Generator.begin_amplitude << " " << Generator.end_amplitude;
@@ -89,7 +89,7 @@ void read_settings()
         file >> Thermostat.GetID() >> Generator.GetID()
         >> Thermostat.TempStep >> Thermostat.TempDisp
         >> id_DAQ >> measure_time_DAQ >> rate_DAQ >> averaging_DAQ >> ai_port >> ai_port_pulse >> pfi_ttl_port
-        >> gate_DAQ >> FileSaveName >> index_mode >> aver_time >> index_range
+        >> gate_DAQ >> FileSaveName >> index_mode >> index_range
         >> Generator.period >> Generator.width >> Generator.amplitude >> Generator.bias
         >> Generator.is_active >> Generator.step_voltage >> Generator.begin_amplitude >> Generator.end_amplitude;
     else

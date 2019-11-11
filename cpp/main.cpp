@@ -458,31 +458,39 @@ UINT CALLBACK ReadITS(void*)
 {
     try{
     WaitForSingleObject(hDownloadEvent, INFINITE);
-    double dVoltMin = 0.0, dVoltMax = 0.0;
-    double dBeginVolt = Generator.begin_amplitude;
+    double dVoltBias = 0.0, dVoltAmp = 0.0;
+    double dBeginAmplitude = Generator.begin_amplitude;
     vector<double> Relaxation;
     bool endofits = false;
     /* В случае ITS режима, цикл ниже повторяется */
-    while(endofits == false && start == true && stability == true)
+    while(endofits == false && start == true)
     {
+        Relaxation.clear();
+        #ifndef TEST_MODE
         MyDAQMeasure(&Relaxation, averaging_DAQ, measure_time_DAQ*0.001, ai_port, TRUE);
+        #endif // TEST_MODE
+        /* Создаем релаксацию руками */
+        #ifdef TEST_MODE
+        for(double t = gate_DAQ*0.0000001; t < measure_time_DAQ*0.001; t += 1.0/rate_DAQ)
+            Relaxation.push_back(-0.025*exp(-t/((8.9737+Generator.begin_amplitude)*0.001) + 0.5755));
+        #endif // TEST_MODE
         /* Сохраняем релаксации, чтобы иметь возможность переключаться между ними */
         SavedRelaxations.push_back(Relaxation);
         index_relax = SavedRelaxations.size() - 1;
         /* Вычисляем истинные параметры заполняющего импульса */
-        MeasurePulse(NULL, &dVoltMin, &dVoltMax);
-        itsLowVoltages.push_back(dVoltMin);
-        itsUpVoltages.push_back(dVoltMax);
+        MeasurePulse(NULL, &dVoltBias, &dVoltAmp);
+        itsBiasVoltages.push_back(dVoltBias);
+        itsAmpVoltages.push_back(dVoltAmp);
         /* Подготавливаем следующее измерение */
-        Generator.begin_amplitude -= Generator.step_voltage;
+        Generator.begin_amplitude += Generator.step_voltage;
         if(Generator.begin_amplitude < Generator.end_amplitude)
         {
-            Generator.begin_amplitude = dBeginVolt;
+            Generator.begin_amplitude = dBeginAmplitude;
             endofits = true;
         }
         Generator.Apply();
         /* Сохраняем релаксацию в файл */
-        SaveRelaxSignal(::MeanTemp, &Relaxation, dVoltMin, dVoltMax);
+        SaveRelaxSignal(::MeanTemp, &Relaxation, dVoltBias, dVoltAmp);
         /* Отрисовываем график */
         PlotRelax();
     }

@@ -42,7 +42,12 @@ BOOL ArSettingsWnd_OnCommand(HWND hWnd, int id, HWND, UINT)
         case ID_BUTTON_APPLY:
             /* Настройки физических констант */
             //Применить настройки эффективной массы
-            ::dEfMass = ApplySettingEditBox(hWnd, ID_EDITCONTROL_EFFECTIVE_MASS, 3);
+            {
+                stringstream buff;
+                buff << setprecision(3) << scientific;
+                GetDlgItemTextMod(hWnd, ID_EDITCONTROL_EFFECTIVE_MASS, buff);
+                ::dEfMass = atof(buff.str().data());
+            }
             //Применить настройки фактора вырождения
             ::dFactorG = ApplySettingEditBox(hWnd, ID_EDITCONTROL_G, 0);
             /* Настройки поиска экстремума */

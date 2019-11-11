@@ -18,9 +18,9 @@ VOID PlotRelax()
         vData1.push_back(0.001*gate_DAQ + i*(1/rate_DAQ)*1000); /* ms */
     if(index_mode == DLTS && !xAxisDLTS.empty())
         rewrite(buffer) << xAxisDLTS[index_relax] << " K";
-    else if(index_mode == ITS && !itsLowVoltages.empty())
+    else if(index_mode == ITS && !itsBiasVoltages.empty())
         rewrite(buffer) << fixed << setprecision(2) << "T [K] = " << itsTemperature << endl
-                        << setprecision(3) << "Bias [V] = " << itsUpVoltages[index_relax] << endl << "Amp [V] =  " << itsLowVoltages[index_relax];
+                        << setprecision(3) << "Bias [V] = " << itsBiasVoltages[index_relax] << endl << "Amp [V] =  " << itsAmpVoltages[index_relax];
     gwin::gAdditionalInfo(hRelax, buffer.str());
     gwin::gData(hRelax, &vData1, &SavedRelaxations[index_relax]);
 }
@@ -101,7 +101,7 @@ VOID PlotDLTS()
             double a = 0.0, b = 0.0, Energy = 0.0, CrossSection = 0.0;
             GetParam(vData1, vData2, a, b);
             Energy = (-1)*b;
-            CrossSection = exp(-a)*pow(B, -1);
+            CrossSection = exp(a)*pow(B, -1);
             for(const auto &x: vData1)
                 vData3.push_back(a+b*x);
             gwin::gMulVector vMulData;

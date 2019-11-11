@@ -11,7 +11,7 @@
 using namespace std;
 
 /* Активация режима отладки */
-//#define TEST_MODE
+#define TEST_MODE
 
 /* Идентификаторы */
 #define WM_NEW_CORTIME              200 //Сообщение win_weight_func для обновления графика
@@ -35,12 +35,13 @@ using namespace std;
 #define MAX_TEMPERATURE             320 //Наибольшее устанавливаемое значение SetPoint и EndPoint
 #define MIN_TEMPERATURE             0   //Наименьшее устанавливаемое значение SetPoint и EndPoint
 #define MAX_POINT_TEMP_GRAPH        101 //Количество точек на графике температуры > TEMPERATURE_POINTS
-#define MAX_POINT_RELAX_GRAPH       100 //Количество точек на графике релаксации
 #define RANGE_SIZE                  4   //Число диапазонов напряжений для АЦП
 #define RANGE_HEATING_SIZE          4   //Число уровней нагрева ТЭН'а
 #define VOLTAGE_PRECISION           4   //Вольт
 #define THERMO_PRECISION            2   //Кельвин
 #define TIME_PRECISION              4   //Секунды
+#define AVERAGING_TIME              15  //Время, необходимое для получения среднего значения T и дисперсии.
+                                        //Должно быть меньше, чем MAX_POINT_TEMP_GRAPH*0.001*REFRESH_TIME_THERMOSTAT
 
 /* Физические константы */
 #define BOLTZMANN                   (8.6173303e-5)      //эВ/К
@@ -56,8 +57,8 @@ extern vector<double>           *yAxisDLTS;
 extern vector<double>           xAxisAr;
 extern vector<vector<double>>   yAxisAr;
 extern vector<double>           CorTime;
-extern vector<double>           itsUpVoltages;
-extern vector<double>           itsLowVoltages;  /* Хранит значения напряжений импульсов в режиме ITS */
+extern vector<double>           itsAmpVoltages;
+extern vector<double>           itsBiasVoltages;  /* Хранит значения напряжений импульсов в режиме ITS */
 
 extern vector<vector<double>> SavedRelaxations; //Хранит все сохраненные или загруженные релаксации
 extern size_t index_relax;  //Номер текущей релаксации для отображения
@@ -88,7 +89,6 @@ extern double dLeftBorderGold;
 extern double dRightBorderGold;
 
 extern double itsTemperature; /* Температура в режиме ITS */
-extern unsigned int aver_time;   //Число рассматриваемых точек для расчета дрейфа температуры dT
 extern unsigned int id_DAQ;
 extern int32 ai_port;
 extern int32 ai_port_pulse;

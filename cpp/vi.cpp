@@ -72,6 +72,8 @@ void VI::ReadDigit(int& digit)
 
 void GENERATOR::Apply()
 {
+    if(is_active == false)
+        return;
     static const double K = 2.3;
     stringstream Buff;
     rewrite(Buff) << ":OUTPUT" << channel << " OFF"; /* Channel out of range */

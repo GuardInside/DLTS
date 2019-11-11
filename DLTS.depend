@@ -1,17 +1,17 @@
 # depslib dependency file v1.0
-1573232645 source:c:\users\Виктор\documents\github\dlts\cpp\daq.cpp
+1573497588 source:c:\users\Виктор\documents\github\dlts\cpp\daq.cpp
 	"daq.h"
 	"variable.h"
 	"vi.h"
 
-1572513516 c:\users\Виктор\documents\github\dlts\headers\daq.h
+1573497520 c:\users\Виктор\documents\github\dlts\headers\daq.h
 	<windows.h>
 	<string>
 	<sstream>
 	<vector>
 	"NIDAQmx.h"
 
-1573457674 c:\users\Виктор\documents\github\dlts\headers\variable.h
+1573500187 c:\users\Виктор\documents\github\dlts\headers\variable.h
 	<string>
 	<vector>
 	<sstream>
@@ -21,7 +21,7 @@
 	"gwin.h"
 	"vi.h"
 
-1573379279 c:\users\Виктор\documents\github\dlts\headers\gwin.h
+1573379280 c:\users\Виктор\documents\github\dlts\headers\gwin.h
 	<windows.h>
 	<windowsx.h>
 	<string>
@@ -31,7 +31,7 @@
 	<iomanip>
 	<cmath>
 
-1573237725 c:\users\Виктор\documents\github\dlts\headers\vi.h
+1573468406 c:\users\Виктор\documents\github\dlts\headers\vi.h
 	<windows.h>
 	<visatype.h>
 	<visa.h>
@@ -42,7 +42,7 @@
 	<daq.h>
 	"resource.h"
 
-1573395797 c:\users\Виктор\documents\github\dlts\headers\facility.h
+1573497795 c:\users\Виктор\documents\github\dlts\headers\facility.h
 	<string>
 	<sstream>
 	<fstream>
@@ -58,7 +58,7 @@
 	"gwin.h"
 	"variable.h"
 
-1573382263 c:\users\Виктор\documents\github\dlts\headers\dlts_math.h
+1573382264 c:\users\Виктор\documents\github\dlts\headers\dlts_math.h
 	<fstream>
 	<cmath>
 	<vector>
@@ -103,7 +103,7 @@
 	<gsl/gsl_math.h>
 	<gsl/gsl_types.h>
 
-1573383077 c:\users\Виктор\documents\github\dlts\headers\interpolation.h
+1573383078 c:\users\Виктор\documents\github\dlts\headers\interpolation.h
 	<gsl/gsl_interp.h>
 	<vector>
 
@@ -111,9 +111,9 @@
 	<stdlib.h>
 	<gsl/gsl_types.h>
 
-1573456644 c:\users\Виктор\documents\github\dlts\headers\resource.h
+1573491805 c:\users\Виктор\documents\github\dlts\headers\resource.h
 
-1573404192 source:c:\users\Виктор\documents\github\dlts\cpp\facility\load_save.cpp
+1573498985 source:c:\users\Виктор\documents\github\dlts\cpp\facility\load_save.cpp
 	<sstream>
 	<string>
 	<exception>
@@ -122,11 +122,11 @@
 	"gwin.h"
 	"graph.h"
 
-1573456121 c:\users\Виктор\documents\github\dlts\headers\graph.h
+1573456122 c:\users\Виктор\documents\github\dlts\headers\graph.h
 	<windows.h>
 	"gwin.h"
 
-1573458889 source:c:\users\Виктор\documents\github\dlts\cpp\facility\plot.cpp
+1573499796 source:c:\users\Виктор\documents\github\dlts\cpp\facility\plot.cpp
 	"graph.h"
 	"variable.h"
 	"gwin.h"
@@ -134,18 +134,18 @@
 	"facility.h"
 	"interpolation.h"
 
-1573457896 source:c:\users\Виктор\documents\github\dlts\cpp\facility\settings.cpp
+1573492682 source:c:\users\Виктор\documents\github\dlts\cpp\facility\settings.cpp
 	<facility.h>
 
-1573397724 source:c:\users\Виктор\documents\github\dlts\cpp\facility\utility.cpp
+1573497834 source:c:\users\Виктор\documents\github\dlts\cpp\facility\utility.cpp
 	<facility.h>
 	"graph.h"
 
-1572981769 source:c:\users\Виктор\documents\github\dlts\cpp\facility\winhelp.cpp
+1573459478 source:c:\users\Виктор\documents\github\dlts\cpp\facility\winhelp.cpp
 	"facility.h"
 	"winfunc.h"
 
-1573456223 c:\users\Виктор\documents\github\dlts\headers\winfunc.h
+1573456224 c:\users\Виктор\documents\github\dlts\headers\winfunc.h
 	<string>
 	<sstream>
 	<windows.h>
@@ -161,52 +161,52 @@
 	<dlts_math.h>
 	"gwin.h"
 
-1573375413 source:c:\users\Виктор\documents\github\dlts\cpp\math\weighfunc.cpp
+1573375414 source:c:\users\Виктор\documents\github\dlts\cpp\math\weighfunc.cpp
 	<dlts_math.h>
 	"gwin.h"
 
-1573457769 source:c:\users\Виктор\documents\github\dlts\cpp\variable.cpp
+1573497364 source:c:\users\Виктор\documents\github\dlts\cpp\variable.cpp
 	"variable.h"
 
-1573237943 source:c:\users\Виктор\documents\github\dlts\cpp\vi.cpp
+1573492076 source:c:\users\Виктор\documents\github\dlts\cpp\vi.cpp
 	"vi.h"
 	<cmath>
 
-1572513509 source:c:\users\Виктор\documents\github\dlts\cpp\windows\adv_setting.cpp
+1572513510 source:c:\users\Виктор\documents\github\dlts\cpp\windows\adv_setting.cpp
 	<winfunc.h>
 
-1573456664 source:c:\users\Виктор\documents\github\dlts\cpp\windows\cor_setting.cpp
+1573456666 source:c:\users\Виктор\documents\github\dlts\cpp\windows\cor_setting.cpp
 	"winfunc.h"
 	"variable.h"
 
-1573233137 source:c:\users\Виктор\documents\github\dlts\cpp\windows\general_setting.cpp
+1573497155 source:c:\users\Виктор\documents\github\dlts\cpp\windows\general_setting.cpp
 	<winfunc.h>
 
-1572513509 source:c:\users\Виктор\documents\github\dlts\cpp\windows\pid_setting.cpp
+1572513510 source:c:\users\Виктор\documents\github\dlts\cpp\windows\pid_setting.cpp
 	<winfunc.h>
 
-1573328892 source:c:\users\Виктор\documents\github\dlts\cpp\windows\start_setting.cpp
+1573328894 source:c:\users\Виктор\documents\github\dlts\cpp\windows\start_setting.cpp
 	"winfunc.h"
 
-1573456644 source:c:\users\Виктор\documents\github\dlts\resource\resource.rc
+1573491805 source:c:\users\Виктор\documents\github\dlts\resource\resource.rc
 	<windows.h>
 	<commctrl.h>
 	<richedit.h>
 	"..\headers\resource.h"
 
-1573381074 source:c:\users\Виктор\documents\github\dlts\cpp\gwin.cpp
+1573381076 source:c:\users\Виктор\documents\github\dlts\cpp\gwin.cpp
 	<algorithm>
 	<cctype>
 	"gwin.h"
 
-1573415893 source:c:\users\Виктор\documents\github\dlts\cpp\math\commath.cpp
+1573492647 source:c:\users\Виктор\documents\github\dlts\cpp\math\commath.cpp
 	<dlts_math.h>
 	"interpolation.h"
 
-1573381319 source:c:\users\Виктор\documents\github\dlts\cpp\math\interpolation.cpp
+1573381320 source:c:\users\Виктор\documents\github\dlts\cpp\math\interpolation.cpp
 	<interpolation.h>
 
-1573459006 source:c:\users\Виктор\documents\github\dlts\cpp\main.cpp
+1573498614 source:c:\users\Виктор\documents\github\dlts\cpp\main.cpp
 	<windows.h>
 	<windowsx.h>
 	<commctrl.h>
@@ -235,6 +235,6 @@
 	<errno.h>
 	<gsl/gsl_types.h>
 
-1573458600 source:c:\users\Виктор\documents\github\dlts\cpp\windows\arrhenius_setting.cpp
+1573499452 source:c:\users\Виктор\documents\github\dlts\cpp\windows\arrhenius_setting.cpp
 	"winfunc.h"
 
