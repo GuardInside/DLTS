@@ -28,6 +28,9 @@ BOOL CALLBACK asdlg_proc(HWND hAdvSetDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
                 //Вывести текущие настройки пора аналогового входа импульсов
                 rewrite(buff) << ai_port_pulse;
                 SetDlgItemText(hAdvSetDlg, ID_EDITCONTROL_AI_PULSE, buff.str().data());
+                //Вывести текущие настройки канала выхода генератора
+                rewrite(buff) << Generator.channel;
+                SetDlgItemText(hAdvSetDlg, ID_EDITCONTROL_OUT_CHANNEL, buff.str().data());
             }
             return TRUE;
             case WM_COMMAND:
@@ -38,6 +41,11 @@ BOOL CALLBACK asdlg_proc(HWND hAdvSetDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
                         EndDialog(hAdvSetDlg, 0);
                     break;
                     case ID_BUTTON_APPLY_SETTINGS:
+                        if(start)
+                        {
+                            MessageBox(hAdvSetDlg, "Stop the experiment and try again.", "Warning", MB_ICONWARNING);
+                            return TRUE;
+                        }
                         //Применить настройки DAQ
                         id_DAQ = ApplySettingEditBox(hAdvSetDlg, ID_EDITCONTROL_DAQ);
                         //Применить настройки LakeShore
@@ -50,6 +58,8 @@ BOOL CALLBACK asdlg_proc(HWND hAdvSetDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
                         pfi_ttl_port = ApplySettingEditBox(hAdvSetDlg, ID_EDITCONTROL_TTL);
                         //Применить настройки пора аналогового входа
                         ai_port_pulse = ApplySettingEditBox(hAdvSetDlg, ID_EDITCONTROL_AI_PULSE);
+                        //Вывести текущие настройки канала выхода генератора
+                        Generator.channel = ApplySettingEditBox(hAdvSetDlg, ID_EDITCONTROL_OUT_CHANNEL);
                         //Применить настройки к физическим устройствам и сохранить файл настроек
                         ApplySettings();
                         write_settings();

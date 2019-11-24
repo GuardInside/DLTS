@@ -17,6 +17,7 @@ namespace gwin{
 typedef std::vector<double> gVector;
 typedef std::vector<std::vector<double>> gMulVector;
 typedef std::vector<std::string> gInfoVector;
+struct gPoint{double x; double y;};
 
 HWND gCreateWindow(HINSTANCE hInst, HWND hWndParent, DWORD style);
 BOOL gClose(HWND hWnd);
@@ -31,6 +32,9 @@ BOOL gPrecision(HWND hWnd, INT iPrec1, INT iPrec2);
 BOOL gBand(HWND hWnd, double dMinX, double dMaxX, double dMinY, double dMaxY);
 BOOL gDefaultPlot(HWND hWnd, std::string message);
 BOOL gCross(HWND hWnd, const gVector *vData1, const gVector *vData2);
+
+BOOL gLpToGp(HWND hWnd, gPoint *pt);
+BOOL gGpToLp(HWND hWnd, gPoint *pt);
 
 }
 #endif // GWIN_H

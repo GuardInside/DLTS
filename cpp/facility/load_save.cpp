@@ -6,6 +6,7 @@
 #include "variable.h"
 #include "gwin.h"
 #include "graph.h"
+#include "ini.h"
 
 using namespace std;
 
@@ -29,6 +30,8 @@ VOID DownloadWindow()
         file.Flags = OFN_HIDEREADONLY+OFN_NOCHANGEDIR;
     if(!GetOpenFileName(&file))
         return;
+    /* Включить автопоиск минимума */
+    auto_peak_search = true;
     /* Установка новго имени файла для сохранений */
     FileSaveName.clear();
     for(WORD i = file.nFileOffset; i < (file.nFileExtension-1); i++)
@@ -41,7 +44,7 @@ UINT CALLBACK LoadFile(PVOID)
 {
     /* Собираем путь к файлу */
     string ext = GetExtensionFile(LoadFileName);
-    string strName = Save + FileSaveName + ext;
+    string strName = "save/" + FileSaveName + ext;
     ifstream file;
     file.open(strName);
     if(!file.is_open())

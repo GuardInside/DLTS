@@ -90,12 +90,12 @@ VOID CorWindow_OnCommand(HWND hWnd, INT id, HWND, UINT)
         case ID_BUTTON_PUSH_CORRELATION:
             {
                 double time = ApplySettingEditBox(hWnd, ID_EDITCONTROL_TIME_CORRELATION, 2);
-                if(time <= 0.0)
+                if(time < 0.00)
                 {
                     MessageBox(hWnd, "The value must be positive and greater than zero.", "Information", MB_ICONINFORMATION);
                     break;
                 }
-                if(time*correlation_c > measure_time_DAQ-correlation_width/1000.0) //Все в мс
+                if(time*correlation_c > measure_time_DAQ) //Все в мс
                 {
                     MessageBox(hWnd, "The value \"t_1*C\" must be less than \"T_measure-width\".", "Information", MB_ICONINFORMATION);
                     break;

@@ -96,10 +96,15 @@ BOOL SettingsWindow_OnCommand(HWND hwnd, int ID, HWND, UINT codeNotify)
                 SetDlgItemText(hwnd, ID_EDITCONTROL_END_AMPLITUDE, buff.str().data());
                 rewrite(buff) << setprecision(2);
                 //Вывести текущие настройки режима генератора (SULA\AGILENT)
-                //SendMessage(GetDlgItem(hwnd, ID_CHECKBOX_USE_GENERATOR), BM_SETCHECK, Generator.is_active, 0);
-                //SendMessage(GetDlgItem(hwnd, ID_CHECKBOX_USE_GENERATOR), BM_GETCHECK, 0, 0);
                 CheckDlgButton(hwnd, ID_CHECKBOX_USE_GENERATOR, GenAgilent_is_active);
                 PostMessage(hwnd, WM_COMMAND, ID_CHECKBOX_USE_GENERATOR, 0);
+                //Вывести текущие настройки эффективной массы
+                rewrite(buff) << setprecision(3) << scientific << ::dEfMass;
+                SetDlgItemText(hwnd, ID_EDITCONTROL_EFFECTIVE_MASS, buff.str().data());
+                //Вывести текущие настройки фактора вырождения
+                rewrite(buff) << setprecision(0) << fixed;
+                rewrite(buff) << ::dFactorG;
+                SetDlgItemText(hwnd, ID_EDITCONTROL_G, buff.str().data());
             }
         return TRUE;
         /* Показать окно с сигналом, идущим на образец */
@@ -157,14 +162,13 @@ BOOL SettingsWindow_OnCommand(HWND hwnd, int ID, HWND, UINT codeNotify)
             }
             return TRUE;
         case ID_BUTTON_APPLY_SETTINGS:
+            if(start)
+            {
+                MessageBox(hwnd, "Stop the experiment and try again.", "Warning", MB_ICONWARNING);
+                return TRUE;
+            }
             {
                 bool alright = true;
-                /* Проверка диапазонов введенных значений */
-                /*if(ApplySettingEditBox(hwnd, ID_EDITCONTROL_GATE, 2) == 0.0)
-                {
-                    MessageBox(hwnd, "Gate should be more than 0.0", "Warning", MB_ICONWARNING);
-                    break;
-                }*/
                 /* Общие настройки */
                 //Применить настройки имени файла сохранений
                 FileSaveName = ApplySettingEditBoxString(hwnd, ID_EDITCONTROL_FILE_SAVE_NAME);
@@ -204,11 +208,20 @@ BOOL SettingsWindow_OnCommand(HWND hwnd, int ID, HWND, UINT codeNotify)
                     Generator.step_voltage = ApplySettingEditBox(hwnd, ID_EDITCONTROL_STEP_AMPLITUDE, 3);
                     //Применить настройки начала ITS в вольтах
                     Generator.begin_amplitude = ApplySettingEditBox(hwnd, ID_EDITCONTROL_BEGIN_AMPLITUDE, 3);
-                    if(Generator.begin_amplitude < MIN_VOLTAGE_PULSE || Generator.begin_amplitude > MAX_VOLTAGE_PULSE) alright = false;
+                    //if(Generator.begin_amplitude < MIN_VOLTAGE_PULSE || Generator.begin_amplitude > MAX_VOLTAGE_PULSE) alright = false;
                     //Применить настройки конца ITS в вольтах
                     Generator.end_amplitude = ApplySettingEditBox(hwnd, ID_EDITCONTROL_END_AMPLITUDE, 3);
-                    if(Generator.end_amplitude > MAX_VOLTAGE_PULSE || Generator.end_amplitude < MIN_VOLTAGE_PULSE) alright = false;
+                    //if(Generator.end_amplitude > MAX_VOLTAGE_PULSE || Generator.end_amplitude < MIN_VOLTAGE_PULSE) alright = false;
                 }
+                //Применить настройки эффективной массы
+                {
+                    stringstream buff;
+                    buff << setprecision(3) << scientific;
+                    GetDlgItemTextMod(hwnd, ID_EDITCONTROL_EFFECTIVE_MASS, buff);
+                    ::dEfMass = atof(buff.str().data());
+                }
+                //Применить настройки фактора вырождения
+                ::dFactorG = ApplySettingEditBox(hwnd, ID_EDITCONTROL_G, 0);
                 //Применить настройки к физическим устройствам и сохранить файл настроек при условии их корректности
                 if(alright == true)
                 {
@@ -216,6 +229,7 @@ BOOL SettingsWindow_OnCommand(HWND hwnd, int ID, HWND, UINT codeNotify)
                     ::index_mode = index_mode;
                     ApplySettings();
                     write_settings();
+                    PlotDLTS(); /* При обновлении модели эксперимента это необходимо */
                 }
                 else
                     MessageBox(hwnd, "Incorrect settings.\nYou should be more careful.", "Warning", MB_ICONWARNING);

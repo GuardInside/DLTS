@@ -32,12 +32,13 @@ void RefreshDLTS()
         SendMessage(hProgress, PBM_SETPOS, progress, 0);
     }
     SendMessage(hProgress, PBM_SETPOS, 0, 0);
+    auto_peak_search = true;
     PlotDLTS();
 }
 
 void SaveRelaxSignal(double MeanTemp, const vector<double> *vData, double dBias, double dAmp)
 {
-    string SavePath = Save + FileSaveName;
+    string SavePath = "save/" + FileSaveName;
     if(index_mode == DLTS) SavePath += ".dlts";
     else if(index_mode == ITS) SavePath += ".its";
     ofstream file;

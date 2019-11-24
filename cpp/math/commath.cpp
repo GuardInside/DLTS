@@ -99,5 +99,5 @@ double AverSqFluct(const vector<double> &temp)
     }
     result /= i;
     result = result - pow(m, 2.0);
-    return pow(result, 0.5);
+    return pow(result, 0.5) > pow(10,-THERMO_PRECISION) ? pow(result, 0.5) : 0.00;
 }

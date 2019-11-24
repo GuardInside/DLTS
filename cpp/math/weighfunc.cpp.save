@@ -1,11 +1,18 @@
 #include <dlts_math.h>
 #include "gwin.h"
+#include "ini.h"
+
+void AddPoint_with_interp(const vector<double> *vRelaxation, const double temp);
+void AddPoint_with_approx(const vector<double> *vRelaxation, const double temp);
 
 double exp_w(double x, double t1)
 {
     double t2 = t1*correlation_c;           //начало второго испульса
-    if(x >= t1 && x <= t2)
+    double t_0 = (t2-t1)/2+t1;
+    if(x >= t1 && x <= t_0)
         return exp(-(x-t1)/(0.4*(t2-t1)));
+    if(x > t_0 && x <= t2)
+        return -1*exp(-(x-t_0)/(0.4*(t2-t1)));
     return 0.0;
 }
 
@@ -46,6 +53,84 @@ double test_func(double x, double t1)
 
 void AddPointsDLTS(const vector<double> *vRelaxation, const double temp)
 {
+    bool UseFitting = 0;
+    ini::Settings AnalysisFile{"analysis.ini"};
+    AnalysisFile.ReadBool("Fitting", "use_fitting", &UseFitting);
+    if(UseFitting == true)
+        AddPoint_with_approx(vRelaxation, temp);
+    else AddPoint_with_interp(vRelaxation, temp);
+}
+
+void AddPoint_with_approx(const vector<double> *vRelaxation, const double temp)
+{
+    /* Проверка на существование точки и выбор смещение для вставки новой */
+    int offset = 0;
+    for(auto it = xAxisDLTS.begin(); it != xAxisDLTS.end(); it++)
+    {
+        if(temp > *it) offset++;
+        else if(temp == *it)
+            return;
+    }
+    xAxisDLTS.insert(xAxisDLTS.begin() + offset, temp);
+    /* Определяем весовую функцию */
+    double (*w) (double, double) = NULL;
+    switch(CorType)
+    {
+        case DoubleBoxCar:  w = double_boxcar;  break;
+        case LockIn:        w = lock_in;        break;
+        case ExpW:          w = exp_w;          break;
+        case SinW:          w = sin_w;          break;
+    }
+    /* Вводим обозначения */
+    size_t n = 2*vRelaxation->size();                   //Число узлов инегрироания
+    double T_g = (0.000001*gate_DAQ);                   //Запаздывание начала отсчета
+    double dt = pow(rate_DAQ, -1);                      //Шаг дискретизации
+    double a = T_g, b = T_g + (n-1)*dt;                 //Нижний и верхний пределы
+    double h = (b-a)/(n-1);                             //Шаг сетки
+    double I = 0.0;                                     //Значение интеграла
+    /* Восстанавливаем ось времени */
+    vector<double> TimeAxis;
+    for(size_t i = 0; i < vRelaxation->size(); i++)
+        TimeAxis.push_back(i*dt + T_g);
+    /* Аппроксимируем кривую */
+    int max_iter = 0;
+    double abs_error = 1e-6;
+    double rel_error = 1e-6;
+    double sigma = 1.0;
+    ini::Settings AnalysisFile{"analysis.ini"};
+    AnalysisFile.ReadDouble("Fitting", "abs_error", &abs_error);
+    AnalysisFile.ReadDouble("Fitting", "rel_error", &rel_error);
+    AnalysisFile.ReadDouble("Fitting", "sigma", &sigma);
+    AnalysisFile.ReadInt("Fitting", "max_it", &max_iter);
+    vector<double> vSigma(TimeAxis.size(), sigma);
+    double A = 0.0, dA = 0.0, B = 0.0, dB = 0.0, tau = 0.0, dtau = 0.0, ReducedChiSqr = 0.0;
+    string strStatus;
+    size_t iter = 0;
+    get_exponent_fitt(&TimeAxis, vRelaxation, &vSigma,
+                      &A, &tau, &B, &dA, &dB, &dtau, &ReducedChiSqr, &iter, max_iter, abs_error, rel_error, &strStatus);
+    //if(status)
+        //MessageBox(HWND_DESKTOP, strStatus.data(), "Approximation", MB_ICONINFORMATION);
+    /* Конец аппроксимации */
+    try{
+    for(size_t c = 0; c < CorTime.size(); c++)          //Пробегаемся по всем корреляторам
+    {
+        double t1 = 0.001*CorTime[c];
+        for(double x_i = a; x_i <= a+h*(n-1); x_i += h) //Метод трапеций
+            if(w(x_i,t1) != 0.0)
+            {
+                double f_i = A * exp(- x_i / tau) + B;
+                double f_i_h = A * exp(-(x_i + h) / tau) + B;
+                I += h*(f_i*w(x_i,t1) + f_i_h*w(x_i+h, t1))/2;
+            }
+        /* Добавляем по точке на каждой из осей */
+        yAxisDLTS[c].insert(yAxisDLTS[c].begin() + offset, I);
+    }
+    }catch(std::exception &e){ MessageBox(0, e.what(), "", 0); }
+}
+
+void AddPoint_with_interp(const vector<double> *vRelaxation, const double temp)
+{
+    /* Проверка на существование точки и выбор смещение для вставки новой */
     int offset = 0;
     for(auto it = xAxisDLTS.begin(); it != xAxisDLTS.end(); it++)
     {

@@ -8,6 +8,12 @@
 #include "variable.h"
 #include "interpolation.h"
 
+/* Экспоненцианальная аппроксимация */
+int get_exponent_fitt(const vector<double> *x, const vector<double> *y, const vector<double> *sigma,
+                      double *A, double *tau, double *b, double *dA, double *dtau, double *db, double *ReducedChiSqr,
+                      size_t *iter, size_t max_iter,
+                      double epsabs, double epsrel,
+                      string *strStatusMSG);
 /* Поиск минимума */
 double GoldSerch(double a, double b, double eps, interp &Fun);
 /* Округлить до n значащих цифр после запятой */

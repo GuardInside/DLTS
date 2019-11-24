@@ -34,7 +34,7 @@ using namespace std;
 #define MIN_VOLTAGE_PULSE           -MAX_VOLTAGE_PULSE
 #define MAX_TEMPERATURE             320 //Наибольшее устанавливаемое значение SetPoint и EndPoint
 #define MIN_TEMPERATURE             0   //Наименьшее устанавливаемое значение SetPoint и EndPoint
-#define MAX_POINT_TEMP_GRAPH        101 //Количество точек на графике температуры > TEMPERATURE_POINTS
+#define MAX_POINT_TEMP_GRAPH        100 //Количество точек на графике температуры
 #define RANGE_SIZE                  4   //Число диапазонов напряжений для АЦП
 #define RANGE_HEATING_SIZE          4   //Число уровней нагрева ТЭН'а
 #define VOLTAGE_PRECISION           4   //Вольт
@@ -44,10 +44,10 @@ using namespace std;
                                         //Должно быть меньше, чем MAX_POINT_TEMP_GRAPH*0.001*REFRESH_TIME_THERMOSTAT
 
 /* Физические константы */
-#define BOLTZMANN                   (8.6173303e-5)      //эВ/К
-#define PLANCKS_CONSTANT_H          (4.135667662e-15)   //эВ*с
+#define BOLTZMANN                   (1.380649e-23)      //Дж/К
+#define PLANCKS_CONSTANT_H          (6.62607015e-34)    //Дж*с
 #define G_CONSTANT                  1                   //Фактор вырождения g = 2*s + 1 [Arb.]. По умолчанию.
-#define MASS_ELECTRON               (9.10938188e-28)    //[г] По умолчанию.
+#define MASS_ELECTRON               (9.10938188e-31)    //[кг] По умолчанию.
 #define PI                          3.1415926535897932384626433832795
 
 enum CORTYPE{DoubleBoxCar, LockIn, ExpW, SinW};
@@ -58,7 +58,7 @@ extern vector<double>           xAxisAr;
 extern vector<vector<double>>   yAxisAr;
 extern vector<double>           CorTime;
 extern vector<double>           itsAmpVoltages;
-extern vector<double>           itsLowVoltages;  /* Хранит значения напряжений импульсов в режиме ITS */
+extern vector<double>           itsBiasVoltages;  /* Хранит значения напряжений импульсов в режиме ITS */
 
 extern vector<vector<double>> SavedRelaxations; //Хранит все сохраненные или загруженные релаксации
 extern size_t index_relax;  //Номер текущей релаксации для отображения
@@ -67,11 +67,6 @@ extern size_t index_mode;   //Режим работы программы DLTS или ITS
 extern size_t index_plot_DLTS; //Отображать DLTS или гр. Аррениуса
 extern int32 offset_ai_port;//Смещение номера порта ai_port при отображении в реальном времени
 
-/* Имена файлов с соответствующими настройками */
-extern const string SettingsFile;
-extern const string SettingsCorFile;
-extern const string SettingsPIDFile;
-extern const string SettingsArFile;
 /* Имя папки с сохраненными релаксациями */
 extern const string Save;
 /* Диапазоны измерений напряжения DAQ */
@@ -85,25 +80,24 @@ extern const string names_wFunc[];
 
 extern double dEfMass;
 extern double dFactorG;
-extern double dLeftBorderGold;
-extern double dRightBorderGold;
 
 extern double itsTemperature; /* Температура в режиме ITS */
 extern unsigned int id_DAQ;
 extern int32 ai_port;
 extern int32 ai_port_pulse;
 extern int32 pfi_ttl_port;
-//extern uInt32 samples_DAQ;      //сколько сэмплов на один отсчет
 extern uInt32 measure_time_DAQ; //Время измерения
 extern uInt32 averaging_DAQ;    //Число отсчетов для получения одного измерения
 extern float64 rate_DAQ;        //отсчетов в секунду
 extern float64 gate_DAQ;
 /* Флаги */
-extern bool start;            //Нажата кнопка старт
-extern bool stability;        //Температура стабилизировалась вблизи сетпоинта
-extern bool bfDAQ0k;          //DAQ работает в штатном режиме
-extern bool fbThermostat0k;   //Термостат работает в штатном режиме
-extern bool bfNewfile;        //Создавать ли новый файл при старте эксперимента?
+extern bool start;              //Нажата кнопка старт
+extern bool stability;          //Температура стабилизировалась вблизи сетпоинта
+extern bool bfDAQ0k;            //DAQ работает в штатном режиме
+extern bool fbThermostat0k;     //Термостат работает в штатном режиме
+extern bool bfNewfile;          //Создавать ли новый файл при старте эксперимента?
+extern bool fix_temp;           //Фиксация температуры
+extern bool auto_peak_search;   //Автоопределение пика методом золотого сечения
 /* Параметры коррелятора */
 extern unsigned int CorType;
 extern double correlation_c;

@@ -1,17 +1,17 @@
 # depslib dependency file v1.0
-1573497588 source:c:\users\Виктор\documents\github\dlts\cpp\daq.cpp
+1574076132 source:c:\users\Виктор\documents\github\dlts\cpp\daq.cpp
 	"daq.h"
 	"variable.h"
 	"vi.h"
 
-1573497520 c:\users\Виктор\documents\github\dlts\headers\daq.h
+1573497522 c:\users\Виктор\documents\github\dlts\headers\daq.h
 	<windows.h>
 	<string>
 	<sstream>
 	<vector>
 	"NIDAQmx.h"
 
-1573500187 c:\users\Виктор\documents\github\dlts\headers\variable.h
+1574615345 c:\users\Виктор\documents\github\dlts\headers\variable.h
 	<string>
 	<vector>
 	<sstream>
@@ -21,7 +21,7 @@
 	"gwin.h"
 	"vi.h"
 
-1573379280 c:\users\Виктор\documents\github\dlts\headers\gwin.h
+1574530259 c:\users\Виктор\documents\github\dlts\headers\gwin.h
 	<windows.h>
 	<windowsx.h>
 	<string>
@@ -42,10 +42,9 @@
 	<daq.h>
 	"resource.h"
 
-1573497795 c:\users\Виктор\documents\github\dlts\headers\facility.h
+1574603113 c:\users\Виктор\documents\github\dlts\headers\facility.h
 	<string>
 	<sstream>
-	<fstream>
 	<cmath>
 	<windows.h>
 	<commctrl.h>
@@ -58,7 +57,7 @@
 	"gwin.h"
 	"variable.h"
 
-1573382264 c:\users\Виктор\documents\github\dlts\headers\dlts_math.h
+1574195872 c:\users\Виктор\documents\github\dlts\headers\dlts_math.h
 	<fstream>
 	<cmath>
 	<vector>
@@ -111,9 +110,9 @@
 	<stdlib.h>
 	<gsl/gsl_types.h>
 
-1573491805 c:\users\Виктор\documents\github\dlts\headers\resource.h
+1574617834 c:\users\Виктор\documents\github\dlts\headers\resource.h
 
-1573498985 source:c:\users\Виктор\documents\github\dlts\cpp\facility\load_save.cpp
+1574615374 source:c:\users\Виктор\documents\github\dlts\cpp\facility\load_save.cpp
 	<sstream>
 	<string>
 	<exception>
@@ -121,23 +120,26 @@
 	"variable.h"
 	"gwin.h"
 	"graph.h"
+	"ini.h"
 
 1573456122 c:\users\Виктор\documents\github\dlts\headers\graph.h
 	<windows.h>
 	"gwin.h"
 
-1573499796 source:c:\users\Виктор\documents\github\dlts\cpp\facility\plot.cpp
+1574614405 source:c:\users\Виктор\documents\github\dlts\cpp\facility\plot.cpp
 	"graph.h"
 	"variable.h"
 	"gwin.h"
 	"dlts_math.h"
 	"facility.h"
 	"interpolation.h"
+	"ini.h"
 
-1573492682 source:c:\users\Виктор\documents\github\dlts\cpp\facility\settings.cpp
+1574614243 source:c:\users\Виктор\documents\github\dlts\cpp\facility\settings.cpp
 	<facility.h>
+	"ini.h"
 
-1573497834 source:c:\users\Виктор\documents\github\dlts\cpp\facility\utility.cpp
+1574615579 source:c:\users\Виктор\documents\github\dlts\cpp\facility\utility.cpp
 	<facility.h>
 	"graph.h"
 
@@ -145,7 +147,7 @@
 	"facility.h"
 	"winfunc.h"
 
-1573456224 c:\users\Виктор\documents\github\dlts\headers\winfunc.h
+1574606929 c:\users\Виктор\documents\github\dlts\headers\winfunc.h
 	<string>
 	<sstream>
 	<windows.h>
@@ -161,52 +163,54 @@
 	<dlts_math.h>
 	"gwin.h"
 
-1573375414 source:c:\users\Виктор\documents\github\dlts\cpp\math\weighfunc.cpp
+1574618660 source:c:\users\Виктор\documents\github\dlts\cpp\math\weighfunc.cpp
 	<dlts_math.h>
 	"gwin.h"
+	"ini.h"
 
-1573497364 source:c:\users\Виктор\documents\github\dlts\cpp\variable.cpp
+1574614900 source:c:\users\Виктор\documents\github\dlts\cpp\variable.cpp
 	"variable.h"
 
-1573492076 source:c:\users\Виктор\documents\github\dlts\cpp\vi.cpp
+1574075976 source:c:\users\Виктор\documents\github\dlts\cpp\vi.cpp
 	"vi.h"
 	<cmath>
 
-1572513510 source:c:\users\Виктор\documents\github\dlts\cpp\windows\adv_setting.cpp
+1574078204 source:c:\users\Виктор\documents\github\dlts\cpp\windows\adv_setting.cpp
 	<winfunc.h>
 
-1573456666 source:c:\users\Виктор\documents\github\dlts\cpp\windows\cor_setting.cpp
+1574078182 source:c:\users\Виктор\documents\github\dlts\cpp\windows\cor_setting.cpp
 	"winfunc.h"
 	"variable.h"
 
-1573497155 source:c:\users\Виктор\documents\github\dlts\cpp\windows\general_setting.cpp
+1574547064 source:c:\users\Виктор\documents\github\dlts\cpp\windows\general_setting.cpp
 	<winfunc.h>
 
 1572513510 source:c:\users\Виктор\documents\github\dlts\cpp\windows\pid_setting.cpp
 	<winfunc.h>
 
-1573328894 source:c:\users\Виктор\documents\github\dlts\cpp\windows\start_setting.cpp
+1574546311 source:c:\users\Виктор\documents\github\dlts\cpp\windows\start_setting.cpp
 	"winfunc.h"
 
-1573491805 source:c:\users\Виктор\documents\github\dlts\resource\resource.rc
+1574617834 source:c:\users\Виктор\documents\github\dlts\resource\resource.rc
 	<windows.h>
 	<commctrl.h>
 	<richedit.h>
 	"..\headers\resource.h"
 
-1573381076 source:c:\users\Виктор\documents\github\dlts\cpp\gwin.cpp
+1574617727 source:c:\users\Виктор\documents\github\dlts\cpp\gwin.cpp
 	<algorithm>
 	<cctype>
+	<cmath>
 	"gwin.h"
 
-1573492647 source:c:\users\Виктор\documents\github\dlts\cpp\math\commath.cpp
+1574070872 source:c:\users\Виктор\documents\github\dlts\cpp\math\commath.cpp
 	<dlts_math.h>
 	"interpolation.h"
 
-1573381320 source:c:\users\Виктор\documents\github\dlts\cpp\math\interpolation.cpp
+1574170352 source:c:\users\Виктор\documents\github\dlts\cpp\math\interpolation.cpp
 	<interpolation.h>
 
-1573498614 source:c:\users\Виктор\documents\github\dlts\cpp\main.cpp
+1574611358 source:c:\users\Виктор\documents\github\dlts\cpp\main.cpp
 	<windows.h>
 	<windowsx.h>
 	<commctrl.h>
@@ -235,6 +239,375 @@
 	<errno.h>
 	<gsl/gsl_types.h>
 
-1573499452 source:c:\users\Виктор\documents\github\dlts\cpp\windows\arrhenius_setting.cpp
+1573499454 source:c:\users\Виктор\documents\github\dlts\cpp\windows\arrhenius_setting.cpp
 	"winfunc.h"
+
+1574232744 source:c:\users\Виктор\documents\github\dlts\cpp\math\expapprox.cpp
+	"dlts_math.h"
+	<algorithm>
+	<vector>
+	<string>
+	<gsl/gsl_multifit_nlin.h>
+	<gsl/gsl_vector.h>
+	<gsl/gsl_blas.h>
+
+1151999838 c:\users\Виктор\documents\github\dlts\gsl\include\gsl\gsl_multifit_nlin.h
+	<stdlib.h>
+	<gsl/gsl_types.h>
+	<gsl/gsl_math.h>
+	<gsl/gsl_vector.h>
+	<gsl/gsl_matrix.h>
+
+1059124702 c:\users\Виктор\documents\github\dlts\gsl\include\gsl\gsl_vector.h
+	<gsl/gsl_vector_complex_long_double.h>
+	<gsl/gsl_vector_complex_double.h>
+	<gsl/gsl_vector_complex_float.h>
+	<gsl/gsl_vector_long_double.h>
+	<gsl/gsl_vector_double.h>
+	<gsl/gsl_vector_float.h>
+	<gsl/gsl_vector_ulong.h>
+	<gsl/gsl_vector_long.h>
+	<gsl/gsl_vector_uint.h>
+	<gsl/gsl_vector_int.h>
+	<gsl/gsl_vector_ushort.h>
+	<gsl/gsl_vector_short.h>
+	<gsl/gsl_vector_uchar.h>
+	<gsl/gsl_vector_char.h>
+
+1152001208 c:\users\Виктор\documents\github\dlts\gsl\include\gsl\gsl_vector_complex_long_double.h
+	<stdlib.h>
+	<gsl/gsl_types.h>
+	<gsl/gsl_errno.h>
+	<gsl/gsl_complex.h>
+	<gsl/gsl_check_range.h>
+	<gsl/gsl_vector_long_double.h>
+	<gsl/gsl_vector_complex.h>
+	<gsl/gsl_block_complex_long_double.h>
+
+1119770734 c:\users\Виктор\documents\github\dlts\gsl\include\gsl\gsl_complex.h
+
+1119770734 c:\users\Виктор\documents\github\dlts\gsl\include\gsl\gsl_check_range.h
+	<stdlib.h>
+	<gsl/gsl_types.h>
+
+1152001386 c:\users\Виктор\documents\github\dlts\gsl\include\gsl\gsl_vector_long_double.h
+	<stdlib.h>
+	<gsl/gsl_types.h>
+	<gsl/gsl_errno.h>
+	<gsl/gsl_check_range.h>
+	<gsl/gsl_block_long_double.h>
+
+1151995950 c:\users\Виктор\documents\github\dlts\gsl\include\gsl\gsl_block_long_double.h
+	<stdlib.h>
+	<gsl/gsl_errno.h>
+	<gsl/gsl_types.h>
+
+1059124702 c:\users\Виктор\documents\github\dlts\gsl\include\gsl\gsl_vector_complex.h
+
+1151991894 c:\users\Виктор\documents\github\dlts\gsl\include\gsl\gsl_block_complex_long_double.h
+	<stdlib.h>
+	<gsl/gsl_errno.h>
+	<gsl/gsl_types.h>
+
+1152001094 c:\users\Виктор\documents\github\dlts\gsl\include\gsl\gsl_vector_complex_double.h
+	<stdlib.h>
+	<gsl/gsl_types.h>
+	<gsl/gsl_errno.h>
+	<gsl/gsl_complex.h>
+	<gsl/gsl_check_range.h>
+	<gsl/gsl_vector_double.h>
+	<gsl/gsl_vector_complex.h>
+	<gsl/gsl_block_complex_double.h>
+
+1152001240 c:\users\Виктор\documents\github\dlts\gsl\include\gsl\gsl_vector_double.h
+	<stdlib.h>
+	<gsl/gsl_types.h>
+	<gsl/gsl_errno.h>
+	<gsl/gsl_check_range.h>
+	<gsl/gsl_block_double.h>
+
+1151995852 c:\users\Виктор\documents\github\dlts\gsl\include\gsl\gsl_block_double.h
+	<stdlib.h>
+	<gsl/gsl_errno.h>
+	<gsl/gsl_types.h>
+
+1151991864 c:\users\Виктор\documents\github\dlts\gsl\include\gsl\gsl_block_complex_double.h
+	<stdlib.h>
+	<gsl/gsl_errno.h>
+	<gsl/gsl_types.h>
+
+1152001162 c:\users\Виктор\documents\github\dlts\gsl\include\gsl\gsl_vector_complex_float.h
+	<stdlib.h>
+	<gsl/gsl_types.h>
+	<gsl/gsl_errno.h>
+	<gsl/gsl_complex.h>
+	<gsl/gsl_check_range.h>
+	<gsl/gsl_vector_float.h>
+	<gsl/gsl_vector_complex.h>
+	<gsl/gsl_block_complex_float.h>
+
+1152001286 c:\users\Виктор\documents\github\dlts\gsl\include\gsl\gsl_vector_float.h
+	<stdlib.h>
+	<gsl/gsl_types.h>
+	<gsl/gsl_errno.h>
+	<gsl/gsl_check_range.h>
+	<gsl/gsl_block_float.h>
+
+1151995866 c:\users\Виктор\documents\github\dlts\gsl\include\gsl\gsl_block_float.h
+	<stdlib.h>
+	<gsl/gsl_errno.h>
+	<gsl/gsl_types.h>
+
+1151991884 c:\users\Виктор\documents\github\dlts\gsl\include\gsl\gsl_block_complex_float.h
+	<stdlib.h>
+	<gsl/gsl_errno.h>
+	<gsl/gsl_types.h>
+
+1152001518 c:\users\Виктор\documents\github\dlts\gsl\include\gsl\gsl_vector_ulong.h
+	<stdlib.h>
+	<gsl/gsl_types.h>
+	<gsl/gsl_errno.h>
+	<gsl/gsl_check_range.h>
+	<gsl/gsl_block_ulong.h>
+
+1151996054 c:\users\Виктор\documents\github\dlts\gsl\include\gsl\gsl_block_ulong.h
+	<stdlib.h>
+	<gsl/gsl_errno.h>
+	<gsl/gsl_types.h>
+
+1152001356 c:\users\Виктор\documents\github\dlts\gsl\include\gsl\gsl_vector_long.h
+	<stdlib.h>
+	<gsl/gsl_types.h>
+	<gsl/gsl_errno.h>
+	<gsl/gsl_check_range.h>
+	<gsl/gsl_block_long.h>
+
+1151995940 c:\users\Виктор\documents\github\dlts\gsl\include\gsl\gsl_block_long.h
+	<stdlib.h>
+	<gsl/gsl_errno.h>
+	<gsl/gsl_types.h>
+
+1152001480 c:\users\Виктор\documents\github\dlts\gsl\include\gsl\gsl_vector_uint.h
+	<stdlib.h>
+	<gsl/gsl_types.h>
+	<gsl/gsl_errno.h>
+	<gsl/gsl_check_range.h>
+	<gsl/gsl_block_uint.h>
+
+1151996042 c:\users\Виктор\documents\github\dlts\gsl\include\gsl\gsl_block_uint.h
+	<stdlib.h>
+	<gsl/gsl_errno.h>
+	<gsl/gsl_types.h>
+
+1152001322 c:\users\Виктор\documents\github\dlts\gsl\include\gsl\gsl_vector_int.h
+	<stdlib.h>
+	<gsl/gsl_types.h>
+	<gsl/gsl_errno.h>
+	<gsl/gsl_check_range.h>
+	<gsl/gsl_block_int.h>
+
+1151995930 c:\users\Виктор\documents\github\dlts\gsl\include\gsl\gsl_block_int.h
+	<stdlib.h>
+	<gsl/gsl_errno.h>
+	<gsl/gsl_types.h>
+
+1152001552 c:\users\Виктор\documents\github\dlts\gsl\include\gsl\gsl_vector_ushort.h
+	<stdlib.h>
+	<gsl/gsl_types.h>
+	<gsl/gsl_errno.h>
+	<gsl/gsl_check_range.h>
+	<gsl/gsl_block_ushort.h>
+
+1151996402 c:\users\Виктор\documents\github\dlts\gsl\include\gsl\gsl_block_ushort.h
+	<stdlib.h>
+	<gsl/gsl_errno.h>
+	<gsl/gsl_types.h>
+
+1152001418 c:\users\Виктор\documents\github\dlts\gsl\include\gsl\gsl_vector_short.h
+	<stdlib.h>
+	<gsl/gsl_types.h>
+	<gsl/gsl_errno.h>
+	<gsl/gsl_check_range.h>
+	<gsl/gsl_block_short.h>
+
+1151996006 c:\users\Виктор\documents\github\dlts\gsl\include\gsl\gsl_block_short.h
+	<stdlib.h>
+	<gsl/gsl_errno.h>
+	<gsl/gsl_types.h>
+
+1152001448 c:\users\Виктор\documents\github\dlts\gsl\include\gsl\gsl_vector_uchar.h
+	<stdlib.h>
+	<gsl/gsl_types.h>
+	<gsl/gsl_errno.h>
+	<gsl/gsl_check_range.h>
+	<gsl/gsl_block_uchar.h>
+
+1151996036 c:\users\Виктор\documents\github\dlts\gsl\include\gsl\gsl_block_uchar.h
+	<stdlib.h>
+	<gsl/gsl_errno.h>
+	<gsl/gsl_types.h>
+
+1152000988 c:\users\Виктор\documents\github\dlts\gsl\include\gsl\gsl_vector_char.h
+	<stdlib.h>
+	<gsl/gsl_types.h>
+	<gsl/gsl_errno.h>
+	<gsl/gsl_check_range.h>
+	<gsl/gsl_block_char.h>
+
+1151991854 c:\users\Виктор\documents\github\dlts\gsl\include\gsl\gsl_block_char.h
+	<stdlib.h>
+	<gsl/gsl_errno.h>
+	<gsl/gsl_types.h>
+
+1059124700 c:\users\Виктор\documents\github\dlts\gsl\include\gsl\gsl_matrix.h
+	<gsl/gsl_matrix_complex_long_double.h>
+	<gsl/gsl_matrix_complex_double.h>
+	<gsl/gsl_matrix_complex_float.h>
+	<gsl/gsl_matrix_long_double.h>
+	<gsl/gsl_matrix_double.h>
+	<gsl/gsl_matrix_float.h>
+	<gsl/gsl_matrix_ulong.h>
+	<gsl/gsl_matrix_long.h>
+	<gsl/gsl_matrix_uint.h>
+	<gsl/gsl_matrix_int.h>
+	<gsl/gsl_matrix_ushort.h>
+	<gsl/gsl_matrix_short.h>
+	<gsl/gsl_matrix_uchar.h>
+	<gsl/gsl_matrix_char.h>
+
+1151998580 c:\users\Виктор\documents\github\dlts\gsl\include\gsl\gsl_matrix_complex_long_double.h
+	<stdlib.h>
+	<gsl/gsl_types.h>
+	<gsl/gsl_errno.h>
+	<gsl/gsl_complex.h>
+	<gsl/gsl_check_range.h>
+	<gsl/gsl_vector_complex_long_double.h>
+
+1151998266 c:\users\Виктор\documents\github\dlts\gsl\include\gsl\gsl_matrix_complex_double.h
+	<stdlib.h>
+	<gsl/gsl_types.h>
+	<gsl/gsl_errno.h>
+	<gsl/gsl_complex.h>
+	<gsl/gsl_check_range.h>
+	<gsl/gsl_vector_complex_double.h>
+
+1151998394 c:\users\Виктор\documents\github\dlts\gsl\include\gsl\gsl_matrix_complex_float.h
+	<stdlib.h>
+	<gsl/gsl_types.h>
+	<gsl/gsl_errno.h>
+	<gsl/gsl_complex.h>
+	<gsl/gsl_check_range.h>
+	<gsl/gsl_vector_complex_float.h>
+
+1151999164 c:\users\Виктор\documents\github\dlts\gsl\include\gsl\gsl_matrix_long_double.h
+	<stdlib.h>
+	<gsl/gsl_types.h>
+	<gsl/gsl_errno.h>
+	<gsl/gsl_check_range.h>
+	<gsl/gsl_vector_long_double.h>
+
+1151998682 c:\users\Виктор\documents\github\dlts\gsl\include\gsl\gsl_matrix_double.h
+	<stdlib.h>
+	<gsl/gsl_types.h>
+	<gsl/gsl_errno.h>
+	<gsl/gsl_check_range.h>
+	<gsl/gsl_vector_double.h>
+
+1151998830 c:\users\Виктор\documents\github\dlts\gsl\include\gsl\gsl_matrix_float.h
+	<stdlib.h>
+	<gsl/gsl_types.h>
+	<gsl/gsl_errno.h>
+	<gsl/gsl_check_range.h>
+	<gsl/gsl_vector_float.h>
+
+1151999592 c:\users\Виктор\documents\github\dlts\gsl\include\gsl\gsl_matrix_ulong.h
+	<stdlib.h>
+	<gsl/gsl_types.h>
+	<gsl/gsl_errno.h>
+	<gsl/gsl_check_range.h>
+	<gsl/gsl_vector_ulong.h>
+
+1151999050 c:\users\Виктор\documents\github\dlts\gsl\include\gsl\gsl_matrix_long.h
+	<stdlib.h>
+	<gsl/gsl_types.h>
+	<gsl/gsl_errno.h>
+	<gsl/gsl_check_range.h>
+	<gsl/gsl_vector_long.h>
+
+1151999498 c:\users\Виктор\documents\github\dlts\gsl\include\gsl\gsl_matrix_uint.h
+	<stdlib.h>
+	<gsl/gsl_types.h>
+	<gsl/gsl_errno.h>
+	<gsl/gsl_check_range.h>
+	<gsl/gsl_vector_uint.h>
+
+1151998964 c:\users\Виктор\documents\github\dlts\gsl\include\gsl\gsl_matrix_int.h
+	<stdlib.h>
+	<gsl/gsl_types.h>
+	<gsl/gsl_errno.h>
+	<gsl/gsl_check_range.h>
+	<gsl/gsl_vector_int.h>
+
+1151999696 c:\users\Виктор\documents\github\dlts\gsl\include\gsl\gsl_matrix_ushort.h
+	<stdlib.h>
+	<gsl/gsl_types.h>
+	<gsl/gsl_errno.h>
+	<gsl/gsl_check_range.h>
+	<gsl/gsl_vector_ushort.h>
+
+1151999276 c:\users\Виктор\documents\github\dlts\gsl\include\gsl\gsl_matrix_short.h
+	<stdlib.h>
+	<gsl/gsl_types.h>
+	<gsl/gsl_errno.h>
+	<gsl/gsl_check_range.h>
+	<gsl/gsl_vector_short.h>
+
+1151999386 c:\users\Виктор\documents\github\dlts\gsl\include\gsl\gsl_matrix_uchar.h
+	<stdlib.h>
+	<gsl/gsl_types.h>
+	<gsl/gsl_errno.h>
+	<gsl/gsl_check_range.h>
+	<gsl/gsl_vector_uchar.h>
+
+1151998146 c:\users\Виктор\documents\github\dlts\gsl\include\gsl\gsl_matrix_char.h
+	<stdlib.h>
+	<gsl/gsl_types.h>
+	<gsl/gsl_errno.h>
+	<gsl/gsl_check_range.h>
+	<gsl/gsl_vector_char.h>
+
+1151991836 c:\users\Виктор\documents\github\dlts\gsl\include\gsl\gsl_blas.h
+	<gsl/gsl_vector.h>
+	<gsl/gsl_matrix.h>
+	<gsl/gsl_blas_types.h>
+	<gsl/gsl_types.h>
+
+1119770734 c:\users\Виктор\documents\github\dlts\gsl\include\gsl\gsl_blas_types.h
+	<gsl/gsl_cblas.h>
+
+1151996452 c:\users\Виктор\documents\github\dlts\gsl\include\gsl\gsl_cblas.h
+	<stddef.h>
+	<gsl/gsl_types.h>
+
+1574598968 source:c:\users\Виктор\documents\github\dlts\cpp\facility\innifile.cpp
+	"ini.h"
+	<string>
+	<sstream>
+	<iomanip>
+	<tchar.h>
+
+1574613786 c:\users\Виктор\documents\github\dlts\headers\ini.h
+	<windows.h>
+	<string>
+
+1574613981 source:c:\users\Виктор\documents\github\dlts\cpp\facility\inifile.cpp
+	"ini.h"
+	<string>
+	<sstream>
+	<iomanip>
+	<tchar.h>
+
+1574614020 source:c:\users\Виктор\documents\github\dlts\cpp\windows\analysis.cpp
+	"winfunc.h"
+	"ini.h"
 

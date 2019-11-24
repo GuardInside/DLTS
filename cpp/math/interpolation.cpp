@@ -30,6 +30,8 @@ interp::~interp()
 }
 
 
+
+
     /* Отладка */
     /*
     gwin::gVector vData1, vData2;

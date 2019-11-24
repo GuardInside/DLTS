@@ -2,7 +2,6 @@
 #define FACILITY_H_INCLUDED
 #include <string>
 #include <sstream>
-#include <fstream>
 #include <cmath>
 #include <windows.h>
 #include <commctrl.h>

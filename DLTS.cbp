@@ -39,6 +39,7 @@
 			<Add library="gsl/lib/libgsl.a" />
 		</Linker>
 		<Unit filename="cpp/daq.cpp" />
+		<Unit filename="cpp/facility/inifile.cpp" />
 		<Unit filename="cpp/facility/load_save.cpp" />
 		<Unit filename="cpp/facility/plot.cpp" />
 		<Unit filename="cpp/facility/settings.cpp" />
@@ -47,12 +48,13 @@
 		<Unit filename="cpp/gwin.cpp" />
 		<Unit filename="cpp/main.cpp" />
 		<Unit filename="cpp/math/commath.cpp" />
+		<Unit filename="cpp/math/expapprox.cpp" />
 		<Unit filename="cpp/math/interpolation.cpp" />
 		<Unit filename="cpp/math/weighfunc.cpp" />
 		<Unit filename="cpp/variable.cpp" />
 		<Unit filename="cpp/vi.cpp" />
 		<Unit filename="cpp/windows/adv_setting.cpp" />
-		<Unit filename="cpp/windows/arrhenius_setting.cpp" />
+		<Unit filename="cpp/windows/analysis.cpp" />
 		<Unit filename="cpp/windows/cor_setting.cpp" />
 		<Unit filename="cpp/windows/general_setting.cpp" />
 		<Unit filename="cpp/windows/pid_setting.cpp" />
@@ -61,6 +63,7 @@
 		<Unit filename="headers/dlts_math.h" />
 		<Unit filename="headers/facility.h" />
 		<Unit filename="headers/gwin.h" />
+		<Unit filename="headers/ini.h" />
 		<Unit filename="headers/interpolation.h" />
 		<Unit filename="headers/resource.h" />
 		<Unit filename="headers/variable.h" />

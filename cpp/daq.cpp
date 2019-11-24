@@ -44,11 +44,18 @@ INT DAQmxReadAnalog(UINT uDev, UINT uAIPort, INT iTrigPort, float64 dRate, float
         /** Параметры триггера **/
         buff.str("");
         buff << "/Dev" << uDev << "/PFI" << iTrigPort;
-        if(!Generator.is_active) iTrigEdge = DAQmx_Val_Falling;
-        else iTrigEdge = DAQmx_Val_Rising;
-        DAQmxErrChk(DAQmxCfgDigEdgeStartTrig(hTask, buff.str().data(), iTrigEdge));
         DAQmxErrChk(DAQmxSetStartTrigDelayUnits(hTask, DAQmx_Val_Seconds));
-        DAQmxErrChk(DAQmxSetStartTrigDelay(hTask, dGate + Generator.width*0.001));
+        if(!Generator.is_active)
+        {
+            iTrigEdge = DAQmx_Val_Falling;
+            DAQmxErrChk(DAQmxSetStartTrigDelay(hTask, dGate));
+        }
+        else
+        {
+            iTrigEdge = DAQmx_Val_Rising;
+            DAQmxErrChk(DAQmxSetStartTrigDelay(hTask, dGate + Generator.width*0.001));
+        }
+        DAQmxErrChk(DAQmxCfgDigEdgeStartTrig(hTask, buff.str().data(), iTrigEdge));
     }
     DAQmxErrChk(DAQmxStartTask(hTask));
     DAQmxErrChk(DAQmxReadAnalogF64(hTask, DAQmx_Val_Auto, fTimeout, DAQmx_Val_GroupByChannel , Data, uSamples, &iRead, NULL));
@@ -108,25 +115,39 @@ BOOL MyDAQMeasure(vector<double> *vResult, UINT AverNum, double time, UINT AIPor
 BOOL MeasurePulse(vector<double> *vData, double *dVoltBias, double *dVoltAmp)
 {
     static CONST UINT T_NUM = 2, A_NUM = 1;
-    static const double dV = 0.1;
+    static const double dV = 0.025;
     *dVoltBias = 0.0;
     *dVoltAmp = 0.0;
     UINT uiCount1 = 0, uiCount2 = 0;
     vector<double> vData2;
-    MyDAQMeasure(&vData2, A_NUM, Generator.period*T_NUM*0.001, ai_port_pulse);
+    double dMeasTime = 0.0;
+    if(Generator.is_active) dMeasTime = Generator.period*T_NUM*0.001;
+    else dMeasTime = measure_time_DAQ*T_NUM*0.001;
+    MyDAQMeasure(&vData2, A_NUM, dMeasTime, ai_port_pulse);
     /* Рассчитываем истинные значения амплитуд */
-    for(const auto &v: vData2)
+    if(Generator.is_active)
+        for(const auto &v: vData2)
+        {
+            if( ( v >= (Generator.bias-dV) ) && ( v <= (Generator.bias+dV) ) )
+            {
+                *dVoltBias += v;
+                uiCount2++;
+            }
+            else if( index_mode == DLTS && (( v >= (Generator.amplitude-dV) ) && ( v <= (Generator.amplitude+dV) )) )
+            {
+                *dVoltAmp += v;
+                uiCount1++;
+            }
+            else if( index_mode == ITS && (( v >= (Generator.begin_amplitude-dV) ) && ( v <= (Generator.begin_amplitude+dV) )) )
+            {
+                *dVoltAmp += v;
+                uiCount1++;
+            }
+        }
+    else if(!Generator.is_active)
     {
-        if(v >= Generator.bias-dV && v <= Generator.bias+dV)
-        {
-            *dVoltBias += v;
-            uiCount2++;
-        }
-        else if(v >= Generator.amplitude-dV && v <= Generator.amplitude+dV)
-        {
-            *dVoltAmp += v;
-            uiCount1++;
-        }
+        // Алгоритм измерения напряжения в случае генератор
+
     }
     if(uiCount1 != 0)
         *dVoltAmp /= uiCount1;

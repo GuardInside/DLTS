@@ -30,9 +30,8 @@ UINT CALLBACK DataAcquisition_Process(void*);
 UINT CALLBACK ReadITS(void*);
 UINT CALLBACK ReadDLTS(void*);
 
-HWND hSettinWnd = NULL;     /* Описатель окна настроек */
-HWND hStartRequest = NULL;  /* Описатель окна запроса на старт */
-HWND hArSettingWnd = NULL;  /* Описатель окна настроек графика Аррениуса */
+HWND hSettinWnd = NULL;         /* Описатель окна настроек */
+HWND hAnalysisWnd = NULL;
 double MeanTemp = 0.0;
 
 int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszArgument, int nCmdShow)
@@ -56,10 +55,14 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszArgu
 
         while (GetMessage(&messages, NULL, 0, 0))
         {
-            if(!IsDialogMessage(hSettinWnd, &messages) &&
-               !IsDialogMessage(hStartRequest, &messages) &&
-               !IsDialogMessage(hArSettingWnd, &messages))
+            if(!IsDialogMessage(hSettinWnd, &messages) && !IsDialogMessage(hAnalysisWnd, &messages))
             {
+                /* Перехват сообщений о действиях мышки для окна DLTS графика */
+                if(index_plot_DLTS == 0 && messages.hwnd == hGraph_DLTS)
+                {
+                    dlts_mouse_message(messages.hwnd, messages.message, messages.wParam, messages.lParam);
+                    /* Сообщение из очереди удаляется стандартным обработчиком */
+                }
                 TranslateMessage(&messages);
                 DispatchMessage(&messages);
             }
@@ -163,22 +166,25 @@ void MainWindow_OnCommand(HWND hwnd, int id, HWND, UINT)
             PlotRelax();
             SetFocus(hMainWindow);
             break;
+        /* Сохранить файл */
+        case ID_BUTTON_SAVE:
+            SaveWindow();
+            break;
         /* Загрузить файл */
         case ID_BUTTON_LOAD:
             DownloadWindow();
             break;
-        case ID_BUTTON_AR_SETTINGS:
-            //if(!IsWindow(hArSettingWnd))
-                hArSettingWnd = CreateDialog(hInst, MAKEINTRESOURCE(ID_AR_SETTINGS_WINDOW), HWND_DESKTOP, aswin_proc);
-            break;
         /* Настройки */
+        case ID_BUTTON_ANALYSIS:
+            if(!IsWindow(hAnalysisWnd))
+                hAnalysisWnd = CreateDialog(hInst, MAKEINTRESOURCE(ID_ANALYSIS_WINDOW), HWND_DESKTOP, anwin_proc);
+            break;
         case ID_BUTTON_SETTINGS:
             if(!IsWindow(hSettinWnd))
                 hSettinWnd = CreateDialog(hInst, MAKEINTRESOURCE(ID_SETTINGS_WINDOW), HWND_DESKTOP, stwin_proc);
             break;
         case ID_CHECKBOX_FIX_TEMPERATURE:
             {
-                static bool fix_temp = false;
                 static double dPrevTemp = 0.0;
                 stringstream buff;
                 /* Активирован флаг фиксации температуры */
@@ -217,8 +223,8 @@ void MainWindow_OnCommand(HWND hwnd, int id, HWND, UINT)
                 MessageBox(hwnd, "Invalid set point or end point value,\nor step temperature sign.", "Warning", MB_ICONWARNING);
                 break;
             }
-            if(start == false && !IsWindow(hStartRequest))
-                hStartRequest = CreateDialog(hInst, MAKEINTRESOURCE(ID_START_WINDOW), hwnd, srwin_proc);
+            if(start == false)
+                DialogBox(hInst,  MAKEINTRESOURCE(ID_START_WINDOW), hwnd, srwin_proc);
             if(start == true)
                 StartButPush();
             break;
@@ -319,10 +325,10 @@ UINT CALLBACK DataAcquisition_Process(void*)
     stringstream buff;
     if(ai_port+offset_ai_port == ai_port_pulse)
     {
-        double dMinVoltage = 0.0, dMaxVoltage = 0.0;
-        MeasurePulse(&vData2, &dMinVoltage, &dMaxVoltage);
+        double dBias = 0.0, dAmp = 0.0;
+        MeasurePulse(&vData2, &dBias, &dAmp);
         buff << fixed << "AI: " << ai_port + offset_ai_port << endl
-             << setprecision(3) << "Bias [V] =  " << dMaxVoltage << endl << "Amp [V] = " << dMinVoltage;
+             << setprecision(3) << "Bias [V] =  " << dBias << endl << "Amp [V] = " << dAmp;
         gAdditionalInfo(hGraph_DAQ, buff.str());
     }
     else
@@ -375,9 +381,8 @@ UINT Thermostat_Process()
     double dAverSqFluct = AverSqFluct(vTemp);
     rewrite(buff) << "Mean-squared error " << dAverSqFluct << " K";
     SetDlgItemText(hMainWindow, ID_STR_DISPERSION, buff.str().data());
-
     /* Проверяем условие стабилизации первое */
-    if(start == true && stability == false && dAverSqFluct <= Thermostat.TempDisp)
+    if(start == true && stability == false && fix_temp == false && dAverSqFluct <= Thermostat.TempDisp)
     {
         double dMean = round(mean(vTemp), 2);
         /* Проверяем условие стабилизации второе */
@@ -386,9 +391,15 @@ UINT Thermostat_Process()
             stability = true;
             ::MeanTemp = dMean;
             if(index_mode == DLTS)
-                _beginthreadex(NULL, 0, ReadDLTS, NULL, 0, NULL);
+            {
+                HANDLE hThread = (HANDLE)_beginthreadex(NULL, 0, ReadDLTS, NULL, 0, NULL);
+                CloseHandle(hThread);
+            }
             else if(index_mode == ITS)
-                _beginthreadex(NULL, 0, ReadITS, NULL, 0, NULL);
+            {
+                HANDLE hThread = (HANDLE)_beginthreadex(NULL, 0, ReadITS, NULL, 0, NULL);
+                CloseHandle(hThread);
+            }
             else return -1;
         }
     }
@@ -396,7 +407,8 @@ UINT Thermostat_Process()
     gVector vData1;
     for(size_t i = 0; i < vTemp.size(); i++)
         vData1.push_back(i*REFRESH_TIME_THERMOSTAT*0.001);
-    gBand(hGraph, 0, 50, (dTemp-5)<0?0:(dTemp-5), (dTemp+5));
+    if(dAverSqFluct < 0.01) gBand(hGraph, 0, REFRESH_TIME_THERMOSTAT*0.001*MAX_POINT_TEMP_GRAPH, (dTemp-0.05)<0?0:(dTemp-0.05), (dTemp+0.05));
+    else gBand(hGraph, 0, REFRESH_TIME_THERMOSTAT*0.001*MAX_POINT_TEMP_GRAPH, 0, 0);
     gData(hGraph, &vData1, &vTemp);
     return 0;
 }

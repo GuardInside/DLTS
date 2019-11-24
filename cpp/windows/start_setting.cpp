@@ -35,7 +35,7 @@ BOOL StartWnd_OnCommand(HWND hWnd, int id, HWND, UINT)
             FileSaveName = ApplySettingEditBoxString(hWnd, ID_EDITCONTROL_SAVE_FILE_NAME);
             StartButPush();
         case ID_BUTTON_CANCEL:
-            DestroyWindow(hWnd);
+            EndDialog(hWnd, 0);
             return TRUE;
     }
     return FALSE;
@@ -52,7 +52,6 @@ void StartButPush()
     EnableWindow(GetDlgItem(hMainWindow, ID_BUTTON_SET), start);
     EnableWindow(GetDlgItem(hMainWindow, ID_EDITCONTROL_END), start);
     EnableWindow(GetDlgItem(hMainWindow, ID_EDITCONTROL_BEGIN), start);
-    EnableWindow(GetDlgItem(hMainWindow, ID_BUTTON_SETTINGS), start);
     EnableWindow(GetDlgItem(hMainWindow, ID_BUTTON_EXIT), start);
     EnableWindow(GetDlgItem(hMainWindow, ID_BUTTON_LOAD), start);
     SetDlgItemText(hMainWindow, ID_BUTTON_START, buff.str().data());

@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cctype>
+#include <cmath>
 
 #include "gwin.h"
 
@@ -35,7 +36,7 @@ namespace gwin
                                  DEFAULT_CHARSET, OUT_STROKE_PRECIS, CLIP_EMBEDDED,
                                  PROOF_QUALITY, FIXED_PITCH | FF_MODERN, "Courier New")},
             bfEnableGrid{true}, bfEnableAdInfo{true}, bfEnableScale{true}, bfEnableAxis{true},
-            bfEnableScCor{true}, bfEnableCross{false},
+            bfEnableScCor{true}, bfEnableCross{false}, bfEnableFixedXBand{false}, bfEnableFixedYBand{false},
             dMinX{0.0}, dMaxX{0.0}, dMinY{0.0}, dMaxY{0.0} {}
         HBITMAP hBitMap;
         UINT iMark1, iMark2, iAdMark1, iAdMark2;
@@ -44,7 +45,17 @@ namespace gwin
         COLORREF crTextColor, crAdInfoColor;
         HFONT hTextFont;
         BOOL bfEnableGrid, bfEnableAdInfo, bfEnableScale, bfEnableAxis,
-            bfEnableScCor, bfEnableCross;
+            bfEnableScCor, bfEnableCross, bfEnableFixedXBand, bfEnableFixedYBand;
+        /*
+        bfEnableGrid        отображать сетку
+        bfEnableAdInfo      отображать доп. информацию, см. метод gAddInfo
+        bfEnableScale       отображать масштаб на осях
+        bfEnableAxis        отображать оси
+        bfEnableScCor       автоматически корректировать масштабные множители (10^3, 10^6 и т.п.)
+        bfEnableCross       отображать метки, см. vCrossX, vCrossY
+        bfEnableFixedXBand  диапазон отображаемых значений оси x фиксирован
+        bfEnableFixedYBand  диапазон отображаемых значений оси y фиксирован
+        */
         std::string strAdInfo;
         double dMinX, dMaxX, dMinY, dMaxY;
         gVector vCrossX, vCrossY;
@@ -110,6 +121,26 @@ namespace gwin
 /* ********************** */
 /*  Интерфейс библиотеки  */
 /* ********************** */
+BOOL gwin::gLpToGp(HWND hWnd, gPoint *pt)
+{
+    if(pt == nullptr)
+        return FALSE;
+    // Логические координаты в координаты графика //
+    pt->x = (pt->x)/GPLOT_LOGICAL_SIZE * (_gMap.at(hWnd).dMaxX - _gMap.at(hWnd).dMinX) + _gMap.at(hWnd).dMinX;
+    pt->y = (pt->y)/GPLOT_LOGICAL_SIZE * (_gMap.at(hWnd).dMaxY - _gMap.at(hWnd).dMinY) + _gMap.at(hWnd).dMinY;
+    return TRUE;
+}
+
+BOOL gwin::gGpToLp(HWND hWnd, gPoint *pt)
+{
+    if(pt == nullptr)
+        return FALSE;
+    // Координаты графика в логические координаты //
+    pt->x = (pt->x - _gMap.at(hWnd).dMinX)/(_gMap.at(hWnd).dMaxX - _gMap.at(hWnd).dMinX) * GPLOT_LOGICAL_SIZE;
+    pt->y = (pt->y - _gMap.at(hWnd).dMinY)/(_gMap.at(hWnd).dMaxY - _gMap.at(hWnd).dMinY) * GPLOT_LOGICAL_SIZE;
+    return TRUE;
+}
+
 BOOL gwin::gCross(HWND hWnd, const gVector *vData1, const gVector *vData2)
 {
     if(vData1->size() == 0 || vData2->size() == 0 || vData1->size() != vData2->size())
@@ -147,16 +178,14 @@ BOOL gwin::gDefaultPlot(HWND hWnd, std::string message)
 
 BOOL gwin::gBand(HWND hWnd, double dMinX, double dMaxX, double dMinY, double dMaxY)
 {
-    if(dMinX != dMaxX)
-    {
         _gMap.at(hWnd).dMinX = dMinX;
         _gMap.at(hWnd).dMaxX = dMaxX;
-    }
-    if(dMinY != dMaxY)
-    {
         _gMap.at(hWnd).dMinY = dMinY;
         _gMap.at(hWnd).dMaxY = dMaxY;
-    }
+    if(dMinX == dMaxX) _gMap.at(hWnd).bfEnableFixedXBand = false;
+    else _gMap.at(hWnd).bfEnableFixedXBand = true;
+    if(dMinY == dMaxY) _gMap.at(hWnd).bfEnableFixedYBand = false;
+    else _gMap.at(hWnd).bfEnableFixedYBand = true;
     return TRUE;
 }
 
@@ -211,7 +240,6 @@ BOOL gwin::gClose(HWND hWnd)
     return DestroyWindow(hWnd);
 }
 
-
 BOOL gwin::gMulData(HWND hWnd, const gVector *vData1, const gMulVector *vMulData)
 {
     /** Проверка полноты **/
@@ -220,21 +248,20 @@ BOOL gwin::gMulData(HWND hWnd, const gVector *vData1, const gMulVector *vMulData
     /** Подготовка к отрисовке **/
     LONG iWidth, iHeight;
     gWindowMetric(hWnd, &iWidth, &iHeight);
-    HDC hdc = CreateCompatibleDC(GetDC(hWnd));
-    HBITMAP bitPlot = CreateCompatibleBitmap(GetDC(hWnd), iWidth, iHeight);
-    SelectObject(hdc, bitPlot);
-    gTransformPlot(hWnd, hdc);
+    HDC hdc = GetDC(hWnd);
+    HDC hMemDC = CreateCompatibleDC(hdc);
+    HBITMAP bitPlot = CreateCompatibleBitmap(hdc, iWidth, iHeight);
+    SelectObject(hMemDC, bitPlot);
+    gTransformPlot(hWnd, hMemDC);
     /** Отрисовка графика в буфере памяти **/
-    PatBlt(hdc, 0, 0, iWidth, iHeight, BLACKNESS);
-    gMulDrawPlot(hWnd, hdc, vData1, vMulData);
+    PatBlt(hMemDC, 0, 0, iWidth, iHeight, BLACKNESS);
+    gMulDrawPlot(hWnd, hMemDC, vData1, vMulData);
     /** Конец отрисовки графика **/
     gClearBitmap(hWnd);
     _gMap.at(hWnd).hBitMap = bitPlot;
-    /** Отрисовка легенды в буфере памяти **/
-    //PatBlt(hdc, 0, 0, iWidth, iHeight, BLACKNESS);
-    //gMulDrawPlot(hWnd, hdc, vData1, vMulData);
     /** Конец отрисовки **/
-    DeleteDC(hdc);
+    DeleteDC(hMemDC);
+    ReleaseDC(hWnd, hdc);
     InvalidateRect(hWnd, NULL, FALSE);
     return TRUE;
 }
@@ -279,7 +306,6 @@ VOID gwin::gWindowMetric(HWND hWnd, LONG *iWidth, LONG *iHeight)
 {
     RECT rc;
     GetClientRect(hWnd, &rc);
-    //GetWindowRect(hWnd, &rc);
     *iWidth = abs(abs(rc.right)-abs(rc.left));
     *iHeight = abs(abs(rc.top)-abs(rc.bottom));
 }
@@ -321,25 +347,30 @@ BOOL gwin::gMulDrawPlot(HWND hWnd, HDC &hdc, const gVector *vData1, const gMulVe
             max_x = vData1->at(0), min_x = vData1->at(0);
     int     x = 0, y = 0;
     size_t  i = 0;
-    /* Масштабные множители */
-    if(_gMap.at(hWnd).dMinX == _gMap.at(hWnd).dMaxX)
+    /* Границы отображения */
+    if(_gMap.at(hWnd).bfEnableFixedXBand == false)
     {
         for(const auto &itir: *vData1)
             if(max_x < itir) max_x = itir;
             else if(min_x > itir) min_x = itir;
+        /* Сохраняем новые границы */
+        _gMap.at(hWnd).dMinX = min_x;
+        _gMap.at(hWnd).dMaxX = max_x;
     }
     else
     {
         min_x = _gMap.at(hWnd).dMinX;
         max_x = _gMap.at(hWnd).dMaxX;
     }
-    if(_gMap.at(hWnd).dMinY == _gMap.at(hWnd).dMaxY)
+    if(_gMap.at(hWnd).bfEnableFixedYBand == false)
     {
         for(const auto &extiter: *vMulData2)
             for(const auto &itir: extiter)
                 if(max_y < itir) max_y = itir;
                 else if(min_y > itir) min_y = itir;
-
+        /* Сохраняем новые границы */
+        _gMap.at(hWnd).dMinY = min_y;
+        max_y = _gMap.at(hWnd).dMaxY = max_y;
     }
     else
     {
@@ -348,15 +379,33 @@ BOOL gwin::gMulDrawPlot(HWND hWnd, HDC &hdc, const gVector *vData1, const gMulVe
     }
     hx = (max_x - min_x)/iMark1;
     hy = (max_y - min_y)/iMark2;
-    /* Коррекция масштаба */
+    /* Коррекция масштаба оси Y */
     double e = fabs(max_y) > fabs(min_y)? fabs(max_y) : fabs(min_y);
-    int exp = 0;
-    while(e < 0.1 && bfEnableScCor)
+    int expY = 0, expX = 0;
+    while(e < 1.0 && bfEnableScCor)
     {
         e*=10;
-        exp++;
+        expY++;
     }
-    while(exp%3 != 0) exp--;
+    while(e > 999.9 && bfEnableScCor)
+    {
+        e/=10;
+        expY--;
+    }
+    while(expY%3 != 0) expY--;
+    /* Коррекция масштаба оси X */
+    e = fabs(max_x) > fabs(min_x)? fabs(max_x) : fabs(min_x);
+    while(e < 1.0 && bfEnableScCor)
+    {
+        e*=10;
+        expX++;
+    }
+    while(e > 999.9 && bfEnableScCor)
+    {
+        e/=10;
+        expX--;
+    }
+    while(expX%3 != 0) expX--;
     /* Сдвигаем начало координат */
     LONG iWidth, iHeight;
     gWindowMetric(hWnd, &iWidth, &iHeight);
@@ -390,7 +439,7 @@ BOOL gwin::gMulDrawPlot(HWND hWnd, HDC &hdc, const gVector *vData1, const gMulVe
             }
             if(c == 0 && bfEnableScale)
             {
-                buff << z;
+                buff << z*pow(10, expX);
                 TextOut(hdc, x-0.5*pIndent.x, y - iIndent, buff.str().c_str(), buff.str().length());
             }
         }
@@ -412,7 +461,7 @@ BOOL gwin::gMulDrawPlot(HWND hWnd, HDC &hdc, const gVector *vData1, const gMulVe
             }
             if(c == 0 && bfEnableScale)
             {
-                buff << z*pow(10, exp);
+                buff << z*pow(10, expY);
                 TextOut(hdc, -pIndent.x, y+0.5*pIndent.y, buff.str().data(), buff.str().length());
             }
         }
@@ -521,9 +570,15 @@ BOOL gwin::gMulDrawPlot(HWND hWnd, HDC &hdc, const gVector *vData1, const gMulVe
         }
     }
     /* Выводим масштабирующий множитель */
-    if(exp > 0 && bfEnableScCor)
+    if(expY != 0 && bfEnableScCor)
     {
-        buff << "y: e-" << exp;
+        buff << "y: e" << expY;
+        GetTextExtentPoint32(hdc, buff.str().data(), buff.str().length(), &szText);
+        TextOut(hdc, iPlotSize-szText.cx-iIndent, iPlotSize - szText.cy*(s++), buff.str().data(), buff.str().length());
+    }
+    if(expX != 0 && bfEnableScCor)
+    {
+        buff << "x: e" << expX;
         GetTextExtentPoint32(hdc, buff.str().data(), buff.str().length(), &szText);
         TextOut(hdc, iPlotSize-szText.cx-iIndent, iPlotSize - szText.cy*(s++), buff.str().data(), buff.str().length());
     }

@@ -18,17 +18,10 @@ int32  offset_ai_port = 0;//Смещение номера порта ai_port при отображении в реал
 const string        names_wFunc[] = {"Double box-car", "Lock-in", "Exponent", "Sine"};
 const string        range[] = {"±10", "±5", "±0.5", "±0.05"};
 const string        strHeatingRange[] = {"Off", "Low", "Med", "High"};
-const string        SettingsFile  = "settings\\settings.txt";
-const string        SettingsCorFile = "settings\\correlations.txt";
-const string        SettingsPIDFile = "settings\\PID.txt";
-const string        SettingsArFile = "settings\\AR.txt";
-const string        Save = "save\\";
       string        FileSaveName;
 
 double dEfMass = MASS_ELECTRON;
 double dFactorG = G_CONSTANT;
-double dLeftBorderGold = 0.0;
-double dRightBorderGold = 0.0;
 
 double itsTemperature = 0.0; /* Температура в режиме ITS */
 unsigned int id_DAQ = 0;
@@ -37,15 +30,16 @@ int32 ai_port_pulse = 0;
 int32 pfi_ttl_port = 0;
 uInt32 measure_time_DAQ = 0; //Время измерения в мс
 uInt32 averaging_DAQ = 0;    //Число отсчетов для получения одного измерения
-//uInt32 samples_DAQ = 0;      //Сколько сэмплов на один отсчет
 float64 rate_DAQ = 0.0;      //Сэмплов в секунду
 float64 gate_DAQ = 0.0;      //
 /* Флаги */
 bool start = false;            //Нажата кнопка старт
 bool stability = false;        //Температура стабилизировалась вблизи сетпоинта
-bool bfDAQ0k = true;          //DAQ работает в штатном режиме
-bool fbThermostat0k = true;   //Термостат работает в штатном режиме
-bool bfNewfile = true;        //
+bool bfDAQ0k = true;           //DAQ работает в штатном режиме
+bool fbThermostat0k = true;    //Термостат работает в штатном режиме
+bool bfNewfile = true;         //Создавать ли новый файл при старте эксперимента?
+bool fix_temp = false;         //Фиксация температуры
+bool auto_peak_search = true;  //Автоопределение пика методом золотого сечения
 /* Параметры коррелятора */
 unsigned int CorType = DoubleBoxCar;
 double correlation_c = 0.0;
