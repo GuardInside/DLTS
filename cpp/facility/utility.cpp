@@ -1,12 +1,17 @@
 #include <facility.h>
 #include "graph.h"
+#include "ini.h"
 
 void ClearMemmory()
 {
+    /* Включить автопоиск минимума */
+    auto_peak_search = true;
     ClearMemmoryDLTS();
     itsBiasVoltages.clear();
     itsAmpVoltages.clear();
     gwin::gMulVector().swap(SavedRelaxations);
+    gwin::gDefaultPlot(hRelax, "\0");
+    gwin::gDefaultPlot(hGraph_DLTS, "\0");
 }
 
 void ClearMemmoryDLTS()
@@ -38,27 +43,29 @@ void RefreshDLTS()
 
 void SaveRelaxSignal(double MeanTemp, const vector<double> *vData, double dBias, double dAmp)
 {
-    string SavePath = "save/" + FileSaveName;
-    if(index_mode == DLTS) SavePath += ".dlts";
-    else if(index_mode == ITS) SavePath += ".its";
+    string ext;
+    if(index_mode == DLTS) ext = ".dlts";
+    else if(index_mode == ITS) ext = ".its";
+    string FullPath = FileSavePath + FileSaveName + ext;
     ofstream file;
     if(bfNewfile)
     {
-        file.open(SavePath.data());
+        file.open(FullPath.data());
         bfNewfile = false;
     }
     else
-        file.open(SavePath.data(), std::ofstream::app);
+        file.open(FullPath.data(), std::ofstream::app);
     if(!file.is_open())
     {
-        MessageBox(NULL, "Save file isn't being found.", "Error", MB_OK);
+        MessageBox(NULL, "Save file isn't being found.", "Error", MB_ICONERROR);
         return;
     }
-    //Сохраняем настройки, если файл открыт впервые
+
     file << setiosflags(ios::fixed) << setprecision(0);
-    ifstream ifile(SavePath.data());
+    ifstream ifile(FullPath.data());
     if(ifile.peek() == EOF)
     {
+        /* Сохраняем настройки, если файл открыт впервые */
         file<< averaging_DAQ << " "
             << measure_time_DAQ << " "
             << rate_DAQ << " "

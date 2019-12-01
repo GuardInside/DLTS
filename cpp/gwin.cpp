@@ -5,11 +5,13 @@
 #include "gwin.h"
 
 
-#define DEFAULT_HEIGHT_FONT 80
-#define DEFAULT_WIDTH_FONT  20
-#define DEFAULT_PRECISION   3
-#define GWND_LOGICAL_SIZE   1200
-#define GPLOT_LOGICAL_SIZE  1000
+#define DEFAULT_HEIGHT_FONT     80
+#define DEFAULT_WIDTH_FONT      20
+#define DEFAULT_PRECISION       3
+#define GWND_LOGICAL_SIZE       1200
+#define GPLOT_LOGICAL_SIZE      1000
+#define GPLOT_LOGICAL_X_BEGIN   150
+#define GPLOT_LOGICAL_Y_BEGIN   100
 using namespace gwin;
 
 namespace gwin
@@ -121,6 +123,17 @@ namespace gwin
 /* ********************** */
 /*  Интерфейс библиотеки  */
 /* ********************** */
+BOOL gwin::gDvToLp(HWND hWnd, gPoint *pt)
+{
+    if(pt == nullptr)
+        return FALSE;
+    static CONST LONG iWndSize = GWND_LOGICAL_SIZE; // Размер окна в логических единицах
+    LONG iWidth, iHeight;
+    gWindowMetric(hWnd, &iWidth, &iHeight); // Размеры клиентской области в пикселях
+    pt->x = iWndSize * pt->x / iWidth - GPLOT_LOGICAL_X_BEGIN;
+    pt->y = iWndSize - iWndSize * pt->y / iHeight - GPLOT_LOGICAL_Y_BEGIN;
+    return TRUE;
+}
 BOOL gwin::gLpToGp(HWND hWnd, gPoint *pt)
 {
     if(pt == nullptr)
@@ -200,9 +213,13 @@ BOOL gwin::gMark(HWND hWnd, int iMark1, int iMark2, int iAdMark1, int iAdMark2)
 {
     if(iMark1 < 0 || iMark2 < 0 || iAdMark1 < 0 || iAdMark2 < 0)
         return FALSE;
-    _gMap.at(hWnd).iMark1 = iMark1;
-    _gMap.at(hWnd).iMark2 = iMark2;
-    _gMap.at(hWnd).iAdMark1 = iAdMark1;
+    if(iMark1 != 0)
+        _gMap.at(hWnd).iMark1 = iMark1;
+    if(iMark2 != 0)
+        _gMap.at(hWnd).iMark2 = iMark2;
+    if(iAdMark1 != 0)
+        _gMap.at(hWnd).iAdMark1 = iAdMark1;
+    if(iAdMark2 != 0)
     _gMap.at(hWnd).iAdMark2 = iAdMark2;
     return TRUE;
 }
@@ -269,7 +286,7 @@ BOOL gwin::gMulData(HWND hWnd, const gVector *vData1, const gMulVector *vMulData
 BOOL gwin::gData(HWND hWnd, const gVector *vData1, const gVector *vData2)
 {
     /** Проверка полноты **/
-    if(vData1->size() == 0)
+    if(vData1->empty())
         return FALSE;
     const gMulVector vMulData2{*vData2};
     return gMulData(hWnd, vData1, &vMulData2);
@@ -377,8 +394,6 @@ BOOL gwin::gMulDrawPlot(HWND hWnd, HDC &hdc, const gVector *vData1, const gMulVe
         min_y = _gMap.at(hWnd).dMinY;
         max_y = _gMap.at(hWnd).dMaxY;
     }
-    hx = (max_x - min_x)/iMark1;
-    hy = (max_y - min_y)/iMark2;
     /* Коррекция масштаба оси Y */
     double e = fabs(max_y) > fabs(min_y)? fabs(max_y) : fabs(min_y);
     int expY = 0, expX = 0;
@@ -406,10 +421,19 @@ BOOL gwin::gMulDrawPlot(HWND hWnd, HDC &hdc, const gVector *vData1, const gMulVe
         expX--;
     }
     while(expX%3 != 0) expX--;
+    /* Установка шага по осям */
+    /*double max = max_x * pow(10, expX), min = min_x * pow(10, expX);
+    double value_min[] = {1000, 100, 10, 0, 0.1, 0.01, 0.001};
+    int i;
+    for(i = 0, min < value_min[i]; i++);
+    min = value_min.at(i+1);
+    */
+    hx = (max_x - min_x)/iMark1;
+    hy = (max_y - min_y)/iMark2;
     /* Сдвигаем начало координат */
     LONG iWidth, iHeight;
     gWindowMetric(hWnd, &iWidth, &iHeight);
-    POINT pIndent = {150, 100};
+    POINT pIndent = {GPLOT_LOGICAL_X_BEGIN, GPLOT_LOGICAL_Y_BEGIN};
     SetViewportOrgEx(hdc, pIndent.x*((double)iWidth/GWND_LOGICAL_SIZE),
                           iHeight - pIndent.y*((double)iHeight/GWND_LOGICAL_SIZE), NULL);
     /* Настройка инструментов рисования */

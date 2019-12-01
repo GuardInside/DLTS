@@ -6,7 +6,7 @@
 #include "variable.h"
 #include "gwin.h"
 #include "graph.h"
-#include "ini
+#include "ini.h"
 
 using namespace std;
 
@@ -29,11 +29,15 @@ VOID DownloadWindow()
         file.lpstrDefExt = NULL;
         file.Flags = OFN_HIDEREADONLY+OFN_NOCHANGEDIR;
     if(!GetOpenFileName(&file))
+    {
+        MessageBox(NULL, "The file wasn't opened.", "Warning", MB_ICONWARNING);
         return;
-    /* Включить автопоиск минимума */
-    auto_peak_search = true;
+    }
     /* Установка новго имени файла для сохранений */
+    FileSavePath.clear();
     FileSaveName.clear();
+    for(WORD i = file.nFileOffset; i < (file.nFileExtension-1); i++)
+        FileSavePath
     for(WORD i = file.nFileOffset; i < (file.nFileExtension-1); i++)
         FileSaveName.push_back(LoadFileName[i]);
     HANDLE thDownload = (HANDLE)_beginthreadex(NULL, 0, LoadFile, NULL, 0, NULL);
@@ -44,7 +48,12 @@ UINT CALLBACK LoadFile(PVOID)
 {
     /* Собираем путь к файлу */
     string ext = GetExtensionFile(LoadFileName);
-    string strName = Save + FileSaveName + ext;
+    if(ext != ".dlts" && ext != ".its")
+    {
+        MessageBox(NULL, "You should chose file with .dlts or .its extension.", "Warning", MB_ICONWARNING);
+        return -1;
+    }
+    string strName = FileSavePath + FileSaveName + ext;
     ifstream file;
     file.open(strName);
     if(!file.is_open())
@@ -117,8 +126,21 @@ UINT CALLBACK LoadFile(PVOID)
     return TRUE;
 }
 
-VOID SaveWindow()
+VOID SaveWindow(SAVE_MODE mode)
 {
+    string strTitle;
+    switch(mode)
+    {
+    case SAVE_RELAXATIONS:
+        strTitle = "Save relaxations";
+        break;
+    case SAVE_DLTS:
+        strTitle = "Save DLTS";
+        break;
+    case SAVE_ARRHENIUS:
+        strTitle = "Save Arrhenius";
+        break;
+    }
     strcpy(SaveFileName, FileSaveName.data()); /* Имя файла по умолчанию */
     const string ext = "txt", filter = "*.txt\0\0";
     OPENFILENAME file = {0};
@@ -130,29 +152,30 @@ VOID SaveWindow()
         file.lpstrInitialDir = ".\\save\\";
         file.lpstrDefExt = ext.data();
         file.Flags = OFN_NOCHANGEDIR;
+        file.lpstrTitle = strTitle.c_str();
     if(!GetSaveFileName(&file))
         return;
     /* Установка новго имени файла для сохранений */
-    HANDLE thSave = (HANDLE)_beginthreadex(NULL, 0, SaveFile, NULL, 0, NULL);
+    HANDLE thSave = (HANDLE)_beginthreadex(NULL, 0, SaveFile, (PVOID)&mode, 0, NULL);
     CloseHandle(thSave);
 }
 
-UINT CALLBACK SaveFile(PVOID)
+UINT CALLBACK SaveFile(PVOID mode)
 {
     if(SavedRelaxations.empty())
         return -1;
-    /* Проверка ключей */
-    WORD wFlag = 0x00;
-    if(string(SaveFileName).find("_DLTS") != string::npos)
-        wFlag = 0x01;
-    if(string(SaveFileName).find("_AR") != string::npos)
-        wFlag = 0x10;
-    /* Действие в соответствии с ключом */
-    if(wFlag == 0x01)
+    switch(*(SAVE_MODE*)mode)
+    {
+    case SAVE_RELAXATIONS:
+        return SaveRelax();
+    case SAVE_DLTS:
         return SaveDLTS();
-    else if(wFlag == 0x10)
+    case SAVE_ARRHENIUS:
         return SaveArrhenius();
-    return SaveRelax();
+    default:
+        MessageBox(NULL, "SaveFile thread", "Error", MB_ICONERROR);
+        return -1;
+    }
 }
 
 UINT SaveArrhenius()

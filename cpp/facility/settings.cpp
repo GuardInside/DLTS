@@ -23,7 +23,7 @@ UINT CALLBACK dlg_success(PVOID)
 
 void write_settings()
 {
-    ini::Settings iniFile{"settings.ini"};
+    ini::File iniFile{"settings.ini"};
         /* Пользовательские настройки */
     /* Сохраняем настройки блока Термостата */
     iniFile.WriteDoubleFix("Thermostat", "step", Thermostat.TempStep, THERMO_PRECISION);
@@ -45,6 +45,7 @@ void write_settings()
     iniFile.WriteDoubleFix("Generator", "begin_amplitude", Generator.begin_amplitude, 3);
     iniFile.WriteDoubleFix("Generator", "end_amplitude", Generator.end_amplitude, 3);
     /* Сохраняем настройки блока общее */
+    iniFile.WriteString("General", "save_path", FileSavePath);
     iniFile.WriteString("General", "file", FileSaveName);
     iniFile.WriteInt("General", "mode", index_mode);
     /* Сохраняем настройки блока математической модели */
@@ -75,18 +76,15 @@ void write_settings()
         iniFile.WriteDoubleFix("Сorrelator", buff.str(), CorTime[i], 2);
     }
         /* Настройки PID таблицы */
+    iniFile.Rename("pid.ini");
     for(int i = 0; i < QUANTITY_ZONE; i++)
     {
-        rewrite(buff) << "border_" << i;
-        iniFile.WriteInt("PID", buff.str(), Thermostat.ZoneTable.upper_boundary[i]);
-        rewrite(buff) << "P_" << i;
-        iniFile.WriteInt("PID", buff.str(), Thermostat.ZoneTable.P[i]);
-        rewrite(buff) << "I_" << i;
-        iniFile.WriteInt("PID", buff.str(), Thermostat.ZoneTable.I[i]);
-        rewrite(buff) << "D_" << i;
-        iniFile.WriteInt("PID", buff.str(), Thermostat.ZoneTable.D[i]);
-        rewrite(buff) << "R_" << i;
-        iniFile.WriteInt("PID", buff.str(), Thermostat.ZoneTable.range[i]);
+        rewrite(buff) << "ZONE " << i;
+        iniFile.WriteInt(buff.str().data(), "TEMP", Thermostat.ZoneTable.upper_boundary[i]);
+        iniFile.WriteInt(buff.str().data(), "P", Thermostat.ZoneTable.P[i]);
+        iniFile.WriteInt(buff.str().data(), "I", Thermostat.ZoneTable.I[i]);
+        iniFile.WriteInt(buff.str().data(), "D", Thermostat.ZoneTable.D[i]);
+        iniFile.WriteInt(buff.str().data(), "RANGE", Thermostat.ZoneTable.range[i]);
     }
     HANDLE hThreadSuccess = (HANDLE)_beginthreadex(NULL, 0, dlg_success, NULL, 0, NULL);
     CloseHandle(hThreadSuccess);
@@ -94,7 +92,7 @@ void write_settings()
 
 void read_settings()
 {
-    ini::Settings iniFile{"settings.ini"};
+    ini::File iniFile{"settings.ini"};
         /* Пользовательские настройки */
     /* Загружаем настройки блока Термостата */
     iniFile.ReadDouble("Thermostat", "step", &Thermostat.TempStep);
@@ -116,6 +114,7 @@ void read_settings()
     iniFile.ReadDouble("Generator", "begin_amplitude", &Generator.begin_amplitude);
     iniFile.ReadDouble("Generator", "end_amplitude", &Generator.end_amplitude);
     /* Загружаем настройки блока общее */
+    iniFile.ReadString("General", "save_path", &FileSavePath);
     iniFile.ReadString("General", "file", &FileSaveName);
     iniFile.ReadInt("General", "mode", (int*)&index_mode);
     /* Загружаем настройки блока математической модели */
@@ -143,7 +142,7 @@ void read_settings()
     iniFile.ReadInt("Сorrelator", "amount", &amount);
     stringstream buff;
     CorTime.clear();
-    for(size_t i = 0; i < amount; i++)
+    for(size_t i = 0; i < (size_t)amount; i++)
     {
         rewrite(buff) << "_" << i;
         iniFile.ReadDouble("Сorrelator", buff.str(), &value);
@@ -153,18 +152,15 @@ void read_settings()
         delete []yAxisDLTS;
     yAxisDLTS = new vector<double>[CorTime.size()]; /* Число осей совпадает с числом корреляторов */
         /* Настройки PID таблицы */
+    iniFile.Rename("pid.ini");
     for(int i = 0; i < QUANTITY_ZONE; i++)
     {
-        rewrite(buff) << "border_" << i;
-        iniFile.ReadInt("PID", buff.str(), (int*)&Thermostat.ZoneTable.upper_boundary[i]);
-        rewrite(buff) << "P_" << i;
-        iniFile.ReadInt("PID", buff.str(), (int*)&Thermostat.ZoneTable.P[i]);
-        rewrite(buff) << "I_" << i;
-        iniFile.ReadInt("PID", buff.str(), (int*)&Thermostat.ZoneTable.I[i]);
-        rewrite(buff) << "D_" << i;
-        iniFile.ReadInt("PID", buff.str(), (int*)&Thermostat.ZoneTable.D[i]);
-        rewrite(buff) << "R_" << i;
-        iniFile.ReadInt("PID", buff.str(), (int*)&Thermostat.ZoneTable.range[i]);
+        rewrite(buff) << "ZONE " << i;
+        iniFile.ReadInt(buff.str().data(), "TEMP", (int*)&Thermostat.ZoneTable.upper_boundary[i]);
+        iniFile.ReadInt(buff.str().data(), "P", (int*)&Thermostat.ZoneTable.P[i]);
+        iniFile.ReadInt(buff.str().data(), "I", (int*)&Thermostat.ZoneTable.I[i]);
+        iniFile.ReadInt(buff.str().data(), "D", (int*)&Thermostat.ZoneTable.D[i]);
+        iniFile.ReadInt(buff.str().data(), "RANGE", (int*)&Thermostat.ZoneTable.range[i]);
     }
 }
 

@@ -53,7 +53,6 @@ void StartButPush()
     EnableWindow(GetDlgItem(hMainWindow, ID_EDITCONTROL_END), start);
     EnableWindow(GetDlgItem(hMainWindow, ID_EDITCONTROL_BEGIN), start);
     EnableWindow(GetDlgItem(hMainWindow, ID_BUTTON_EXIT), start);
-    EnableWindow(GetDlgItem(hMainWindow, ID_BUTTON_LOAD), start);
     SetDlgItemText(hMainWindow, ID_BUTTON_START, buff.str().data());
     if(start == false)
     {
@@ -61,8 +60,6 @@ void StartButPush()
         {
             /* Очищаем буфферы при запуске с флагом bfNewfilew */
             ClearMemmory();
-            gwin::gDefaultPlot(hRelax, "\0");
-            gwin::gDefaultPlot(hGraph_DLTS, "\0");
         }
         else
         {

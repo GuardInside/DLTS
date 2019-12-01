@@ -2,7 +2,6 @@
 #define FACILITY_H_INCLUDED
 #include <string>
 #include <sstream>
-#include <fstream>
 #include <cmath>
 #include <windows.h>
 #include <commctrl.h>
@@ -15,6 +14,8 @@
 #include "gwin.h"
 #include "variable.h"
 using namespace std;
+
+enum SAVE_MODE{RELAXATION, };
 
 stringstream&   rewrite(stringstream& buff);
 UINT            GetDlgItemTextMod(HWND hwnd, int nIDItem, stringstream& str_buf);
@@ -40,7 +41,7 @@ void ClearMemmory();
 void OrderRelaxation();
 //Обновление DLTS-кривых
 void RefreshDLTS();
-void SaveRelaxSignal(double MeanTemp, const vector<double> *vData, double dBias, double dVoltMax);
+void SaveRelaxSignal(double MeanTemp, const vector<double> *vData, double dBias, double dAmp);
 void AddPointsDLTS(const vector<double> *vRelaxation, const double temp);
 /* Возвращает расширение открытого файла */
 string GetExtensionFile(string str);

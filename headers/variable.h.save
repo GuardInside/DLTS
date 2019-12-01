@@ -67,14 +67,13 @@ extern size_t index_mode;   //Режим работы программы DLTS или ITS
 extern size_t index_plot_DLTS; //Отображать DLTS или гр. Аррениуса
 extern int32 offset_ai_port;//Смещение номера порта ai_port при отображении в реальном времени
 
-/* Имя папки с сохраненными релаксациями */
-extern const string Save;
 /* Диапазоны измерений напряжения DAQ */
 extern const string range[];
 /* Диапазон уровней нагрева */
 extern const string strHeatingRange[];
 /* Имя файла для сохранения FileSaveName.txt */
 extern       string FileSaveName;
+extern       string FileSavePath;
 /* Имена весовых функций */
 extern const string names_wFunc[];
 
@@ -90,6 +89,10 @@ extern uInt32 measure_time_DAQ; //Время измерения
 extern uInt32 averaging_DAQ;    //Число отсчетов для получения одного измерения
 extern float64 rate_DAQ;        //отсчетов в секунду
 extern float64 gate_DAQ;
+
+extern int RANGE_SULA;          //Capaciti range
+extern double CONST_02_SULA;
+extern double PRE_AMP_GAIN_SULA;
 /* Флаги */
 extern bool start;              //Нажата кнопка старт
 extern bool stability;          //Температура стабилизировалась вблизи сетпоинта

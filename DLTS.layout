@@ -2,101 +2,82 @@
 <CodeBlocks_layout_file>
 	<FileVersion major="1" minor="0" />
 	<ActiveTarget name="Release" />
-	<File name="headers\ini.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="696" topLine="6" />
-		</Cursor>
-	</File>
-	<File name="headers\facility.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="1404" topLine="23" />
-		</Cursor>
-	</File>
-	<File name="headers\vi.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="929" topLine="20" />
-		</Cursor>
-	</File>
-	<File name="cpp\facility\inifile.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="2281" topLine="51" />
-		</Cursor>
-	</File>
 	<File name="cpp\variable.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="23" topLine="0" />
-		</Cursor>
-	</File>
-	<File name="headers\resource.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="2047" topLine="24" />
-		</Cursor>
-	</File>
-	<File name="headers\winfunc.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="1303" topLine="29" />
-		</Cursor>
-	</File>
-	<File name="cpp\facility\load_save.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="1422" topLine="34" />
-		</Cursor>
-	</File>
-	<File name="cpp\facility\settings.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="6189" topLine="102" />
-		</Cursor>
-		<Folding>
-			<Collapse line="4" />
-			<Collapse line="19" />
-		</Folding>
-	</File>
-	<File name="cpp\facility\plot.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="1708" topLine="29" />
-		</Cursor>
-	</File>
-	<File name="headers\variable.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="5504" topLine="75" />
-		</Cursor>
-	</File>
-	<File name="cpp\facility\utility.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="951" topLine="19" />
-		</Cursor>
-	</File>
-	<File name="cpp\gwin.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="15817" topLine="424" />
-		</Cursor>
-	</File>
-	<File name="cpp\main.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="2121" topLine="47" />
-		</Cursor>
-		<Folding>
-			<Collapse line="186" />
-		</Folding>
-	</File>
-	<File name="cpp\math\weighfunc.cpp" open="1" top="1" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="4088" topLine="92" />
+			<Cursor1 position="1278" topLine="11" />
 		</Cursor>
 	</File>
 	<File name="cpp\windows\general_setting.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="13876" topLine="203" />
+			<Cursor1 position="15493" topLine="225" />
+		</Cursor>
+	</File>
+	<File name="cpp\facility\settings.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="551" topLine="10" />
+		</Cursor>
+	</File>
+	<File name="cpp\main.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="22941" topLine="467" />
+		</Cursor>
+		<Folding>
+			<Collapse line="37" />
+			<Collapse line="74" />
+		</Folding>
+	</File>
+	<File name="headers\winfunc.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="1726" topLine="32" />
+		</Cursor>
+	</File>
+	<File name="cpp\facility\load_save.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="5330" topLine="17" />
+		</Cursor>
+		<Folding>
+			<Collapse line="20" />
+			<Collapse line="43" />
+			<Collapse line="125" />
+			<Collapse line="159" />
+			<Collapse line="177" />
+			<Collapse line="207" />
+			<Collapse line="237" />
+		</Folding>
+	</File>
+	<File name="headers\ini.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="1429" topLine="9" />
+		</Cursor>
+	</File>
+	<File name="cpp\facility\utility.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="2074" topLine="61" />
+		</Cursor>
+	</File>
+	<File name="cpp\gwin.cpp" open="1" top="1" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="15352" topLine="420" />
+		</Cursor>
+	</File>
+	<File name="cpp\math\weighfunc.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="2191" topLine="53" />
+		</Cursor>
+	</File>
+	<File name="cpp\facility\inifile.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="3222" topLine="75" />
+		</Cursor>
+	</File>
+	<File name="cpp\facility\plot.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="2082" topLine="40" />
 		</Cursor>
 	</File>
 	<File name="cpp\windows\analysis.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="2366" topLine="50" />
-		</Cursor>
-	</File>
-	<File name="resource\resource.rc" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="0" topLine="48" />
+			<Cursor1 position="585" topLine="12" />
 		</Cursor>
 	</File>
 </CodeBlocks_layout_file>

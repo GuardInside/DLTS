@@ -81,6 +81,7 @@ BOOL Analysis_OnCommand(HWND hWnd, INT id, HWND, UINT)
                 AnalysisFile.WriteDoubleSc("Fitting", "rel_error", rel_error, 0);
                 AnalysisFile.WriteDoubleFix("Fitting", "sigma", sigma, 0);
                 AnalysisFile.WriteBool("Fitting", "use_fitting", isFitting);
+                /* Сообщение об успешном прим
                 /* Пересчитываем и обновляем графики */
                 PlotRelax();
                 RefreshDLTS();

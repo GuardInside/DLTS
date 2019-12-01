@@ -1,0 +1,66 @@
+#include "winfunc.h"
+
+BOOL ArSettingsWnd_OnInit(HWND, HWND, LPARAM);
+BOOL ArSettingsWnd_OnCommand(HWND, int, HWND, UINT);
+
+INT_PTR CALLBACK aswin_proc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    switch (message)
+    {
+        HANDLE_MSG(hWnd, WM_INITDIALOG, ArSettingsWnd_OnInit);
+        HANDLE_MSG(hWnd, WM_COMMAND, ArSettingsWnd_OnCommand);
+    }
+    return FALSE;
+}
+
+BOOL ArSettingsWnd_OnInit(HWND hWnd, HWND, LPARAM)
+{
+    stringstream buff;
+    buff << setprecision(3) << scientific;
+    /* Вывод информации при инициализации */
+    //Вывести текущие настройки эффективной массы
+    rewrite(buff) << ::dEfMass;
+    SetDlgItemText(hWnd, ID_EDITCONTROL_EFFECTIVE_MASS, buff.str().data());
+    //Вывести текущие настройки фактора вырождения
+    rewrite(buff) << setprecision(0) << fixed;
+    rewrite(buff) << dFactorG;
+    SetDlgItemText(hWnd, ID_EDITCONTROL_G, buff.str().data());
+    //Вывести текущие настройки левой границы для метода Gold
+    rewrite(buff) << setprecision(THERMO_PRECISION) << fixed;
+    rewrite(buff) << dLeftBorderGold;
+    SetDlgItemText(hWnd, ID_EDITCONTROL_LEFT_BORDER_MAX_SEARCH, buff.str().data());
+    //Вывести текущие настройки правой границы для метода Gold
+    rewrite(buff) << dRightBorderGold;
+    SetDlgItemText(hWnd, ID_EDITCONTROL_RIGHT_BORDER_MAX_SEARCH, buff.str().data());
+    return TRUE;
+}
+
+BOOL ArSettingsWnd_OnCommand(HWND hWnd, int id, HWND, UINT)
+{
+    switch(id)
+    {
+        case ID_BUTTON_APPLY:
+            /* Настройки физических констант */
+            //Применить настройки эффективной массы
+            {
+                stringstream buff;
+                buff << setprecision(3) << scientific;
+                GetDlgItemTextMod(hWnd, ID_EDITCONTROL_EFFECTIVE_MASS, buff);
+                ::dEfMass = atof(buff.str().data());
+            }
+            //Применить настройки фактора вырождения
+            ::dFactorG = ApplySettingEditBox(hWnd, ID_EDITCONTROL_G, 0);
+            /* Настройки поиска экстремума */
+            //Применить настройки левой границы для метода Gold
+            ::dLeftBorderGold = ApplySettingEditBox(hWnd, ID_EDITCONTROL_LEFT_BORDER_MAX_SEARCH, THERMO_PRECISION);
+            //Применить настройки правой границы для метода Gold
+            ::dRightBorderGold = ApplySettingEditBox(hWnd, ID_EDITCONTROL_RIGHT_BORDER_MAX_SEARCH, THERMO_PRECISION);
+            write_settings();
+            PlotDLTS();
+            return TRUE;
+        case ID_BUTTON_CANCEL:
+            EndDialog(hWnd, 0);
+            return TRUE;
+    }
+    return FALSE;
+}

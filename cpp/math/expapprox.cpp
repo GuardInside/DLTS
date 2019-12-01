@@ -53,7 +53,6 @@ int expb_df(const gsl_vector *x_, void *data, gsl_matrix *J)
         /** Где fi = (Yi - yi)/sigma[i] */
         /** Yi = A * exp(-lambda * t) + b */
         /** xj - это параметры (A,lambda,b) */
-
         double t = x->at(i);
         double s = sigma->at(i);
         double e = exp(-lambda * t);

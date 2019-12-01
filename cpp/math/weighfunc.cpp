@@ -54,7 +54,7 @@ double test_func(double x, double t1)
 void AddPointsDLTS(const vector<double> *vRelaxation, const double temp)
 {
     bool UseFitting = 0;
-    ini::Settings AnalysisFile{"analysis.ini"};
+    ini::File AnalysisFile{"analysis.ini"};
     AnalysisFile.ReadBool("Fitting", "use_fitting", &UseFitting);
     if(UseFitting == true)
         AddPoint_with_approx(vRelaxation, temp);
@@ -97,7 +97,7 @@ void AddPoint_with_approx(const vector<double> *vRelaxation, const double temp)
     double abs_error = 1e-6;
     double rel_error = 1e-6;
     double sigma = 1.0;
-    ini::Settings AnalysisFile{"analysis.ini"};
+    ini::File AnalysisFile{"analysis.ini"};
     AnalysisFile.ReadDouble("Fitting", "abs_error", &abs_error);
     AnalysisFile.ReadDouble("Fitting", "rel_error", &rel_error);
     AnalysisFile.ReadDouble("Fitting", "sigma", &sigma);

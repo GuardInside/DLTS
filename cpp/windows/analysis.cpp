@@ -21,7 +21,7 @@ BOOL Analysis_OnInit(HWND hWnd, HWND, LPARAM)
     double rel_error = 0.0;
     double sigma = 0.0;
     bool isFitting = false;
-    ini::Settings AnalysisFile{"analysis.ini"};
+    ini::File AnalysisFile{"analysis.ini"};
     AnalysisFile.ReadDouble("Fitting", "abs_error", &abs_error);
     AnalysisFile.ReadDouble("Fitting", "rel_error", &rel_error);
     AnalysisFile.ReadDouble("Fitting", "sigma", &sigma);
@@ -61,7 +61,7 @@ BOOL Analysis_OnCommand(HWND hWnd, INT id, HWND, UINT)
                 double rel_error = 0.0;
                 double sigma = 0.0;
                 int isFitting = 0;
-                ini::Settings AnalysisFile{"analysis.ini"};
+                ini::File AnalysisFile{"analysis.ini"};
                 /* Предельное число итераций */
                 max_iter = ApplySettingEditBox(hWnd, ID_EDITCONTROL_ITERATION);
                 /* Абсолютная погрешность */
@@ -81,6 +81,9 @@ BOOL Analysis_OnCommand(HWND hWnd, INT id, HWND, UINT)
                 AnalysisFile.WriteDoubleSc("Fitting", "rel_error", rel_error, 0);
                 AnalysisFile.WriteDoubleFix("Fitting", "sigma", sigma, 0);
                 AnalysisFile.WriteBool("Fitting", "use_fitting", isFitting);
+                /* Сообщение об успешном приминении настроек */
+                HANDLE hThreadSuccess = (HANDLE)_beginthreadex(NULL, 0, dlg_success, NULL, 0, NULL);
+                CloseHandle(hThreadSuccess);
                 /* Пересчитываем и обновляем графики */
                 PlotRelax();
                 RefreshDLTS();

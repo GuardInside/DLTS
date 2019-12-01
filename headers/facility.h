@@ -15,6 +15,8 @@
 #include "variable.h"
 using namespace std;
 
+enum SAVE_MODE {SAVE_RELAXATIONS, SAVE_DLTS, SAVE_ARRHENIUS};
+
 stringstream&   rewrite(stringstream& buff);
 UINT            GetDlgItemTextMod(HWND hwnd, int nIDItem, stringstream& str_buf);
 double          ApplySettingEditBox(HWND hwnd, int nIDEditBox, int prec = 0);
@@ -31,7 +33,7 @@ void ApplySettings();
 /* Функции для сохранения и загрузки save-файлов */
 VOID DownloadWindow();
 UINT CALLBACK LoadFile(PVOID);
-VOID SaveWindow();
+VOID SaveWindow(SAVE_MODE);
 UINT CALLBACK SaveFile(PVOID);
 //Очистка векторов осей DLTS-кривых
 void ClearMemmoryDLTS();

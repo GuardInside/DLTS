@@ -33,7 +33,8 @@ BOOL gBand(HWND hWnd, double dMinX, double dMaxX, double dMinY, double dMaxY);
 BOOL gDefaultPlot(HWND hWnd, std::string message);
 BOOL gCross(HWND hWnd, const gVector *vData1, const gVector *vData2);
 
-BOOL gLpToGp(HWND hWnd, gPoint *pt);
+BOOL gDvToLp(HWND hWnd, gPoint *pt);
+BOOL gLpToGp(HWND hWnd, gPoint *pt); //Логические координаты
 BOOL gGpToLp(HWND hWnd, gPoint *pt);
 
 }

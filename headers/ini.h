@@ -6,11 +6,11 @@
 
 namespace ini
 {
-    class Settings
+    class File
     {
     public:
         /* Файл .ini создается в директории с .exe */
-        Settings(std::string FileName);
+        File(std::string FileName);
         VOID Rename(std::string FileName);
         /* Функции чтения */
         BOOL ReadString(std::string section, std::string key, std::string *value, std::string default_value = "0");
@@ -24,6 +24,8 @@ namespace ini
         BOOL WriteDoubleSc(std::string section, std::string key, double value, int prec);
         BOOL WriteDoubleFix(std::string section, std::string key, double value, int prec);
         BOOL WriteDouble(std::string section, std::string key, double value, std::stringstream *buff);
+        /* Вспомогательные функции */
+        //BOOL IsEmpty();
 
     private:
         std::string Path;

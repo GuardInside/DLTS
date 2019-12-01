@@ -87,6 +87,21 @@ INT DAQmxReadAnalog(UINT uDev, UINT uAIPort, INT iTrigPort, float64 dRate, float
     return 0;
 }
 
+
+BOOL DAQMeasure_Capacity(UINT AIPort, double *capacity)
+{
+    vector<double> vResult;
+    EnterCriticalSection(&csDataAcquisition);
+    DAQmxReadAnalog(id_DAQ, AIPort, pfi_ttl_port,
+                rate_DAQ, gate_DAQ*0.000001, DAQmx_Val_Rising, index_range, (Generator.period - Generator.width)*0.001,
+                &vResult);
+    LeaveCriticalSection(&csDataAcquisition);
+    for(auto &it: vResult)
+        *capacity += it;
+    *capacity /= vResult.size();
+    return TRUE;
+}
+
 BOOL MyDAQMeasure(vector<double> *vResult, UINT AverNum, double time, UINT AIPort, BOOL bfProgress)
 {
     if(vResult == NULL || AverNum < 1) return FALSE;
@@ -115,7 +130,7 @@ BOOL MyDAQMeasure(vector<double> *vResult, UINT AverNum, double time, UINT AIPor
 BOOL MeasurePulse(vector<double> *vData, double *dVoltBias, double *dVoltAmp)
 {
     static CONST UINT T_NUM = 2, A_NUM = 1;
-    static const double dV = 0.025;
+    static const double dV = 0.05;
     *dVoltBias = 0.0;
     *dVoltAmp = 0.0;
     UINT uiCount1 = 0, uiCount2 = 0;

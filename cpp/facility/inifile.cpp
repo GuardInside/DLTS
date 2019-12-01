@@ -4,13 +4,15 @@
 #include <iomanip>
 #include <tchar.h>
 
+#define BUFFER_SIZE_FOR_VARIABLE 80
+
 using namespace ini;
 
-Settings::Settings(std::string FileName)
+File::File(std::string FileName)
 {
     Rename(FileName);
 }
-VOID Settings::Rename(std::string FileName)
+VOID File::Rename(std::string FileName)
 {
     TCHAR szFileName[MAX_PATH], szPath[MAX_PATH];
     GetModuleFileName(NULL, szFileName, MAX_PATH);
@@ -18,70 +20,70 @@ VOID Settings::Rename(std::string FileName)
     Path = std::string(szPath) + FileName;
 }
 /* Функции чтения */
-BOOL Settings::ReadString(std::string section, std::string key, std::string *value, std::string default_value)
+BOOL File::ReadString(std::string section, std::string key, std::string *value, std::string default_value)
 {
-    char buff[80];
+    char buff[BUFFER_SIZE_FOR_VARIABLE];
     BOOL status = GetPrivateProfileString(section.c_str(), key.c_str(), default_value.c_str(), buff, sizeof(buff), Path.c_str());
     *value = buff;
     return status;
 }
-BOOL Settings::ReadDouble(std::string section, std::string key, double *value, std::string default_value)
+BOOL File::ReadDouble(std::string section, std::string key, double *value, std::string default_value)
 {
-    char buff[80];
+    char buff[BUFFER_SIZE_FOR_VARIABLE];
     BOOL status = GetPrivateProfileString(section.c_str(), key.c_str(), default_value.c_str(), buff, sizeof(buff), Path.c_str());
     *value = atof(buff);
     return status;
 }
-BOOL Settings::ReadInt(std::string section, std::string key, int *value, std::string default_value)
+BOOL File::ReadInt(std::string section, std::string key, int *value, std::string default_value)
 {
-    char buff[80];
+    char buff[BUFFER_SIZE_FOR_VARIABLE];
     BOOL status = GetPrivateProfileString(section.c_str(), key.c_str(), default_value.c_str(), buff, sizeof(buff), Path.c_str());
     *value = atoi(buff);
     return status;
 }
-BOOL Settings::ReadBool(std::string section, std::string key, bool *value, std::string default_value)
+BOOL File::ReadBool(std::string section, std::string key, bool *value, std::string default_value)
 {
-    char buff[80];
+    char buff[BUFFER_SIZE_FOR_VARIABLE];
     BOOL status = GetPrivateProfileString(section.c_str(), key.c_str(), default_value.c_str(), buff, sizeof(buff), Path.c_str());
     *value = (atoi(buff) == 0? false : true);
     return status;
 }
 /* Функции записи */
-BOOL Settings::WriteString(std::string section, std::string key, std::string value)
+BOOL File::WriteString(std::string section, std::string key, std::string value)
 {
     return WritePrivateProfileString(section.c_str(), key.c_str(), value.c_str(), Path.c_str());
 }
-BOOL Settings::WriteInt(std::string section, std::string key, int value)
+BOOL File::WriteInt(std::string section, std::string key, int value)
 {
     std::stringstream buff;
     buff << value;
     return WritePrivateProfileString(section.c_str(), key.c_str(), buff.str().c_str(), Path.c_str());
 }
-BOOL Settings::WriteBool(std::string section, std::string key, bool value)
+BOOL File::WriteBool(std::string section, std::string key, bool value)
 {
     std::stringstream buff;
     buff << (value == true? 1 : 0);
     return WritePrivateProfileString(section.c_str(), key.c_str(), buff.str().c_str(), Path.c_str());
 }
-BOOL Settings::WriteDoubleSc(std::string section, std::string key, double value, int prec)
+BOOL File::WriteDoubleSc(std::string section, std::string key, double value, int prec)
 {
     std::stringstream buff;
     buff << std::scientific << std::setprecision(prec);
     return WriteDouble(section, key, value, &buff);
 }
-BOOL Settings::WriteDoubleFix(std::string section, std::string key, double value, int prec)
+BOOL File::WriteDoubleFix(std::string section, std::string key, double value, int prec)
 {
     std::stringstream buff;
     buff << std::fixed << std::setprecision(prec);
     return WriteDouble(section, key, value, &buff);
 }
-BOOL Settings::WriteDouble(std::string section, std::string key, double value, std::stringstream *buff)
+BOOL File::WriteDouble(std::string section, std::string key, double value, std::stringstream *buff)
 {
     (*buff) << value;
     return WritePrivateProfileString(section.c_str(), key.c_str(), buff->str().c_str(), Path.c_str());
 }
 
-LPTSTR Settings::ExtractFilePath(LPCTSTR FileName, LPTSTR buf)
+LPTSTR File::ExtractFilePath(LPCTSTR FileName, LPTSTR buf)
 {
     int i, len = lstrlen(FileName);
     for(i=len-1; i>=0; i--)

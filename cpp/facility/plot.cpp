@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include "graph.h"
 #include "variable.h"
 #include "gwin.h"
@@ -9,13 +11,26 @@
 bool capture = false; /* Флаг захвата мыши */
 size_t index = 0;     /* Индекс захваченного пика */
 gwin::gVector vPickData1, vPickData2; /* Вектор со значениями температур, соответствующих пикам */
+
 VOID dlts_OnLButtonDown(HWND hwnd, BOOL fDoubleClick, INT x, INT y, UINT keyFlags);
 VOID dlts_OnLButtonUp(HWND hWnd, INT x, INT y, UINT keyFlags);
 VOID dlts_OnMouseMove(HWND hwnd, INT x, INT y, UINT keyFlags);
-VOID DvToLp(HWND hWnd, POINT *point);
 
 VOID plotDAQ(gwin::gVector *vData1, gwin::gVector *vData2)
 {
+    if(vData1->empty())
+        return;
+    static gwin::gVector vMin, vMax;
+    static const int max_size = 20;
+    /* Фиксация границ отображения */
+    auto min_max = std::minmax_element(vData2->begin(), vData2->end());
+    vMin.push_back(*min_max.first);
+    vMax.push_back(*min_max.second);
+    if(vMin.size() > max_size) vMin.erase(vMin.begin());
+    if(vMax.size() > max_size) vMax.erase(vMax.begin());
+    double min = mean(vMin), max = mean(vMax);
+    // Фиксируем так, чтобы отношение размаха к числу рисок (10 by default) было хорошим
+    gwin::gBand(hGraph_DAQ, 0, 0, min, max);
     gwin::gData(hGraph_DAQ, vData1, vData2);
 }
 
@@ -23,14 +38,17 @@ VOID PlotRelax()
 {
     if(SavedRelaxations.empty())
         return;
+    gwin::gVector vData2{SavedRelaxations[index_relax]};
+    for(auto &Y: vData2)
+        Y = CONST_02_SULA * Y * RANGE_SULA / PRE_AMP_GAIN_SULA;
     gwin::gVector vData1;
     gwin::gMulVector vMulData;
-    vMulData.push_back(SavedRelaxations[index_relax]);
+    vMulData.push_back(vData2);
     stringstream buffer;
-    for(size_t i = 0; i < SavedRelaxations[index_relax].size(); i++)
+    for(size_t i = 0; i < vData2.size(); i++)
         vData1.push_back(0.001*gate_DAQ + i*(1/rate_DAQ)*1000); /* ms */
     bool UseFitting = 0;
-    ini::Settings AnalysisFile{"analysis.ini"};
+    ini::File AnalysisFile{"analysis.ini"};
     AnalysisFile.ReadBool("Fitting", "use_fitting", &UseFitting);
     if(UseFitting)
     {
@@ -48,7 +66,7 @@ VOID PlotRelax()
         string strStatus;
         size_t iter = 0;
 
-        int status = get_exponent_fitt(&vData1, &SavedRelaxations[index_relax], &vSigma,
+        int status = get_exponent_fitt(&vData1, &vData2, &vSigma,
                       &A, &tau, &b, &dA, &db, &dtau, &ReducedChiSqr, &iter, max_iter, abs_error, rel_error, &strStatus);
         if(status)
             MessageBox(NULL, strStatus.data(), "Approximation warning", MB_ICONWARNING);
@@ -90,7 +108,10 @@ VOID PlotDLTS()
         double dRightBorder = xAxisDLTS.at(xAxisDLTS.size()-1);
         for(size_t i = 0; i < CorTime.size(); i++)
         {
-            interp f(xAxisDLTS, yAxisDLTS[i],xAxisDLTS.size(), gsl_interp_linear);
+            gwin::gVector vData2{yAxisDLTS[i]};
+            for(auto &Y: vData2)
+                Y = CONST_02_SULA * Y * RANGE_SULA / PRE_AMP_GAIN_SULA;
+            interp f(xAxisDLTS, vData2,xAxisDLTS.size(), gsl_interp_linear);
             double dMin = 0.0;
             if(auto_peak_search == true)
                 dMin = GoldSerch(dLeftBorder, dRightBorder, eps, f);
@@ -115,7 +136,12 @@ VOID PlotDLTS()
         {
             gwin::gMulVector vMulData;
             for(size_t i = 0; i < CorTime.size(); i++)
-                vMulData.push_back(yAxisDLTS[i]);
+            {
+                gwin::gVector vData2{yAxisDLTS[i]};
+                for(auto &Y: vData2)
+                    Y = CONST_02_SULA * Y * RANGE_SULA / PRE_AMP_GAIN_SULA;
+                vMulData.push_back(vData2);
+            }
             if(capture)
             {
                 stringstream buffer;
@@ -193,23 +219,11 @@ BOOL dlts_mouse_message(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     return FALSE;
 }
 
-VOID DvToLp(HWND hWnd, POINT *point)
-{
-    static CONST LONG iWndSize = 1200; // Размер окна в логических единицах
-    LONG iWidth, iHeight;   // Размеры клиентской области в пикселях
-    RECT rt;
-    GetClientRect(hWnd, &rt);
-    iWidth = abs(abs(rt.right)-abs(rt.left));
-    iHeight = abs(abs(rt.top)-abs(rt.bottom));
-    point->x = iWndSize * point->x / iWidth - 150;  /* Смещения начала координат */
-    point->y = iWndSize - iWndSize * point->y / iHeight - 100;
-}
-
 VOID dlts_OnLButtonDown(HWND hWnd, BOOL fDoubleClick, INT x, INT y, UINT keyFlags)
 {
     static CONST LONG MARK = 10; // Размер (радиус) области выделения пика в лог. ед
-    POINT point{x, y};
-    DvToLp(hWnd, &point); // Положение курсора в лог. ед.
+    gwin::gPoint point{(double)x, (double)y};
+    gwin::gDvToLp(hWnd, &point); // Положение курсора в лог. ед.
     RECT rt;
     /* Добавить проверку полноты вектора */
     try{
@@ -218,7 +232,7 @@ VOID dlts_OnLButtonDown(HWND hWnd, BOOL fDoubleClick, INT x, INT y, UINT keyFlag
             gwin::gPoint pt = {vPickData1.at(i), vPickData2.at(i)}; // В ед. температуры и arb. соответственно
             gwin::gGpToLp(hWnd, &pt); // В лог. ед.
             SetRect(&rt, pt.x-MARK, pt.y-MARK, pt.x+MARK, pt.y+MARK);
-            if(PtInRect(&rt, point))
+            if(PtInRect(&rt, POINT{(LONG)point.x, (LONG)point.y}))
             {
                 auto_peak_search = false;
                 index = i;
@@ -245,11 +259,10 @@ VOID dlts_OnMouseMove(HWND hWnd, INT x, INT y, UINT keyFlags)
     {
         if(capture)
         {
-            POINT point{x, y};
-            DvToLp(hWnd, &point);
-            gwin::gPoint p{point.x, point.y};
-            gwin::gLpToGp(hWnd, &p);
-            vPickData1.at(index) = p.x;
+            gwin::gPoint point{(double)x, (double)y};
+            gwin::gDvToLp(hWnd, &point);
+            gwin::gLpToGp(hWnd, &point);
+            vPickData1.at(index) = point.x;
             PlotDLTS();
         }
     } catch(out_of_range  &e){ MessageBox(0, e.what(), "Exception in ReadITS", 0); }

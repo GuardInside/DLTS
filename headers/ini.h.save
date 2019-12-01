@@ -4,25 +4,30 @@
 #include <windows.h>
 #include <string>
 
+/* По умолчанию файл распологается в одной директории с
+    
 namespace ini
 {
-    class Settings
+    class File
     {
     public:
         /* Файл .ini создается в директории с .exe */
-        Settings(std::string FileName);
+        File(std::string FileName);
         VOID Rename(std::string FileName);
         /* Функции чтения */
         BOOL ReadString(std::string section, std::string key, std::string *value, std::string default_value = "0");
         BOOL ReadDouble(std::string section, std::string key, double *value, std::string default_value = "0.0");
         BOOL ReadInt(std::string section, std::string key, int *value, std::string default_value = "0");
-        BOOL ReadUInt(std::string section, std::string key, unsigned int *value, std::string default_value = "0");
+        BOOL ReadBool(std::string section, std::string key, bool *value, std::string default_value = "0");
         /* Функции записи */
         BOOL WriteString(std::string section, std::string key, std::string value);
         BOOL WriteInt(std::string section, std::string key, int value);
+        BOOL WriteBool(std::string section, std::string key, bool value);
         BOOL WriteDoubleSc(std::string section, std::string key, double value, int prec);
         BOOL WriteDoubleFix(std::string section, std::string key, double value, int prec);
         BOOL WriteDouble(std::string section, std::string key, double value, std::stringstream *buff);
+        /* Вспомогательные функции */
+        BOOL IsEmpty();
 
     private:
         std::string Path;

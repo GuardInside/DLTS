@@ -30,7 +30,7 @@ BOOL SettingsWindow_OnInit(HWND hwnd, HWND, LPARAM)
     SendMessage(hComboBox_range, CB_SETCURSEL, index_range, 0);
     /* Настройка режима */
     hComboBox_mode = CreateWindow(WC_COMBOBOX, TEXT(""), CBS_DROPDOWNLIST | WS_CHILD | WS_OVERLAPPED | WS_VISIBLE,
-    555, 120, 100, 125, hwnd, (HMENU)(ID_COMBOBOX_MODE), hInst, NULL);
+    555, 180, 100, 125, hwnd, (HMENU)(ID_COMBOBOX_MODE), hInst, NULL);
         SendMessage(hComboBox_mode, CB_ADDSTRING, 0, (LPARAM)"DLTS");
         SendMessage(hComboBox_mode, CB_ADDSTRING, 0, (LPARAM)"ITS");
     SendMessage(hComboBox_mode, CB_SETCURSEL, index_mode, 0);
@@ -68,9 +68,12 @@ BOOL SettingsWindow_OnCommand(HWND hwnd, int ID, HWND, UINT codeNotify)
                 //Вывести текущие настройки длительности ворот
                 rewrite(buff) << gate_DAQ;
                 SetDlgItemText(hwnd, ID_EDITCONTROL_GATE, buff.str().data());
-                //Вывести текущие настройки имени файла сохранений
+                //Вывести текущие настройки пути к файлу сохранений
                 rewrite(buff) << FileSaveName;
                 SetDlgItemText(hwnd, ID_EDITCONTROL_FILE_SAVE_NAME, buff.str().data());
+                //Вывести текущие настройки имени файла сохранений
+                rewrite(buff) << FileSavePath;
+                SetDlgItemText(hwnd, ID_EDITCONTROL_SAVE_PATH, buff.str().data());
                 /* Настройки генератора импульсов */
                 //Вывести текущие настройки периода
                 rewrite(buff) << Generator.period;
@@ -161,6 +164,8 @@ BOOL SettingsWindow_OnCommand(HWND hwnd, int ID, HWND, UINT codeNotify)
                 PostMessage(hwnd, WM_COMMAND, ID_CHECKBOX_USE_GENERATOR, 0);
             }
             return TRUE;
+        case ID_EDITCONTROL_SAVE_PATH:
+            break;
         case ID_BUTTON_APPLY_SETTINGS:
             if(start)
             {
@@ -170,6 +175,8 @@ BOOL SettingsWindow_OnCommand(HWND hwnd, int ID, HWND, UINT codeNotify)
             {
                 bool alright = true;
                 /* Общие настройки */
+                //Применить настройки пути файла сохранений
+                FileSavePath = ApplySettingEditBoxString(hwnd, ID_EDITCONTROL_SAVE_PATH);
                 //Применить настройки имени файла сохранений
                 FileSaveName = ApplySettingEditBoxString(hwnd, ID_EDITCONTROL_FILE_SAVE_NAME);
                 //Применить настройки режима работы программы
@@ -208,10 +215,12 @@ BOOL SettingsWindow_OnCommand(HWND hwnd, int ID, HWND, UINT codeNotify)
                     Generator.step_voltage = ApplySettingEditBox(hwnd, ID_EDITCONTROL_STEP_AMPLITUDE, 3);
                     //Применить настройки начала ITS в вольтах
                     Generator.begin_amplitude = ApplySettingEditBox(hwnd, ID_EDITCONTROL_BEGIN_AMPLITUDE, 3);
-                    //if(Generator.begin_amplitude < MIN_VOLTAGE_PULSE || Generator.begin_amplitude > MAX_VOLTAGE_PULSE) alright = false;
                     //Применить настройки конца ITS в вольтах
                     Generator.end_amplitude = ApplySettingEditBox(hwnd, ID_EDITCONTROL_END_AMPLITUDE, 3);
-                    //if(Generator.end_amplitude > MAX_VOLTAGE_PULSE || Generator.end_amplitude < MIN_VOLTAGE_PULSE) alright = false;
+                    if(Generator.begin_amplitude < MIN_VOLTAGE_PULSE || Generator.begin_amplitude > MAX_VOLTAGE_PULSE) alright = false;
+                    else if(Generator.end_amplitude < MIN_VOLTAGE_PULSE || Generator.end_amplitude > MAX_VOLTAGE_PULSE) alright = false;
+                    else if(Generator.end_amplitude < Generator.begin_amplitude && Generator.step_voltage > 0.0) alright = false;
+                    else if(Generator.end_amplitude > Generator.begin_amplitude && Generator.step_voltage < 0.0) alright = false;
                 }
                 //Применить настройки эффективной массы
                 {

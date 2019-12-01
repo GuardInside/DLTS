@@ -1,3 +1,5 @@
+#define WINVER 0x0500
+
 #include <windows.h>
 #include <windowsx.h>
 #include <commctrl.h>
@@ -22,7 +24,6 @@ using namespace gwin;
 BOOL MainWindow_OnCreate(HWND, LPCREATESTRUCT);
 VOID MainWindow_OnCommand(HWND, int, HWND, UINT);
 VOID MainWindow_OnTimer(HWND, UINT);
-VOID MainWindow_OnKeyDown(HWND, UINT, BOOL, INT, UINT);
 
 /* Считываени данных с LakeShore и обновление информации */
 UINT Thermostat_Process();
@@ -31,7 +32,7 @@ UINT CALLBACK ReadITS(void*);
 UINT CALLBACK ReadDLTS(void*);
 
 HWND hSettinWnd = NULL;         /* Описатель окна настроек */
-double MeanTemp = 0.0;
+HWND hAnalysisWnd = NULL;
 
 int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszArgument, int nCmdShow)
 {
@@ -54,7 +55,7 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszArgu
 
         while (GetMessage(&messages, NULL, 0, 0))
         {
-            if(!IsDialogMessage(hSettinWnd, &messages))
+            if(!IsDialogMessage(hSettinWnd, &messages) && !IsDialogMessage(hAnalysisWnd, &messages))
             {
                 /* Перехват сообщений о действиях мышки для окна DLTS графика */
                 if(index_plot_DLTS == 0 && messages.hwnd == hGraph_DLTS)
@@ -77,7 +78,6 @@ LRESULT CALLBACK mwwin_proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPar
         HANDLE_MSG(hwnd, WM_CREATE, MainWindow_OnCreate);
         HANDLE_MSG(hwnd, WM_COMMAND, MainWindow_OnCommand);
         HANDLE_MSG(hwnd, WM_TIMER, MainWindow_OnTimer);
-        HANDLE_MSG(hwnd, WM_KEYDOWN, MainWindow_OnKeyDown);
         case WM_DESTROY:
             PostQuitMessage(0);
             break;
@@ -89,6 +89,13 @@ LRESULT CALLBACK mwwin_proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPar
 
 BOOL MainWindow_OnCreate(HWND hwnd, LPCREATESTRUCT)
 {
+    /* Настройка меню */
+    MENUINFO hMenuInfo {0};
+	hMenuInfo.cbSize = sizeof(hMenuInfo);
+	hMenuInfo.fMask = MIM_APPLYTOSUBMENUS | MIM_STYLE;
+	hMenuInfo.dwStyle = MNS_AUTODISMISS | MNS_NOCHECK;
+    HMENU hMenu = GetMenu(hwnd);
+    SetMenuInfo(hMenu, &hMenuInfo);
     /* Дочернии окна */
     hGraph = gCreateWindow(hInst, hwnd, WS_CHILD|WS_DLGFRAME|WS_VISIBLE);
     gPosition(hGraph, 10, 22);
@@ -166,17 +173,30 @@ void MainWindow_OnCommand(HWND hwnd, int id, HWND, UINT)
             SetFocus(hMainWindow);
             break;
         /* Сохранить файл */
-        case ID_BUTTON_SAVE:
-            SaveWindow();
+        case ID_MENU_SAVE_RELAXATIONS:
+            SaveWindow(SAVE_RELAXATIONS);
+            break;
+        case ID_MENU_SAVE_DLTS:
+            SaveWindow(SAVE_DLTS);
+            break;
+        case ID_MENU_SAVE_ARRHENIUS:
+            SaveWindow(SAVE_ARRHENIUS);
+            break;
+        case ID_MENU_CLEAR_MEMORY:
+            ClearMemmory();
+            break;
+        case ID_MENU_AUTO_PEAK_DETECTING:
+            ::auto_peak_search = true;
+            CloseHandle((HANDLE)_beginthreadex(NULL, 0, dlg_success, NULL, 0, NULL));
+            PlotDLTS();
             break;
         /* Загрузить файл */
-        case ID_BUTTON_LOAD:
+        case ID_MENU_OPEN:
             DownloadWindow();
             break;
         /* Настройки */
-        case ID_BUTTON_ANALYSIS:
-            //if(!IsWindow(hAnalysisWnd))
-                //hAnalysisWnd = CreateDialog(hInst, MAKEINTRESOURCE(ID_SETTINGS_WINDOW), HWND_DESKTOP, stwin_proc);
+        case ID_MENU_FITTING_EXPONENTIAL:
+            if(!IsWindow(hAnalysisWnd))
                 hAnalysisWnd = CreateDialog(hInst, MAKEINTRESOURCE(ID_ANALYSIS_WINDOW), HWND_DESKTOP, anwin_proc);
             break;
         case ID_BUTTON_SETTINGS:
@@ -225,7 +245,7 @@ void MainWindow_OnCommand(HWND hwnd, int id, HWND, UINT)
             }
             if(start == false)
                 DialogBox(hInst,  MAKEINTRESOURCE(ID_START_WINDOW), hwnd, srwin_proc);
-            if(start == true)
+            else if(start == true)
                 StartButPush();
             break;
         /* Установка начального и конечного значений температуры */
@@ -271,17 +291,10 @@ void MainWindow_OnCommand(HWND hwnd, int id, HWND, UINT)
             break;
         /* Выход */
         case ID_BUTTON_EXIT:
-            DestroyWindow(hwnd);
+                Thermostat.Write("RANG 0");
+                DestroyWindow(hwnd);
             break;
     }
-}
-
-//((fn)((hwnd),(UINT)(wParam),TRUE,(int)(short)LOWORD(lParam),(UINT)HIWORD(lParam)),0)
-VOID MainWindow_OnKeyDown(HWND hwnd, UINT key, BOOL, INT, UINT)
-{
-    if((char)key == 'S') /* Комбинация CTRL+S */
-        if ((GetKeyState(VK_RCONTROL)|GetKeyState(VK_LCONTROL))&0x80)
-            SaveWindow();
 }
 
 
@@ -333,8 +346,17 @@ UINT CALLBACK DataAcquisition_Process(void*)
     }
     else
     {
+        double capacity = 0.0;
+        int port_c = 2; /* AI_2 */
+        DAQMeasure_Capacity(port_c, &capacity);
+        capacity *= CONST_02_SULA*RANGE_SULA;
         MyDAQMeasure(&vData2, 1, measure_time_DAQ*0.001, ai_port);
-        buff << fixed << "AI: " << ai_port + offset_ai_port << endl;
+        for(auto &Y: vData2)
+        {
+            Y = CONST_02_SULA*Y*RANGE_SULA / PRE_AMP_GAIN_SULA;
+        }
+        buff << fixed << "AI: " << ai_port + offset_ai_port << endl
+             << "Cap. [pF] = " << fixed << setprecision(3) << capacity;
         gAdditionalInfo(hGraph_DAQ, buff.str());
     }
     for(size_t i = 0; i < vData2.size(); i++)
@@ -384,20 +406,21 @@ UINT Thermostat_Process()
     /* Проверяем условие стабилизации первое */
     if(start == true && stability == false && fix_temp == false && dAverSqFluct <= Thermostat.TempDisp)
     {
-        double dMean = round(mean(vTemp), 2);
+        double dMean = round(mean(vTemp), THERMO_PRECISION);
         /* Проверяем условие стабилизации второе */
         if(fabs(dMean - Thermostat.BeginPoint) <= Thermostat.TempDisp) //dAverSqFluct?
         {
             stability = true;
-            ::MeanTemp = dMean;
+            double* MeanTemp = new double(dMean);
             if(index_mode == DLTS)
             {
-                HANDLE hThread = (HANDLE)_beginthreadex(NULL, 0, ReadDLTS, NULL, 0, NULL);
+                
+                HANDLE hThread = (HANDLE)_beginthreadex(NULL, 0, ReadDLTS, (PVOID)MeanTemp, 0, NULL);
                 CloseHandle(hThread);
             }
             else if(index_mode == ITS)
             {
-                HANDLE hThread = (HANDLE)_beginthreadex(NULL, 0, ReadITS, NULL, 0, NULL);
+                HANDLE hThread = (HANDLE)_beginthreadex(NULL, 0, ReadITS, (PVOID)MeanTemp, 0, NULL);
                 CloseHandle(hThread);
             }
             else return -1;
@@ -407,26 +430,27 @@ UINT Thermostat_Process()
     gVector vData1;
     for(size_t i = 0; i < vTemp.size(); i++)
         vData1.push_back(i*REFRESH_TIME_THERMOSTAT*0.001);
-    if(dAverSqFluct < 0.01) gBand(hGraph, 0, REFRESH_TIME_THERMOSTAT*0.001*MAX_POINT_TEMP_GRAPH, (dTemp-0.05)<0?0:(dTemp-0.05), (dTemp+0.05));
+    if(dAverSqFluct < 0.01) gBand(hGraph, 0, REFRESH_TIME_THERMOSTAT*0.001*MAX_POINT_TEMP_GRAPH, (dTemp-0.5)<0?0:(dTemp-0.5), (dTemp+0.5));
     else gBand(hGraph, 0, REFRESH_TIME_THERMOSTAT*0.001*MAX_POINT_TEMP_GRAPH, 0, 0);
     gData(hGraph, &vData1, &vTemp);
     return 0;
 }
 
-UINT CALLBACK ReadDLTS(void*)
+UINT CALLBACK ReadDLTS(void* MeanTemp_)
 {
     try{
     stringstream buff;
     buff << fixed << setprecision(2);
     vector<double> Relaxation;
+    double MeanTemp = *(double*)MeanTemp_;
     int offset = 0; /* Величина смещения в массиве сохраненых релаксаций для записи следующей */
     WaitForSingleObject(hDownloadEvent, INFINITE);
     /* Проверка на существование релаксации с текущей температурой */
     for(auto it = xAxisDLTS.begin(); it != xAxisDLTS.end(); it++)
     {
         /* Выбор позиции для сохранения */
-        if(::MeanTemp > *it) offset++;
-        else if(::MeanTemp == *it)
+        if(MeanTemp > *it) offset++;
+        else if(MeanTemp == *it)
         {
             /* Если релаксация с текущей температурой существует */
             goto J1;
@@ -443,9 +467,10 @@ UINT CALLBACK ReadDLTS(void*)
     /* Сохраняем релаксации, чтобы иметь возможность переключаться между ними */
     SavedRelaxations.insert(SavedRelaxations.begin()+offset, Relaxation);
     /* Добавляем точку на DLTS кривую */
-    AddPointsDLTS(&Relaxation, ::MeanTemp);
+    AddPointsDLTS(&Relaxation, MeanTemp);
     /* Сохраняем релаксацию в файл */
-    SaveRelaxSignal(::MeanTemp, &Relaxation, 0.0, 0.0);
+    SaveRelaxSignal(MeanTemp, &Relaxation, 0.0, 0.0);
+    delete MeanTemp_;
     index_relax = offset;
     PlotRelax();
     PlotDLTS();
@@ -466,7 +491,7 @@ UINT CALLBACK ReadDLTS(void*)
     return 0;
 }
 
-UINT CALLBACK ReadITS(void*)
+UINT CALLBACK ReadITS(void* MeanTemp)
 {
     try{
     WaitForSingleObject(hDownloadEvent, INFINITE);
@@ -502,7 +527,8 @@ UINT CALLBACK ReadITS(void*)
         }
         Generator.Apply();
         /* Сохраняем релаксацию в файл */
-        SaveRelaxSignal(::MeanTemp, &Relaxation, dVoltBias, dVoltAmp);
+        SaveRelaxSignal(*(double*)MeanTemp, &Relaxation, dVoltBias, dVoltAmp);
+        delete MeanTemp;
         /* Отрисовываем график */
         PlotRelax();
     }

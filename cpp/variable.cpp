@@ -19,6 +19,7 @@ const string        names_wFunc[] = {"Double box-car", "Lock-in", "Exponent", "S
 const string        range[] = {"±10", "±5", "±0.5", "±0.05"};
 const string        strHeatingRange[] = {"Off", "Low", "Med", "High"};
       string        FileSaveName;
+      string        FileSavePath;
 
 double dEfMass = MASS_ELECTRON;
 double dFactorG = G_CONSTANT;
@@ -31,7 +32,11 @@ int32 pfi_ttl_port = 0;
 uInt32 measure_time_DAQ = 0; //Время измерения в мс
 uInt32 averaging_DAQ = 0;    //Число отсчетов для получения одного измерения
 float64 rate_DAQ = 0.0;      //Сэмплов в секунду
-float64 gate_DAQ = 0.0;      //
+float64 gate_DAQ = 0.0;      //Длительность запирающего импульса
+
+int RANGE_SULA = 100;          //Capaciti range
+double CONST_02_SULA = 0.2;
+double PRE_AMP_GAIN_SULA = 10;
 /* Флаги */
 bool start = false;            //Нажата кнопка старт
 bool stability = false;        //Температура стабилизировалась вблизи сетпоинта

@@ -77,7 +77,7 @@ double mean(const std::vector<double> &temp)
         return 0.0;
     size_t i = 0;
     double result = 0.0;
-    for(vector<double>::const_reverse_iterator it = temp.crbegin(); it != temp.crend() && i < 1000*AVERAGING_TIME/REFRESH_TIME_THERMOSTAT; it++)
+    for(vector<double>::const_reverse_iterator it = temp.crbegin(); it != temp.crend(); it++)
     {
         result += *it;
         i++;

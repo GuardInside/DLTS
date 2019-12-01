@@ -22,8 +22,8 @@ stringstream& rewrite(stringstream& buff)
 
 UINT GetDlgItemTextMod(HWND hwnd, int nIDItem, stringstream& str_buf)
 {
-    char buffer[30];
-    UINT result = GetDlgItemText(hwnd, nIDItem, buffer, 30);
+    char buffer[80];
+    UINT result = GetDlgItemText(hwnd, nIDItem, buffer, 80);
     rewrite(str_buf) << buffer;
     return result;
 }

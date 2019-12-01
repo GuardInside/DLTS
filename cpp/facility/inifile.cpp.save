@@ -4,6 +4,8 @@
 #include <iomanip>
 #include <tchar.h>
 
+#define BUFFER_SIZE_FOR_VARIABLE 
+
 using namespace ini;
 
 Settings::Settings(std::string FileName)
@@ -39,7 +41,7 @@ BOOL Settings::ReadInt(std::string section, std::string key, int *value, std::st
     *value = atoi(buff);
     return status;
 }
-BOOL Settings::ReadBool(std::string section, std::string key, bool *value, std::string default_value = "0")
+BOOL Settings::ReadBool(std::string section, std::string key, bool *value, std::string default_value)
 {
     char buff[80];
     BOOL status = GetPrivateProfileString(section.c_str(), key.c_str(), default_value.c_str(), buff, sizeof(buff), Path.c_str());
@@ -57,7 +59,7 @@ BOOL Settings::WriteInt(std::string section, std::string key, int value)
     buff << value;
     return WritePrivateProfileString(section.c_str(), key.c_str(), buff.str().c_str(), Path.c_str());
 }
-BOOL WriteBool(std::string section, std::string key, bool value)
+BOOL Settings::WriteBool(std::string section, std::string key, bool value)
 {
     std::stringstream buff;
     buff << (value == true? 1 : 0);

@@ -1,12 +1,17 @@
 #include <facility.h>
 #include "graph.h"
+#include "ini.h"
 
 void ClearMemmory()
 {
+    /* Включить автопоиск минимума */
+    auto_peak_search = true;
     ClearMemmoryDLTS();
-    itsLowVoltages.clear();
-    itsUpVoltages.clear();
+    itsBiasVoltages.clear();
+    itsAmpVoltages.clear();
     gwin::gMulVector().swap(SavedRelaxations);
+    gwin::gDefaultPlot(hRelax, "\0");
+    gwin::gDefaultPlot(hGraph_DLTS, "\0");
 }
 
 void ClearMemmoryDLTS()
@@ -32,44 +37,48 @@ void RefreshDLTS()
         SendMessage(hProgress, PBM_SETPOS, progress, 0);
     }
     SendMessage(hProgress, PBM_SETPOS, 0, 0);
+    auto_peak_search = true;
     PlotDLTS();
 }
 
-void SaveRelaxSignal(double MeanTemp, const vector<double> *vData, double dVoltMin, double dVoltMax)
+void SaveRelaxSignal(double MeanTemp, const vector<double> *vData, double dBias, double dAmp)
 {
-    string SavePath = Save + FileSaveName;
-    if(index_mode == DLTS) SavePath += ".dlts";
-    else if(index_mode == ITS) SavePath += ".its";
+    string ext;
+    if(index_mode == DLTS) ext = ".dlts";
+    else if(index_mode == ITS) ext = ".its";
+    string FullPath = FileSavePath + FileSaveName + ext;
     ofstream file;
     if(bfNewfile)
     {
-        file.open(SavePath.data());
+        file.open(FullPath.data());
         bfNewfile = false;
     }
     else
-        file.open(SavePath.data(), std::ofstream::app);
+        file.open(FullPath.data(), std::ofstream::app);
     if(!file.is_open())
     {
-        MessageBox(NULL, "Save file isn't being found.", "Error", MB_OK);
+        MessageBox(NULL, "Save file isn't being found.", "Error", MB_ICONERROR);
         return;
     }
-    //Сохраняем настройки, если файл открыт впервые
+
     file << setiosflags(ios::fixed) << setprecision(0);
-    ifstream ifile(SavePath.data());
-    if(ifile.peek() == EOF)
+    //ifstream ifile(FullPath.data());
+    if(file.peek() == EOF)
     {
+        /* Сохраняем настройки, если файл открыт впервые */
+        //ini::File ();
         file<< averaging_DAQ << " "
             << measure_time_DAQ << " "
             << rate_DAQ << " "
             << gate_DAQ << endl << setprecision(VOLTAGE_PRECISION)
             << Generator.amplitude << " "
             << Generator.bias << endl;
-        if(index_mode == ITS) file << setprecision(THREMO_) << MeanTemp << endl;
+        if(index_mode == ITS) file << setprecision(THERMO_PRECISION) << MeanTemp << endl;
     }
     else file << endl;
-    if(index_mode == DLTS) file << setprecision(2) << MeanTemp << endl;
+    if(index_mode == DLTS) file << setprecision(THERMO_PRECISION) << MeanTemp << endl;
     else if(index_mode == ITS) /* Должен записывать истинное, а не установленное значение */
-        file << setprecision(VOLTAGE_PRECISION) << dVoltMin << " " << dVoltMax << endl;
+        file << setprecision(VOLTAGE_PRECISION) << dBias << " " << dAmp << endl;
     file << setprecision(VOLTAGE_PRECISION);
     UINT32 uSamples = rate_DAQ*measure_time_DAQ*0.001;
     for(uInt32 i = 0; i < uSamples; i++)
@@ -78,7 +87,7 @@ void SaveRelaxSignal(double MeanTemp, const vector<double> *vData, double dVoltM
         if(i != uSamples-1)
             file << endl;
     }
-    ifile.close();
+    //ifile.close();
     file.close();
 }
 

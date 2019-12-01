@@ -73,6 +73,7 @@ extern const string range[];
 extern const string strHeatingRange[];
 /* Имя файла для сохранения FileSaveName.txt */
 extern       string FileSaveName;
+extern       string FileSavePath;
 /* Имена весовых функций */
 extern const string names_wFunc[];
 
@@ -88,6 +89,10 @@ extern uInt32 measure_time_DAQ; //Время измерения
 extern uInt32 averaging_DAQ;    //Число отсчетов для получения одного измерения
 extern float64 rate_DAQ;        //отсчетов в секунду
 extern float64 gate_DAQ;
+
+extern int RANGE_SULA;          //Capaciti range
+extern double CONST_02_SULA;
+extern double PRE_AMP_GAIN_SULA;
 /* Флаги */
 extern bool start;              //Нажата кнопка старт
 extern bool stability;          //Температура стабилизировалась вблизи сетпоинта
