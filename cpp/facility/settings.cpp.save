@@ -23,7 +23,7 @@ UINT CALLBACK dlg_success(PVOID)
 
 void write_settings()
 {
-    ini::Settings iniFile{"settings.ini"};
+    ini::File iniFile{"settings.ini"};
         /* Пользовательские настройки */
     /* Сохраняем настройки блока Термостата */
     iniFile.WriteDoubleFix("Thermostat", "step", Thermostat.TempStep, THERMO_PRECISION);
@@ -34,6 +34,9 @@ void write_settings()
     iniFile.WriteInt("DAQ", "rate", rate_DAQ);
     iniFile.WriteInt("DAQ", "time", measure_time_DAQ);
     iniFile.WriteDoubleFix("DAQ", "gate", gate_DAQ, 2);
+    /* Сохраняем настройки блока SULA */
+    iniFile.WriteInt("SULA", "range_capacity", RANGE_SULA_index);
+    iniFile.WriteInt("SULA", "pre_amp_gain", PRE_AMP_GAIN_SULA_index);
     /* Сохраняем настройки блока генератора импульсов */
     iniFile.WriteDoubleFix("Generator", "period", Generator.period, 2);
     iniFile.WriteDoubleFix("Generator", "width", Generator.width, 2);
@@ -75,6 +78,11 @@ void write_settings()
         rewrite(buff) << "_" << i;
         iniFile.WriteDoubleFix("Сorrelator", buff.str(), CorTime[i], 2);
     }
+        /* Настройки аппроксимации */
+    iniFile.WriteDoubleSc("Fitting", "abs_error", AprErr, 0);
+    iniFile.WriteInt("Fitting", "max_iter", AprIter);
+    iniFile.WriteBool("Fitting", "use_for_relax", AprEnableRelax);
+    iniFile.WriteBool("Fitting", "use_for_dlts", AprEnableDLTS);
         /* Настройки PID таблицы */
     iniFile.Rename("pid.ini");
     for(int i = 0; i < QUANTITY_ZONE; i++)
@@ -103,6 +111,9 @@ void read_settings()
     iniFile.ReadDouble("DAQ", "rate", &rate_DAQ);
     iniFile.ReadInt("DAQ", "time", (int*)&measure_time_DAQ);
     iniFile.ReadDouble("DAQ", "gate", &gate_DAQ);
+    /* Загружаем настройки блока SULA */
+    iniFile.ReadInt("SULA", "range_capacity", &RANGE_SULA_index);
+    iniFile.ReadInt("SULA", "pre_amp_gain", &PRE_AMP_GAIN_SULA_index);
     /* Загружаем настройки блока генератора импульсов */
     iniFile.ReadDouble("Generator", "period", &Generator.period);
     iniFile.ReadDouble("Generator", "width", &Generator.width);
@@ -151,6 +162,11 @@ void read_settings()
     if(yAxisDLTS != nullptr)
         delete []yAxisDLTS;
     yAxisDLTS = new vector<double>[CorTime.size()]; /* Число осей совпадает с числом корреляторов */
+        /* Настройки аппроксимации */
+    iniFile.ReadDouble("Fitting", "abs_error", &AprErr);
+    iniFile.ReadInt("Fitting", "max_iter", &AprIter);
+    iniFile.ReadBool("Fitting", "use_for_relax", &AprEnableRelax);
+    iniFile.ReadBool("Fitting", "use_for_dlts", &AprEnableDLTS);
         /* Настройки PID таблицы */
     iniFile.Rename("pid.ini");
     for(int i = 0; i < QUANTITY_ZONE; i++)

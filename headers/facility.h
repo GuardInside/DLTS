@@ -45,5 +45,7 @@ void SaveRelaxSignal(double MeanTemp, const vector<double> *vData, double dBias,
 void AddPointsDLTS(const vector<double> *vRelaxation, const double temp);
 /* Возвращает расширение открытого файла */
 string GetExtensionFile(string str);
+/* Преобразует значение напряжения в емкость */
+void VoltageToCapacity(double *value);
 
 #endif // FACILITY_H_INCLUDED

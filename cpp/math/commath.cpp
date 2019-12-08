@@ -92,12 +92,12 @@ double AverSqFluct(const vector<double> &temp)
         return 0.0;
     size_t i = 0;
     double result = 0.0, m = mean(temp);
-    for(vector<double>::const_reverse_iterator it = temp.crbegin(); it != temp.crend() && i < 1000*AVERAGING_TIME/REFRESH_TIME_THERMOSTAT; it++)
+    for(vector<double>::const_reverse_iterator it = temp.crbegin(); it != temp.crend(); it++)
     {
         result += pow(*it, 2.0);
         i++;
     }
     result /= i;
     result = result - pow(m, 2.0);
-    return pow(result, 0.5) > pow(10,-THERMO_PRECISION) ? pow(result, 0.5) : 0.00;
+    return pow(result, 0.5) > 0.01 ? pow(result, 0.5) : 0.00;
 }

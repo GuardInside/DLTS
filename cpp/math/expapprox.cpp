@@ -81,8 +81,8 @@ int get_exponent_fitt(const vector<double> *x, const vector<double> *y, const ve
         return -1; /* Несовпадающие размеры */
     const size_t p = 3;
     const size_t n = x->size();
-    struct data d = {n, x, y, sigma};
 
+    struct data d = {n, x, y, sigma};
 
     gsl_vector *x_init = gsl_vector_calloc(p);
     gsl_vector_set(x_init, 0, -0.01);
@@ -145,6 +145,7 @@ int get_exponent_fitt(const vector<double> *x, const vector<double> *y, const ve
     gsl_matrix_free(covar);
     gsl_vector_free(x_init);
 
+    if(strStatusMSG != NULL)
     *strStatusMSG = gsl_strerror(status);
     return status;
 }

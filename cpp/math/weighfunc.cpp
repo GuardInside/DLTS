@@ -53,10 +53,7 @@ double test_func(double x, double t1)
 
 void AddPointsDLTS(const vector<double> *vRelaxation, const double temp)
 {
-    bool UseFitting = 0;
-    ini::File AnalysisFile{"analysis.ini"};
-    AnalysisFile.ReadBool("Fitting", "use_fitting", &UseFitting);
-    if(UseFitting == true)
+    if(AprEnableDLTS == true)
         AddPoint_with_approx(vRelaxation, temp);
     else AddPoint_with_interp(vRelaxation, temp);
 }
@@ -93,23 +90,10 @@ void AddPoint_with_approx(const vector<double> *vRelaxation, const double temp)
     for(size_t i = 0; i < vRelaxation->size(); i++)
         TimeAxis.push_back(i*dt + T_g);
     /* Аппроксимируем кривую */
-    int max_iter = 0;
-    double abs_error = 1e-6;
-    double rel_error = 1e-6;
-    double sigma = 1.0;
-    ini::File AnalysisFile{"analysis.ini"};
-    AnalysisFile.ReadDouble("Fitting", "abs_error", &abs_error);
-    AnalysisFile.ReadDouble("Fitting", "rel_error", &rel_error);
-    AnalysisFile.ReadDouble("Fitting", "sigma", &sigma);
-    AnalysisFile.ReadInt("Fitting", "max_it", &max_iter);
-    vector<double> vSigma(TimeAxis.size(), sigma);
-    double A = 0.0, dA = 0.0, B = 0.0, dB = 0.0, tau = 0.0, dtau = 0.0, ReducedChiSqr = 0.0;
-    string strStatus;
-    size_t iter = 0;
+    double A = 0.0, B = 0.0, tau = 0.0;
+    vector<double> vSigma(TimeAxis.size(), 1); /* Веса пл умолчанию */
     get_exponent_fitt(&TimeAxis, vRelaxation, &vSigma,
-                      &A, &tau, &B, &dA, &dB, &dtau, &ReducedChiSqr, &iter, max_iter, abs_error, rel_error, &strStatus);
-    //if(status)
-        //MessageBox(HWND_DESKTOP, strStatus.data(), "Approximation", MB_ICONINFORMATION);
+                  &A, &tau, &B, NULL, NULL, NULL, NULL, NULL, AprIter, AprErr, 0, NULL);
     /* Конец аппроксимации */
     try{
     for(size_t c = 0; c < CorTime.size(); c++)          //Пробегаемся по всем корреляторам
@@ -123,6 +107,7 @@ void AddPoint_with_approx(const vector<double> *vRelaxation, const double temp)
                 I += h*(f_i*w(x_i,t1) + f_i_h*w(x_i+h, t1))/2;
             }
         /* Добавляем по точке на каждой из осей */
+        VoltageToCapacity(&I);
         yAxisDLTS[c].insert(yAxisDLTS[c].begin() + offset, I);
     }
     }catch(std::exception &e){ MessageBox(0, e.what(), "", 0); }
@@ -168,6 +153,7 @@ void AddPoint_with_interp(const vector<double> *vRelaxation, const double temp)
             if(w(x_i,t1) != 0.0)
                 I += h*(f.at(x_i)*w(x_i,t1) + f.at(x_i+h)*w(x_i+h, t1))/2;
         /* Добавляем по точке на каждой из осей */
+        VoltageToCapacity(&I);
         yAxisDLTS[c].insert(yAxisDLTS[c].begin() + offset, I);
     }
     }catch(std::exception &e){ MessageBox(0, e.what(), "", 0); }

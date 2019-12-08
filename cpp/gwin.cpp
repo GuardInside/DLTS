@@ -123,6 +123,18 @@ namespace gwin
 /* ********************** */
 /*  Интерфейс библиотеки  */
 /* ********************** */
+BOOL gwin::gBandGet(HWND hWnd, double* dMinX, double* dMaxX, double* dMinY, double* dMaxY)
+{
+    if(dMinX != NULL)
+        *dMinX = _gMap.at(hWnd).dMinX;
+    if(dMaxX != NULL)
+        *dMaxX = _gMap.at(hWnd).dMaxX;
+    if(dMinY != NULL)
+        *dMinY = _gMap.at(hWnd).dMinY;
+    if(dMaxY != NULL)
+        *dMaxY = _gMap.at(hWnd).dMaxY;
+}
+
 BOOL gwin::gDvToLp(HWND hWnd, gPoint *pt)
 {
     if(pt == nullptr)

@@ -37,16 +37,15 @@ using namespace std;
 #define MAX_POINT_TEMP_GRAPH        100 //Количество точек на графике температуры
 #define RANGE_SIZE                  4   //Число диапазонов напряжений для АЦП
 #define RANGE_HEATING_SIZE          4   //Число уровней нагрева ТЭН'а
-#define VOLTAGE_PRECISION           4   //Вольт
+#define VOLTAGE_PRECISION           6   //Вольт
 #define THERMO_PRECISION            2   //Кельвин
 #define TIME_PRECISION              4   //Секунды
 #define AVERAGING_TIME              15  //Время, необходимое для получения среднего значения T и дисперсии.
-                                        //Должно быть меньше, чем MAX_POINT_TEMP_GRAPH*0.001*REFRESH_TIME_THERMOSTAT
+                                        //Должно быть меньше, чем MAX_POINT_TEMP_GRAPH*0.001*REFRESH_TIME_THERMOSTA
 
 /* Физические константы */
 #define BOLTZMANN                   (1.380649e-23)      //Дж/К
 #define PLANCKS_CONSTANT_H          (6.62607015e-34)    //Дж*с
-#define G_CONSTANT                  1                   //Фактор вырождения g = 2*s + 1 [Arb.]. По умолчанию.
 #define MASS_ELECTRON               (9.10938188e-31)    //[кг] По умолчанию.
 #define PI                          3.1415926535897932384626433832795
 
@@ -69,6 +68,8 @@ extern int32 offset_ai_port;//Смещение номера порта ai_port при отображении в ре
 
 /* Диапазоны измерений напряжения DAQ */
 extern const string range[];
+extern const int    int_range_sula[];
+extern const int    int_pre_amp_gain[];
 /* Диапазон уровней нагрева */
 extern const string strHeatingRange[];
 /* Имя файла для сохранения FileSaveName.txt */
@@ -90,9 +91,14 @@ extern uInt32 averaging_DAQ;    //Число отсчетов для получения одного измерения
 extern float64 rate_DAQ;        //отсчетов в секунду
 extern float64 gate_DAQ;
 
-extern int RANGE_SULA;          //Capaciti range
-extern double CONST_02_SULA;
-extern double PRE_AMP_GAIN_SULA;
+/* Настройки SULA */
+extern int RANGE_SULA_index;
+extern int PRE_AMP_GAIN_SULA_index;
+/* Настройки аппроксимации */
+extern bool AprEnableRelax;
+extern bool AprEnableDLTS;
+extern int  AprIter;
+extern double AprErr;
 /* Флаги */
 extern bool start;              //Нажата кнопка старт
 extern bool stability;          //Температура стабилизировалась вблизи сетпоинта
@@ -116,4 +122,17 @@ extern HWND                        hGraph_DLTS;//Описатель окна графика DLTS
 extern HWND                        hProgress;  //Прогресс чтения данных
 extern CRITICAL_SECTION            csDataAcquisition;//Используется всегда при чтении данных DAQ
 extern HANDLE                      hDownloadEvent;
+
+
+class AllSettings
+{
+    class PlotSettings
+    {
+    };
+
+public:
+    PlotSettings RelaxPlot;
+
+};
+
 #endif // VARIABLE_H_INCLUDED

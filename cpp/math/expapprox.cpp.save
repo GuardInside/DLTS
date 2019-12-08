@@ -53,7 +53,6 @@ int expb_df(const gsl_vector *x_, void *data, gsl_matrix *J)
         /** Где fi = (Yi - yi)/sigma[i] */
         /** Yi = A * exp(-lambda * t) + b */
         /** xj - это параметры (A,lambda,b) */
-
         double t = x->at(i);
         double s = sigma->at(i);
         double e = exp(-lambda * t);
@@ -82,7 +81,18 @@ int get_exponent_fitt(const vector<double> *x, const vector<double> *y, const ve
         return -1; /* Несовпадающие размеры */
     const size_t p = 3;
     const size_t n = x->size();
-    struct data d = {n, x, y, sigma};
+
+    struct data d = {n, x, y, NULL};
+
+    bool fDelSigma = false;
+    if(sigma == NULL)
+    {
+        /* По умолчанию все веса равны 1 */
+        d.sigma = new vector<double>{}
+        fDelSigma = true;
+    }
+    else
+        d.sigma = sigma;
 
 
     gsl_vector *x_init = gsl_vector_calloc(p);
@@ -110,10 +120,9 @@ int get_exponent_fitt(const vector<double> *x, const vector<double> *y, const ve
         it++;
         status = gsl_multifit_fdfsolver_iterate(s);
 
-        if(status == GSL_SUCCESS)
-            break;
+        if(status != GSL_SUCCESS) break;
         status = gsl_multifit_test_delta(s->dx, s->x, epsabs, epsrel);
-    }while(status == GSL_CONTINUE && it < 50);
+    }while(status == GSL_CONTINUE && it < max_iter);
 
     if(iter != NULL) *iter = it;
 
@@ -148,5 +157,7 @@ int get_exponent_fitt(const vector<double> *x, const vector<double> *y, const ve
     gsl_vector_free(x_init);
 
     *strStatusMSG = gsl_strerror(status);
+    if(fDelSigma)
+        delete sigma;
     return status;
 }

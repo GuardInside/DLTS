@@ -1,6 +1,14 @@
 #include <facility.h>
+
 #include "graph.h"
 #include "ini.h"
+#include "variable.h"
+
+void VoltageToCapacity(double *value)
+{
+    static const double _SULA_CONST = 0.2;
+    *value = _SULA_CONST*(*value)*int_range_sula[RANGE_SULA_index] / int_pre_amp_gain[PRE_AMP_GAIN_SULA_index];
+}
 
 void ClearMemmory()
 {

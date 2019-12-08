@@ -44,8 +44,15 @@ VOID PlotDLTS();
 /* ************************************** */
 
 BOOL dlts_mouse_message(HWND, UINT, WPARAM, LPARAM); //Оконная функция для обработки сообщений мыщи окна графика DLTS
+BOOL relax_mouse_message(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+BOOL daq_mouse_message(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
-/* **************************** */
+/* ************************************ */
+/* Функции отображения и настройки меню */
+/* ************************************ */
+BOOL BuildMenu(HWND hWnd);
+
+
 UINT CALLBACK dlg_success(PVOID);
 
 VOID StartButPush();

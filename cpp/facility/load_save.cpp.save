@@ -28,49 +28,50 @@ VOID DownloadWindow()
         file.lpstrInitialDir = ".\\save\\";
         file.lpstrDefExt = NULL;
         file.Flags = OFN_HIDEREADONLY+OFN_NOCHANGEDIR;
-    if(!GetOpenFileName(&file))
-    {
-        MessageBox(NULL, "The file wasn't opened.", "Warning", MB_ICONWARNING);
-        return;
-    }
+    if(!GetOpenFileName(&file)) return; /* Отмена выбора файла */
     /* Установка новго имени файла для сохранений */
     FileSavePath.clear();
     FileSaveName.clear();
-    for(WORD i = file.nFileOffset; i < (file.nFileExtension-1); i++)
-        FileSavePath
+    for(WORD i = 0; i < file.nFileOffset; i++)
+        FileSavePath.push_back(LoadFileName[i]);
     for(WORD i = file.nFileOffset; i < (file.nFileExtension-1); i++)
         FileSaveName.push_back(LoadFileName[i]);
+    string ext;
+    for(WORD i = file.nFileExtension; i < strlen(LoadFileName); i++)
+        ext.push_back(LoadFileName[i]);
+    /* Установка мода */
+    if(ext == "dlts")
+        index_mode = DLTS;
+    else if(ext == "its")
+        index_mode = ITS;
+    else
+    {
+        MessageBox(NULL, "You should chose file with .dlts or .its extension.", "Warning", MB_ICONWARNING);
+        return;
+    }
     HANDLE thDownload = (HANDLE)_beginthreadex(NULL, 0, LoadFile, NULL, 0, NULL);
     CloseHandle(thDownload);
 }
 
 UINT CALLBACK LoadFile(PVOID)
 {
-    /* Собираем путь к файлу */
-    string ext = GetExtensionFile(LoadFileName);
-    if(ext != ".dlts" && ext != ".its")
-    {
-        MessageBox(NULL, "You should chose file with .dlts or .its extension.", "Warning", MB_ICONWARNING);
-        return -1;
-    }
-    string strName = FileSavePath + FileSaveName + ext;
+    string ext;
+    if(index_mode == DLTS) ext = "dlts";
+    else if(index_mode == ITS) ext = "its";
+    string strName = FileSavePath + FileSaveName + '.' + ext;
     ifstream file;
     file.open(strName);
     if(!file.is_open())
         return FALSE;
-    /* Создаем событие-флаг */
+    /** Создаем событие-флаг **/
+    /* Чтобы запись релаксаций не начиналась раньше конца загрузки */
     ResetEvent(hDownloadEvent);
     double itsBias = 0.0, itsAmp = 0.0;
     double buff = 0.0, temp = 0.0;
+    /** Загружаем настройки **/
     file >> averaging_DAQ >> measure_time_DAQ >> rate_DAQ >> gate_DAQ
-         >> Generator.amplitude >> Generator.bias;
-    if(ext == ".dlts")
-        index_mode = DLTS;
-    else if(ext == ".its")
-    {
-        index_mode = ITS;
-        file >> itsTemperature;
-    }
+         >> Generator.amplitude >> Generator.bias >> RANGE_SULA_index;
+    if(ext == "its") file >> itsTemperature;
     /** Оценка размера загружаемого файла **/
     UINT uSamples = rate_DAQ*measure_time_DAQ*0.001, uQuantity = 0;
     ifstream LoadFile2;
@@ -122,6 +123,7 @@ UINT CALLBACK LoadFile(PVOID)
     file.close();
     PlotRelax();
     PlotDLTS();
+    /** Устанавливаем флаг окончания загрузки **/
     SetEvent(hDownloadEvent);
     return TRUE;
 }

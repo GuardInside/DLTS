@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include "daq.h"
 #include "variable.h"
 #include "vi.h"
@@ -130,7 +132,6 @@ BOOL MyDAQMeasure(vector<double> *vResult, UINT AverNum, double time, UINT AIPor
 BOOL MeasurePulse(vector<double> *vData, double *dVoltBias, double *dVoltAmp)
 {
     static CONST UINT T_NUM = 2, A_NUM = 1;
-    static const double dV = 0.05;
     *dVoltBias = 0.0;
     *dVoltAmp = 0.0;
     UINT uiCount1 = 0, uiCount2 = 0;
@@ -139,30 +140,36 @@ BOOL MeasurePulse(vector<double> *vData, double *dVoltBias, double *dVoltAmp)
     if(Generator.is_active) dMeasTime = Generator.period*T_NUM*0.001;
     else dMeasTime = measure_time_DAQ*T_NUM*0.001;
     MyDAQMeasure(&vData2, A_NUM, dMeasTime, ai_port_pulse);
-    /* Рассчитываем истинные значения амплитуд */
-    if(Generator.is_active)
-        for(const auto &v: vData2)
-        {
-            if( ( v >= (Generator.bias-dV) ) && ( v <= (Generator.bias+dV) ) )
-            {
-                *dVoltBias += v;
-                uiCount2++;
-            }
-            else if( index_mode == DLTS && (( v >= (Generator.amplitude-dV) ) && ( v <= (Generator.amplitude+dV) )) )
-            {
-                *dVoltAmp += v;
-                uiCount1++;
-            }
-            else if( index_mode == ITS && (( v >= (Generator.begin_amplitude-dV) ) && ( v <= (Generator.begin_amplitude+dV) )) )
-            {
-                *dVoltAmp += v;
-                uiCount1++;
-            }
-        }
-    else if(!Generator.is_active)
-    {
-        // Алгоритм измерения напряжения в случае генератор
+    /* Допустимое отклонение напряжения в Вольтах*/
 
+    double dV = 0.05;
+    /* Рассчитываем примерные значения амплитуды и смещения */
+    double PredBias = 0.0, PredAmp = 0.0;
+    if(Generator.is_active)
+    {
+        PredBias = Generator.bias;
+        PredAmp = Generator.amplitude;
+    }
+    else
+    {
+        /* Bias всегда больше либо равен Amp */
+        auto AmpBias = minmax_element(vData2.begin(), vData2.end());
+        PredAmp = *AmpBias.first;
+        PredBias = *AmpBias.second;
+    }
+    /* Рассчитываем истинные значения амплитуды и смещения */
+    for(const auto &v: vData2)
+    {
+        if( ( v >= (PredBias-dV) ) && ( v <= (PredBias+dV) ) )
+        {
+            *dVoltBias += v;
+            uiCount2++;
+        }
+        else if( ( v >= (PredAmp-dV) ) && ( v <= (PredAmp+dV) ) )
+        {
+            *dVoltAmp += v;
+            uiCount1++;
+        }
     }
     if(uiCount1 != 0)
         *dVoltAmp /= uiCount1;

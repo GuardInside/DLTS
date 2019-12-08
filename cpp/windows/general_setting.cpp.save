@@ -1,7 +1,9 @@
 #include <winfunc.h>
-#define ID_COMBOBOX_VOLTAGE_RANGE 200
-#define ID_COMBOBOX_MODE          201
-#define WM_INITDLG                WM_USER
+#define ID_COMBOBOX_VOLTAGE_RANGE       200
+#define ID_COMBOBOX_MODE                201
+#define ID_COMBOBOX_RANGE_SULA          202
+#define ID_COMBOBOX_PRE_AMP_GAIN_SULA   203
+#define WM_INITDLG                      WM_USER
 
 BOOL SettingsWindow_OnInit(HWND, HWND, LPARAM);
 BOOL SettingsWindow_OnCommand(HWND, int, HWND, UINT);
@@ -21,19 +23,41 @@ INT_PTR CALLBACK stwin_proc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
 //BOOL SettingsWindow_OnCreate(HWND hwnd, LPCREATESTRUCT)
 BOOL SettingsWindow_OnInit(HWND hwnd, HWND, LPARAM)
 {
-    HWND hComboBox_range, hComboBox_mode;
+    HWND hComboBox_range;
+    HWND hComboBox_mode;
+    HWND hComboBox_RangeSula;
+    HWND hComboBox_PreAmpGain;
     //Вывести возможны настройки диапазонов напряжений
     hComboBox_range = CreateWindow(WC_COMBOBOX, TEXT(""), CBS_DROPDOWNLIST | WS_CHILD | WS_OVERLAPPED | WS_VISIBLE,
     167, 63, 95, 125, hwnd, (HMENU)(ID_COMBOBOX_VOLTAGE_RANGE), hInst, NULL);
     for (int i = 0; i < RANGE_SIZE; i++)
         SendMessage(hComboBox_range, CB_ADDSTRING, 0, (LPARAM)range[i].data());
     SendMessage(hComboBox_range, CB_SETCURSEL, index_range, 0);
-    /* Настройка режима */
+    /* Настройка режима эксперимента */
     hComboBox_mode = CreateWindow(WC_COMBOBOX, TEXT(""), CBS_DROPDOWNLIST | WS_CHILD | WS_OVERLAPPED | WS_VISIBLE,
-    555, 180, 100, 125, hwnd, (HMENU)(ID_COMBOBOX_MODE), hInst, NULL);
-        SendMessage(hComboBox_mode, CB_ADDSTRING, 0, (LPARAM)"DLTS");
-        SendMessage(hComboBox_mode, CB_ADDSTRING, 0, (LPARAM)"ITS");
-    SendMessage(hComboBox_mode, CB_SETCURSEL, index_mode, 0);
+    685, 180, 100, 125, hwnd, (HMENU)(ID_COMBOBOX_MODE), hInst, NULL);
+        ComboBox_AddString(hComboBox_mode, "DLTS");
+        ComboBox_AddString(hComboBox_mode, "ITS");
+        ComboBox_SetCurSel(hComboBox_mode, index_mode);
+    /* Настройка SULA.CAPACITY_RANGE */
+    hComboBox_RangeSula = CreateWindow(WC_COMBOBOX, TEXT(""), CBS_DROPDOWNLIST | WS_CHILD | WS_OVERLAPPED | WS_VISIBLE,
+    300, 70, 100, 125, hwnd, (HMENU)(ID_COMBOBOX_RANGE_SULA), hInst, NULL);
+    stringstream buff;
+    for(int i = 0; i < 5; i++)
+    {
+        rewrite(buff) << int_range_sula[i];
+        ComboBox_AddString(hComboBox_RangeSula, buff.str().c_str());
+    }
+    ComboBox_SetCurSel(hComboBox_RangeSula, RANGE_SULA_index);
+    /* Настройка SULA.PRE_AMP_GAIN */
+    hComboBox_PreAmpGain = CreateWindow(WC_COMBOBOX, TEXT(""), CBS_DROPDOWNLIST | WS_CHILD | WS_OVERLAPPED | WS_VISIBLE,
+    300, 130, 100, 125, hwnd, (HMENU)(ID_COMBOBOX_PRE_AMP_GAIN_SULA), hInst, NULL);
+    for(int i = 0; i < 7; i++)
+    {
+        rewrite(buff) << int_pre_amp_gain[i];
+        ComboBox_AddString(hComboBox_PreAmpGain, buff.str().c_str());
+    }
+    ComboBox_SetCurSel(hComboBox_PreAmpGain, PRE_AMP_GAIN_SULA_index);
     /* Вывод значений в эдитбокс */
     PostMessage(hwnd, WM_COMMAND, WM_INITDLG, 0);
     return TRUE;
@@ -196,7 +220,12 @@ BOOL SettingsWindow_OnCommand(HWND hwnd, int ID, HWND, UINT codeNotify)
                 //Применить настройки длительности ворот
                 gate_DAQ = ApplySettingEditBox(hwnd, ID_EDITCONTROL_GATE, 2);
                 //Применить настройки диапазона напряжений
-                index_range = SendMessage(GetDlgItem(hwnd, ID_COMBOBOX_VOLTAGE_RANGE), CB_GETCURSEL, 0, 0);
+                index_range = ComboBox_GetCurSel(GetDlgItem(hwnd, ID_COMBOBOX_VOLTAGE_RANGE));
+                /* Настройки SULA */
+                //Применить настройки диапазона напряжений
+                RANGE_SULA_index = ComboBox_GetCurSel(GetDlgItem(hwnd, ID_COMBOBOX_RANGE_SULA));
+                //Применить настройки диапазона напряжений
+                PRE_AMP_GAIN_SULA_index = ComboBox_GetCurSel(GetDlgItem(hwnd, ID_COMBOBOX_PRE_AMP_GAIN_SULA));
                 /* Настройки генератора импульсов */
                 //Применить настройки периода
                 Generator.period = ApplySettingEditBox(hwnd, ID_EDITCONTROL_PERIOD, 2);
@@ -219,7 +248,8 @@ BOOL SettingsWindow_OnCommand(HWND hwnd, int ID, HWND, UINT codeNotify)
                     Generator.end_amplitude = ApplySettingEditBox(hwnd, ID_EDITCONTROL_END_AMPLITUDE, 3);
                     if(Generator.begin_amplitude < MIN_VOLTAGE_PULSE || Generator.begin_amplitude > MAX_VOLTAGE_PULSE) alright = false;
                     else if(Generator.end_amplitude < MIN_VOLTAGE_PULSE || Generator.end_amplitude > MAX_VOLTAGE_PULSE) alright = false;
-                    else if(Generator.end_amplitude)
+                    else if(Generator.end_amplitude < Generator.begin_amplitude && Generator.step_voltage > 0.0) alright = false;
+                    else if(Generator.end_amplitude > Generator.begin_amplitude && Generator.step_voltage < 0.0) alright = false;
                 }
                 //Применить настройки эффективной массы
                 {

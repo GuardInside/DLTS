@@ -17,12 +17,14 @@ int32  offset_ai_port = 0;//Смещение номера порта ai_port при отображении в реал
 
 const string        names_wFunc[] = {"Double box-car", "Lock-in", "Exponent", "Sine"};
 const string        range[] = {"±10", "±5", "±0.5", "±0.05"};
+const int           int_range_sula[] = {10, 30, 100, 300, 1000};
+const int           int_pre_amp_gain[] = {1, 3, 10, 30, 100};
 const string        strHeatingRange[] = {"Off", "Low", "Med", "High"};
-      string        FileSaveName = "new file;
-      string        FileSavePath = "";
+      string        FileSaveName;
+      string        FileSavePath;
 
 double dEfMass = MASS_ELECTRON;
-double dFactorG = G_CONSTANT;
+double dFactorG = 1;
 
 double itsTemperature = 0.0; /* Температура в режиме ITS */
 unsigned int id_DAQ = 0;
@@ -33,10 +35,13 @@ uInt32 measure_time_DAQ = 0; //Время измерения в мс
 uInt32 averaging_DAQ = 0;    //Число отсчетов для получения одного измерения
 float64 rate_DAQ = 0.0;      //Сэмплов в секунду
 float64 gate_DAQ = 0.0;      //Длительность запирающего импульса
-
-int RANGE_SULA = 100;          //Capaciti range
-double CONST_02_SULA = 0.2;
-double PRE_AMP_GAIN_SULA = 10;
+/* Настройки SULA */
+int RANGE_SULA_index = 0;
+int PRE_AMP_GAIN_SULA_index = 0;
+/* Настройки аппроксимации */
+extern bool AprEnable = false;
+extern int  AprIter = 50;
+extern double AprErr ;
 /* Флаги */
 bool start = false;            //Нажата кнопка старт
 bool stability = false;        //Температура стабилизировалась вблизи сетпоинта

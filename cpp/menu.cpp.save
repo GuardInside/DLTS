@@ -1,0 +1,53 @@
+#include "winfunc.h"
+
+#include <windows.h>
+#include <string>
+
+const std::string strMenu[] = {"&File", "&Analysis"};
+const std::string strFile[] = {"&Open", "&Save", "&Clear memory", "&Quit"};
+const std::string strSave[] = {"&Relaxations", "&DLTS", "&Arrhinius"};
+
+#define ID_ITEM_FILE        WM_USER
+#define ID_ITEM_ANALYSIS    WM_USER+1
+
+BOOL BuildMenu(HWND hWnd)
+{
+    const int nFileItem = 4;
+    const int nSaveItem = 3;
+    HMENU hMenu;
+    hMenu = CreateMenu();
+        AppendMenu(hMenu, MF_STRING, ID_ITEM_FILE, strMenu[0].c_str());
+            
+        AppendMenu(hMenu, MF_STRING, ID_ITEM_ANALYSIS, strMenu[1].c_str());
+
+    SetMenu(hWnd, hMenu);
+    //EnableMenuItem(GetMenu(hWnd),ID_LINE, MF_ENABLED);
+/*MENUINFO hMenuInfo {0};
+	hMenuInfo.cbSize = sizeof(hMenuInfo);
+	hMenuInfo.fMask = MIM_APPLYTOSUBMENUS | MIM_STYLE;
+	hMenuInfo.dwStyle = MNS_AUTODISMISS | MNS_NOCHECK;*/
+    //HMENU hMenu = GetMenu(hWnd);
+    /* File */
+    //HBITMAP hbmpOpen = LoadBitmap(hInst, MAKEINTRESOURCE(ID_BITMAP_OPEN));
+    //SetMenuItemBitmaps(hMenu, ID_MENU_OPEN, MF_BYCOMMAND, hbmpOpen, hbmpOpen);
+    //HBITMAP hbmpQuit = ;
+    //SetMenuInfo(hMenu, &hMenuInfo);
+    /*LONG metric = GetMenuCheckMarkDimensions();
+    LONG height = HIWORD(metric), width = LOWORD(metric);
+    stringstream buff;
+    buff << height << " and " << width;
+    MessageBox(0, buff.str().data(),"",0);*/
+    return EXIT_SUCCESS;
+}
+
+BOOL DrawMenu(HWND hWnd, const DRAWITEMSTRUCT* DrawSt)
+{
+    //HICON icon = (HICON)LoadIcon(NULL, "C:\\Users\\Виктор\\Documents\\GitHub\\DLTS\\Plus.png");
+    HDC hdc = DrawSt->hDC;
+    RECT rc = DrawSt->rcItem;
+    //DrawIcon(hdc, 0, 0, icon);
+    DrawText(hdc, "Some", strlen("Open"), &rc, DT_LEFT);
+    //DestroyIcon(icon);
+
+    return EXIT_SUCCESS;
+}

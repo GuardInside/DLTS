@@ -123,6 +123,15 @@ namespace gwin
 /* ********************** */
 /*  Интерфейс библиотеки  */
 /* ********************** */
+BOOL gBandGet(HWND hWnd, double& dMinX, double& dMaxX, double& dMinY, double& dMaxY)
+{
+    i
+    dMinX = _gMap.at(hWnd).dMinX;
+    dMaxX = _gMap.at(hWnd).dMaxX;
+    dMinY = _gMap.at(hWnd).dMinY;
+    dMaxY = _gMap.at(hWnd).dMaxY;
+}
+
 BOOL gwin::gDvToLp(HWND hWnd, gPoint *pt)
 {
     if(pt == nullptr)
@@ -422,12 +431,12 @@ BOOL gwin::gMulDrawPlot(HWND hWnd, HDC &hdc, const gVector *vData1, const gMulVe
     }
     while(expX%3 != 0) expX--;
     /* Установка шага по осям */
-    double max = max_x * pow(10, expX), min = min_x * pow(10, expX);
+    /*double max = max_x * pow(10, expX), min = min_x * pow(10, expX);
     double value_min[] = {1000, 100, 10, 0, 0.1, 0.01, 0.001};
     int i;
     for(i = 0, min < value_min[i]; i++);
-    min =
-
+    min = value_min.at(i+1);
+    */
     hx = (max_x - min_x)/iMark1;
     hy = (max_y - min_y)/iMark2;
     /* Сдвигаем начало координат */

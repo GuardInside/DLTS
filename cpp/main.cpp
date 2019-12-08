@@ -22,7 +22,7 @@
 using namespace std;
 using namespace gwin;
 BOOL MainWindow_OnCreate(HWND, LPCREATESTRUCT);
-VOID MainWindow_OnCommand(HWND, int, HWND, UINT);
+VOID MainWindow_OnCommand(HWND, INT, HWND, UINT);
 VOID MainWindow_OnTimer(HWND, UINT);
 
 /* Считываени данных с LakeShore и обновление информации */
@@ -34,7 +34,7 @@ UINT CALLBACK ReadDLTS(void*);
 HWND hSettinWnd = NULL;         /* Описатель окна настроек */
 HWND hAnalysisWnd = NULL;
 
-int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszArgument, int nCmdShow)
+int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE, LPSTR, int)
 {
         hInst = hInstance;
         MSG messages;
@@ -58,11 +58,14 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszArgu
             if(!IsDialogMessage(hSettinWnd, &messages) && !IsDialogMessage(hAnalysisWnd, &messages))
             {
                 /* Перехват сообщений о действиях мышки для окна DLTS графика */
+                /* Сообщение из очереди удаляется стандартным обработчиком */
                 if(index_plot_DLTS == 0 && messages.hwnd == hGraph_DLTS)
-                {
                     dlts_mouse_message(messages.hwnd, messages.message, messages.wParam, messages.lParam);
-                    /* Сообщение из очереди удаляется стандартным обработчиком */
-                }
+                else if(messages.hwnd == hRelax)
+                    relax_mouse_message(messages.hwnd, messages.message, messages.wParam, messages.lParam);
+                else if(messages.hwnd == hGraph_DAQ)
+                    daq_mouse_message(messages.hwnd, messages.message, messages.wParam, messages.lParam);
+
                 TranslateMessage(&messages);
                 DispatchMessage(&messages);
             }
@@ -90,12 +93,7 @@ LRESULT CALLBACK mwwin_proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPar
 BOOL MainWindow_OnCreate(HWND hwnd, LPCREATESTRUCT)
 {
     /* Настройка меню */
-    MENUINFO hMenuInfo {0};
-	hMenuInfo.cbSize = sizeof(hMenuInfo);
-	hMenuInfo.fMask = MIM_APPLYTOSUBMENUS | MIM_STYLE;
-	hMenuInfo.dwStyle = MNS_AUTODISMISS | MNS_NOCHECK;
-    HMENU hMenu = GetMenu(hwnd);
-    SetMenuInfo(hMenu, &hMenuInfo);
+    BuildMenu(hwnd);
     /* Дочернии окна */
     hGraph = gCreateWindow(hInst, hwnd, WS_CHILD|WS_DLGFRAME|WS_VISIBLE);
     gPosition(hGraph, 10, 22);
@@ -106,11 +104,13 @@ BOOL MainWindow_OnCreate(HWND hwnd, LPCREATESTRUCT)
     gPosition(hGraph_DAQ, 422, 22);
     gSize(hGraph_DAQ, 399, 276);
     gPrecision(hGraph_DAQ, 0, 3);
+    gBand(hGraph_DAQ, 0, 0, -10.0, 10.0);
     gDefaultPlot(hGraph_DAQ, "\0");
     hRelax = gCreateWindow(hInst, hwnd, WS_CHILD|WS_DLGFRAME|WS_VISIBLE);
     gPosition(hRelax, 10, 323);
     gSize(hRelax, 399, 276);
     gPrecision(hRelax, 0, 3);
+    gBand(hRelax, 0, 0, -10.0, 10.0);
     gDefaultPlot(hRelax, "\0");
     hGraph_DLTS = gCreateWindow(hInst, hwnd, WS_CHILD|WS_DLGFRAME|WS_VISIBLE);
     gPosition(hGraph_DLTS, 422, 323);
@@ -349,12 +349,10 @@ UINT CALLBACK DataAcquisition_Process(void*)
         double capacity = 0.0;
         int port_c = 2; /* AI_2 */
         DAQMeasure_Capacity(port_c, &capacity);
-        capacity *= CONST_02_SULA*RANGE_SULA;
-        MyDAQMeasure(&vData2, 1, measure_time_DAQ*0.001, ai_port);
+        VoltageToCapacity(&capacity);
+        MyDAQMeasure(&vData2, 5, measure_time_DAQ*0.001, ai_port);
         for(auto &Y: vData2)
-        {
-            Y = CONST_02_SULA*Y*RANGE_SULA / PRE_AMP_GAIN_SULA;
-        }
+            VoltageToCapacity(&Y);
         buff << fixed << "AI: " << ai_port + offset_ai_port << endl
              << "Cap. [pF] = " << fixed << setprecision(3) << capacity;
         gAdditionalInfo(hGraph_DAQ, buff.str());

@@ -8,26 +8,24 @@
 #include "interpolation.h"
 #include "ini.h"
 
+#define WHEEL_FORWARD 120
+#define WHEEL_REVERSE 65416
+#define WHEEL_SCALE   2
+
 bool capture = false; /* Флаг захвата мыши */
 size_t index = 0;     /* Индекс захваченного пика */
 gwin::gVector vPickData1, vPickData2; /* Вектор со значениями температур, соответствующих пикам */
-VOID dlts_OnLButtonDown(HWND hwnd, BOOL fDoubleClick, INT x, INT y, UINT keyFlags);
+
+VOID dlts_OnLButtonDown(HWND hWnd, BOOL fDoubleClick, INT x, INT y, UINT keyFlags);
 VOID dlts_OnLButtonUp(HWND hWnd, INT x, INT y, UINT keyFlags);
-VOID dlts_OnMouseMove(HWND hwnd, INT x, INT y, UINT keyFlags);
+VOID dlts_OnMouseMove(HWND hWnd, INT x, INT y, UINT keyFlags);
+
+VOID relax_OnMouseWheel(HWND hWnd, WORD key, WORD wheel, INT x, INT y, int &range_index, int &offset_index);
 
 VOID plotDAQ(gwin::gVector *vData1, gwin::gVector *vData2)
 {
-    static gwin::gVector vMin, vMax;
-    static const int max_size = 20;
-    /* Фиксация границ отображения */
-    auto min_max = std::minmax_element(vData2->begin(), vData2end());
-    vMin.push_back(*min_max.first);
-    vMax.push_back(*min_max.second);
-    if(vMin.size() > max_size) vMin.erase(vMin.begin());
-    if(vMax.size() > max_size) vMax.erase(vMax.begin());
-    double min = mean(vMin), max = mean(vMax);
-    // Фиксируем так, чтобы отношение размаха к числу рисок (10 by default) было хорошим
-    gwin::gBand(hGraph_DAQ, 0, 0, min, max);
+    if(vData1->empty()) return;
+
     gwin::gData(hGraph_DAQ, vData1, vData2);
 }
 
@@ -36,35 +34,22 @@ VOID PlotRelax()
     if(SavedRelaxations.empty())
         return;
     gwin::gVector vData2{SavedRelaxations[index_relax]};
-    for(auto &Y: vData2)
-        Y = CONST_02_SULA * Y * RANGE_SULA / PRE_AMP_GAIN_SULA;
+    /*for(auto &Y: vData2)
+        Y = CONST_02_SULA * Y * RANGE_SULA / PRE_AMP_GAIN_SULA;*/
     gwin::gVector vData1;
     gwin::gMulVector vMulData;
     vMulData.push_back(vData2);
     stringstream buffer;
     for(size_t i = 0; i < vData2.size(); i++)
         vData1.push_back(0.001*gate_DAQ + i*(1/rate_DAQ)*1000); /* ms */
-    bool UseFitting = 0;
-    ini::Settings AnalysisFile{"analysis.ini"};
-    AnalysisFile.ReadBool("Fitting", "use_fitting", &UseFitting);
-    if(UseFitting)
+    if(AprEnableRelax)
     {
-        int max_iter = 0;
-        double abs_error = 1e-6;
-        double rel_error = 1e-6;
-        double sigma = 1.0;
-        AnalysisFile.ReadDouble("Fitting", "abs_error", &abs_error);
-        AnalysisFile.ReadDouble("Fitting", "rel_error", &rel_error);
-        AnalysisFile.ReadDouble("Fitting", "sigma", &sigma);
-        AnalysisFile.ReadInt("Fitting", "max_it", &max_iter);
         /* Аппроксимируем кривую */
-        vector<double> vSigma(vData1.size(), 1);
-        double A = 0.0, dA = 0.0, b = 0.0, db = 0.0, tau = 0.0, dtau = 0.0, ReducedChiSqr = 0.0;
+        double A = 0.0, b = 0.0, tau = 0.0;
         string strStatus;
-        size_t iter = 0;
-
+        vector<double> vSigma(vData1.size(), 1); /* Веса пл умолчанию */
         int status = get_exponent_fitt(&vData1, &vData2, &vSigma,
-                      &A, &tau, &b, &dA, &db, &dtau, &ReducedChiSqr, &iter, max_iter, abs_error, rel_error, &strStatus);
+                      &A, &tau, &b, NULL, NULL, NULL, NULL, NULL, AprIter, AprErr, 0, &strStatus);
         if(status)
             MessageBox(NULL, strStatus.data(), "Approximation warning", MB_ICONWARNING);
         gwin::gVector vApproxRelaxation;
@@ -74,7 +59,7 @@ VOID PlotRelax()
     /* Конец аппроксимации */
     }
     if(index_mode == DLTS && !xAxisDLTS.empty())
-        rewrite(buffer) << xAxisDLTS[index_relax] << " K";// << endl << iter << endl << A << endl << tau << endl << b;
+        rewrite(buffer) << xAxisDLTS[index_relax] << " K";
     else if(index_mode == ITS && !itsBiasVoltages.empty())
         rewrite(buffer) << fixed << setprecision(2) << "T [K] = " << itsTemperature << endl
                         << setprecision(3) << "Bias [V] = " << itsBiasVoltages[index_relax] << endl << "Amp [V] =  " << itsAmpVoltages[index_relax];
@@ -106,8 +91,6 @@ VOID PlotDLTS()
         for(size_t i = 0; i < CorTime.size(); i++)
         {
             gwin::gVector vData2{yAxisDLTS[i]};
-            for(auto &Y: vData2)
-                Y = CONST_02_SULA * Y * RANGE_SULA / PRE_AMP_GAIN_SULA;
             interp f(xAxisDLTS, vData2,xAxisDLTS.size(), gsl_interp_linear);
             double dMin = 0.0;
             if(auto_peak_search == true)
@@ -135,8 +118,6 @@ VOID PlotDLTS()
             for(size_t i = 0; i < CorTime.size(); i++)
             {
                 gwin::gVector vData2{yAxisDLTS[i]};
-                for(auto &Y: vData2)
-                    Y = CONST_02_SULA * Y * RANGE_SULA / PRE_AMP_GAIN_SULA;
                 vMulData.push_back(vData2);
             }
             if(capture)
@@ -196,7 +177,8 @@ VOID PlotDLTS()
                  << fixed << setprecision(3) << "E: " << Energy*(625e+16) << " eV";
             gwin::gCross(hGraph_DLTS, &vData1, &vData2); /* Экспериментальные точки */
             gwin::gAdditionalInfo(hGraph_DLTS, buff.str());
-            //gwin::gMulData(hGraph_DLTS, &vData1, &vMulData);
+            gwin::gBand(hGraph_DLTS, floor(min_element(vData1.begin(), vData1.end())),
+                        ceil(max_element(vData1.begin(), vData1.end()))), 0, 0);
             gwin::gData(hGraph_DLTS, &vData1, &vData3);
             /* Сохраняем результаты */
             ::xAxisAr = (vector<double>)vData1;
@@ -264,4 +246,73 @@ VOID dlts_OnMouseMove(HWND hWnd, INT x, INT y, UINT keyFlags)
         }
     } catch(out_of_range  &e){ MessageBox(0, e.what(), "Exception in ReadITS", 0); }
       catch(...){ MessageBox(0, "Some exception.", "Exception in ReadITS", 0); }
+}
+
+BOOL relax_mouse_message(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    static int range_index;
+    static int offset_index;
+    switch(message)
+    {
+    case WM_MOUSEWHEEL:
+        relax_OnMouseWheel(hWnd, LOWORD(wParam), HIWORD(wParam), LOWORD(lParam), HIWORD(lParam),
+                           range_index, offset_index);
+        return TRUE;
+    }
+    return FALSE;
+}
+
+BOOL daq_mouse_message(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    static int range_index;
+    static int offset_index;
+    switch(message)
+    {
+    case WM_MOUSEWHEEL:
+        relax_OnMouseWheel(hWnd, LOWORD(wParam), HIWORD(wParam), LOWORD(lParam), HIWORD(lParam),
+                           range_index, offset_index);
+        return TRUE;
+    }
+    return FALSE;
+}
+
+VOID relax_OnMouseWheel(HWND hWnd, WORD key, WORD wheel, INT x, INT y, int &range_index, int &offset_index)
+{
+    const int SIZE_RANGE = 10;
+    const double range[SIZE_RANGE] = {10.0, 5.0, 2.0, 1.0, 0.5, 0.2, 0.1, 0.05, 0.02, 0.01};
+    double dMinY = 0.0, dMaxY = 0.0;
+    double offset = 0.0;
+    /* Получаем релевантные значения */
+    gwin::gBandGet(hWnd, NULL, NULL, &dMinY, &dMaxY);
+    offset = range[range_index] / 10;
+    /* Управление рамзером окна отображения */
+    if(wheel == WHEEL_FORWARD && key == MK_CONTROL)
+    {
+        if(range_index < SIZE_RANGE - 1)
+        {
+            range_index++;
+            double new_offset = range[range_index] / 10;
+            offset_index = int( fabs(offset) * offset_index / new_offset + 0.5);
+        }
+    }
+    else if (wheel == WHEEL_REVERSE && key == MK_CONTROL)
+    {
+        if(range_index > 0)
+        {
+            range_index--;
+            double new_offset = range[range_index] / 10;
+            offset_index = int( fabs(offset) * offset_index / new_offset - 0.5);
+        }
+    }
+    /* Управление положением окна отображения */
+    else if(wheel == WHEEL_FORWARD)
+            offset_index++;
+    else if (wheel == WHEEL_REVERSE)
+            offset_index--;
+    /* Рассчитываем положение окна */
+    dMinY = -1 * range[range_index] + (range[range_index] / 10) * offset_index;
+    dMaxY = range[range_index] + (range[range_index] / 10) * offset_index;
+    gwin::gBand(hWnd, 0, 0, dMinY, dMaxY);
+    if(hWnd == hRelax)
+        PlotRelax();
 }
