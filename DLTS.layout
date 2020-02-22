@@ -2,79 +2,49 @@
 <CodeBlocks_layout_file>
 	<FileVersion major="1" minor="0" />
 	<ActiveTarget name="Release" />
-	<File name="cpp\windows\analysis.cpp" open="1" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="cpp\windows\adv_setting.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="2589" topLine="36" />
+			<Cursor1 position="313" topLine="0" />
 		</Cursor>
 	</File>
-	<File name="cpp\windows\general_setting.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="cpp\main.cpp" open="1" top="0" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="0" topLine="217" />
+			<Cursor1 position="4106" topLine="97" />
+		</Cursor>
+		<Folding>
+			<Collapse line="228" />
+			<Collapse line="263" />
+			<Collapse line="274" />
+			<Collapse line="323" />
+			<Collapse line="357" />
+			<Collapse line="389" />
+			<Collapse line="464" />
+			<Collapse line="522" />
+		</Folding>
+	</File>
+	<File name="cpp\variable.cpp" open="1" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="2984" topLine="39" />
 		</Cursor>
 	</File>
-	<File name="headers\variable.h" open="1" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="cpp\facility\winhelp.cpp" open="1" top="0" tabpos="5" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="5050" topLine="86" />
+			<Cursor1 position="3521" topLine="35" />
 		</Cursor>
 	</File>
-	<File name="cpp\main.cpp" open="1" top="1" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="cpp\gwin.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="14995" topLine="339" />
+			<Cursor1 position="25105" topLine="681" />
 		</Cursor>
 	</File>
-	<File name="cpp\facility\load_save.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="headers\variable.h" open="1" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="0" topLine="125" />
+			<Cursor1 position="5888" topLine="97" />
 		</Cursor>
 	</File>
-	<File name="cpp\facility\inifile.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="cpp\facility\plot.cpp" open="1" top="1" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="2537" topLine="60" />
-		</Cursor>
-	</File>
-	<File name="cpp\daq.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="5075" topLine="128" />
-		</Cursor>
-	</File>
-	<File name="cpp\facility\winhelp.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="2926" topLine="28" />
-		</Cursor>
-	</File>
-	<File name="cpp\math\weighfunc.cpp" open="1" top="0" tabpos="6" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="6648" topLine="135" />
-		</Cursor>
-	</File>
-	<File name="cpp\math\expapprox.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="2381" topLine="100" />
-		</Cursor>
-	</File>
-	<File name="cpp\variable.cpp" open="1" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="2259" topLine="26" />
-		</Cursor>
-	</File>
-	<File name="resource\resource.rc" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="190" topLine="0" />
-		</Cursor>
-	</File>
-	<File name="cpp\facility\utility.cpp" open="1" top="0" tabpos="7" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="3136" topLine="79" />
-		</Cursor>
-	</File>
-	<File name="cpp\facility\settings.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="9102" topLine="165" />
-		</Cursor>
-	</File>
-	<File name="cpp\facility\plot.cpp" open="1" top="0" tabpos="5" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="7640" topLine="164" />
+			<Cursor1 position="6798" topLine="152" />
 		</Cursor>
 	</File>
 </CodeBlocks_layout_file>

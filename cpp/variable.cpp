@@ -30,6 +30,7 @@ double itsTemperature = 0.0; /* Температура в режиме ITS */
 unsigned int id_DAQ = 0;
 int32 ai_port = 0;
 int32 ai_port_pulse = 0;
+int32 ai_port_capacity = 0;
 int32 pfi_ttl_port = 0;
 uInt32 measure_time_DAQ = 0; //Время измерения в мс
 uInt32 averaging_DAQ = 0;    //Число отсчетов для получения одного измерения
@@ -51,6 +52,7 @@ bool fbThermostat0k = true;    //Термостат работает в штатном режиме
 bool bfNewfile = true;         //Создавать ли новый файл при старте эксперимента?
 bool fix_temp = false;         //Фиксация температуры
 bool auto_peak_search = true;  //Автоопределение пика методом золотого сечения
+bool normaliz_dlts = false;
 /* Параметры коррелятора */
 unsigned int CorType = DoubleBoxCar;
 double correlation_c = 0.0;
@@ -65,4 +67,5 @@ HWND                        hGraph_DAQ; //Описатель окна графика сигнала с DAQ
 HWND                        hGraph_DLTS;//Описатель окна графика DLTS
 HWND                        hProgress;  //Прогресс чтения данных
 CRITICAL_SECTION            csDataAcquisition;//Используется всегда при чтении данных DAQ
+CRITICAL_SECTION            csSavedRelaxation;
 HANDLE                      hDownloadEvent;

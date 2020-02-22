@@ -138,10 +138,16 @@
 #define ID_BITMAP_PLOT_DLTS_PEAK                162
 #define ID_BITMAP_PLOT_EXP                      164
 #define ID_BITMAP_PLOT_DLTS                     167
+#define ID_IMG_ROSE                             169
+#define ID_BITMAP_NORMALIZE                     171
+#define ID_BITMAP_NOTHING                       173
+#define ID_BITMAP_ONE                           175
 #define ID_EDITCONTROL_ABS_ERROR                40000
 #define ID_EDITCONTROL_AI_CAPACITY              40000
 #define ID_MENU_AUTO_PEAK_DETECTING             40000
 #define ID_EDITCONTROL_ITERATION                40001
 #define ID_EDITCONTROL_SAVE_PATH                40001
+#define ID_MENU_NORMALIZE_TO_ONE                40001
+#define ID_MENU_NORMALIZE_TO_NOTHING            40002
 #define ID_CHECKBOX_USE_FITTING_RELAX           40003
 #define ID_CHECKBOX_USE_FITTING_DLTS            40004

@@ -148,7 +148,10 @@ BOOL MeasurePulse(vector<double> *vData, double *dVoltBias, double *dVoltAmp)
     if(Generator.is_active)
     {
         PredBias = Generator.bias;
-        PredAmp = Generator.amplitude;
+        if(index_mode == DLTS)
+            PredAmp = Generator.amplitude;
+        else if(index_mode == ITS)
+            PredAmp = Generator.begin_amplitude;
     }
     else
     {

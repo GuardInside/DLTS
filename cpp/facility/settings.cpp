@@ -65,6 +65,7 @@ void write_settings()
     iniFile.WriteInt("DAQ", "trigger", pfi_ttl_port);
     iniFile.WriteInt("DAQ", "ai_relax", ai_port);
     iniFile.WriteInt("DAQ", "ai_pulse", ai_port_pulse);
+    iniFile.WriteInt("DAQ", "ai_capacity", ai_port_capacity);
         /* Настройки корреляторов */
     /* Параметры корреляторов */
     iniFile.WriteDoubleFix("Сorrelator", "width", correlation_width, 2);
@@ -142,6 +143,7 @@ void read_settings()
     iniFile.ReadInt("DAQ", "trigger", (int*)&pfi_ttl_port);
     iniFile.ReadInt("DAQ", "ai_relax", (int*)&ai_port);
     iniFile.ReadInt("DAQ", "ai_pulse", (int*)&ai_port_pulse);
+    iniFile.ReadInt("DAQ", "ai_capacity", (int*)&ai_port_capacity);
         /* Настройки корреляторов */
     /* Параметры корреляторов */
     iniFile.ReadDouble("Сorrelator", "width", &correlation_width);

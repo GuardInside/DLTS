@@ -85,6 +85,7 @@ extern double itsTemperature; /* Температура в режиме ITS */
 extern unsigned int id_DAQ;
 extern int32 ai_port;
 extern int32 ai_port_pulse;
+extern int32 ai_port_capacity;
 extern int32 pfi_ttl_port;
 extern uInt32 measure_time_DAQ; //Время измерения
 extern uInt32 averaging_DAQ;    //Число отсчетов для получения одного измерения
@@ -107,6 +108,7 @@ extern bool fbThermostat0k;     //Термостат работает в штатном режиме
 extern bool bfNewfile;          //Создавать ли новый файл при старте эксперимента?
 extern bool fix_temp;           //Фиксация температуры
 extern bool auto_peak_search;   //Автоопределение пика методом золотого сечения
+extern bool normaliz_dlts;
 /* Параметры коррелятора */
 extern unsigned int CorType;
 extern double correlation_c;
@@ -121,18 +123,8 @@ extern HWND                        hRelax;     //Описатель окна графика релаксац
 extern HWND                        hGraph_DLTS;//Описатель окна графика DLTS
 extern HWND                        hProgress;  //Прогресс чтения данных
 extern CRITICAL_SECTION            csDataAcquisition;//Используется всегда при чтении данных DAQ
+extern CRITICAL_SECTION            csSavedRelaxation;
 extern HANDLE                      hDownloadEvent;
 
-
-class AllSettings
-{
-    class PlotSettings
-    {
-    };
-
-public:
-    PlotSettings RelaxPlot;
-
-};
 
 #endif // VARIABLE_H_INCLUDED

@@ -7,7 +7,6 @@
 #include <string>
 #include <iomanip>
 #include <sstream>
-#include <process.h>
 #include <exception>
 
 #include "gwin.h"
@@ -47,6 +46,7 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE, LPSTR, int)
         ApplySettings();
         /* Инициализируем объекты ядра */
         InitializeCriticalSection(&csDataAcquisition);
+        InitializeCriticalSection(&csSavedRelaxation);
         hDownloadEvent = CreateEvent(NULL, TRUE, TRUE, NULL);
         /* Подгружаем динамические библиотеки */
         InitCommonControls();
@@ -61,10 +61,19 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE, LPSTR, int)
                 /* Сообщение из очереди удаляется стандартным обработчиком */
                 if(index_plot_DLTS == 0 && messages.hwnd == hGraph_DLTS)
                     dlts_mouse_message(messages.hwnd, messages.message, messages.wParam, messages.lParam);
-                else if(messages.hwnd == hRelax)
-                    relax_mouse_message(messages.hwnd, messages.message, messages.wParam, messages.lParam);
-                else if(messages.hwnd == hGraph_DAQ)
-                    daq_mouse_message(messages.hwnd, messages.message, messages.wParam, messages.lParam);
+                /* Установка фокуса ввода */
+                RECT rectRelax;
+                RECT rectDLTS;
+                GetWindowRect(hRelax, &rectRelax);
+                GetWindowRect(hGraph_DAQ, &rectDLTS);
+
+                if(messages.message == WM_MOUSEWHEEL)
+                {
+                    if(PtInRect(&rectRelax, messages.pt))
+                        relax_mouse_message(hRelax, messages.message, messages.wParam, messages.lParam);
+                    else if(PtInRect(&rectDLTS, messages.pt) && offset_ai_port == 0)
+                        daq_mouse_message(hGraph_DAQ, messages.message, messages.wParam, messages.lParam);
+                }
 
                 TranslateMessage(&messages);
                 DispatchMessage(&messages);
@@ -115,7 +124,6 @@ BOOL MainWindow_OnCreate(HWND hwnd, LPCREATESTRUCT)
     hGraph_DLTS = gCreateWindow(hInst, hwnd, WS_CHILD|WS_DLGFRAME|WS_VISIBLE);
     gPosition(hGraph_DLTS, 422, 323);
     gSize(hGraph_DLTS, 399, 276);
-    gPrecision(hGraph_DLTS, 2, 3);
     gDefaultPlot(hGraph_DLTS, "\0");
     /* Индикатор выполнения */
     hProgress = CreateWindow(PROGRESS_CLASS, NULL, WS_VISIBLE | WS_CHILD, 850, 195, 140, 20, hwnd, (HMENU)ID_PROGRESS, hInst, NULL);
@@ -135,12 +143,16 @@ void MainWindow_OnCommand(HWND hwnd, int id, HWND, UINT)
             if(offset_ai_port == 0 || !bfDAQ0k)
                 break;
             offset_ai_port--;
+            if(offset_ai_port == 0)
+                daq_mouse_message(hGraph_DAQ, WM_MOUSEWHEEL, 0, 0);
             SetFocus(hMainWindow);
             break;
         case ID_BUTTON_NEXT_AI_PORT:
             if(offset_ai_port == 1 || !bfDAQ0k)
                 break;
             offset_ai_port++;
+            if(offset_ai_port == 1)
+                gBand(hGraph_DAQ, 0, 0, 0, 0);
             SetFocus(hMainWindow);
             break;
         case ID_BUTTON_PREVIOUS_DLTS:
@@ -187,6 +199,16 @@ void MainWindow_OnCommand(HWND hwnd, int id, HWND, UINT)
             break;
         case ID_MENU_AUTO_PEAK_DETECTING:
             ::auto_peak_search = true;
+            CloseHandle((HANDLE)_beginthreadex(NULL, 0, dlg_success, NULL, 0, NULL));
+            PlotDLTS();
+            break;
+        case ID_MENU_NORMALIZE_TO_ONE:
+            ::normaliz_dlts = true;
+            CloseHandle((HANDLE)_beginthreadex(NULL, 0, dlg_success, NULL, 0, NULL));
+            PlotDLTS();
+            break;
+        case ID_MENU_NORMALIZE_TO_NOTHING:
+            ::normaliz_dlts = false;
             CloseHandle((HANDLE)_beginthreadex(NULL, 0, dlg_success, NULL, 0, NULL));
             PlotDLTS();
             break;
@@ -433,6 +455,12 @@ UINT Thermostat_Process()
     return 0;
 }
 
+/*
+    Потоковые функции, определенные ниже, строго говоря, не соответствуют
+    требованиям потокобезопасности. Тем не менее, их использования именнов
+    в таком виде в рамках данного проекта допустимо.
+*/
+
 UINT CALLBACK ReadDLTS(void* MeanTemp_)
 {
     try{
@@ -462,7 +490,10 @@ UINT CALLBACK ReadDLTS(void* MeanTemp_)
         Relaxation.push_back(-0.025*exp(-t/(8.9737*0.001) + 0.5755));
     #endif // TEST_MODE
     /* Сохраняем релаксации, чтобы иметь возможность переключаться между ними */
-    SavedRelaxations.insert(SavedRelaxations.begin()+offset, Relaxation);
+
+    EnterCriticalSection(&csSavedRelaxation);
+        SavedRelaxations.insert(SavedRelaxations.begin()+offset, Relaxation);
+    LeaveCriticalSection(&csSavedRelaxation);
     /* Добавляем точку на DLTS кривую */
     AddPointsDLTS(&Relaxation, MeanTemp);
     /* Сохраняем релаксацию в файл */
@@ -509,7 +540,10 @@ UINT CALLBACK ReadITS(void* MeanTemp)
             Relaxation.push_back(-0.025*exp(-t/((8.9737+Generator.begin_amplitude)*0.001) + 0.5755));
         #endif // TEST_MODE
         /* Сохраняем релаксации, чтобы иметь возможность переключаться между ними */
-        SavedRelaxations.push_back(Relaxation);
+
+        EnterCriticalSection(&csSavedRelaxation);
+            SavedRelaxations.push_back(Relaxation);
+        LeaveCriticalSection(&csSavedRelaxation);
         index_relax = SavedRelaxations.size() - 1;
         /* Вычисляем истинные параметры заполняющего импульса */
         MeasurePulse(NULL, &dVoltBias, &dVoltAmp);

@@ -1,4 +1,5 @@
 #include <dlts_math.h>
+#include <algorithm>
 #include "gwin.h"
 #include "ini.h"
 
@@ -107,7 +108,6 @@ void AddPoint_with_approx(const vector<double> *vRelaxation, const double temp)
                 I += h*(f_i*w(x_i,t1) + f_i_h*w(x_i+h, t1))/2;
             }
         /* Добавляем по точке на каждой из осей */
-        VoltageToCapacity(&I);
         yAxisDLTS[c].insert(yAxisDLTS[c].begin() + offset, I);
     }
     }catch(std::exception &e){ MessageBox(0, e.what(), "", 0); }
@@ -153,7 +153,6 @@ void AddPoint_with_interp(const vector<double> *vRelaxation, const double temp)
             if(w(x_i,t1) != 0.0)
                 I += h*(f.at(x_i)*w(x_i,t1) + f.at(x_i+h)*w(x_i+h, t1))/2;
         /* Добавляем по точке на каждой из осей */
-        VoltageToCapacity(&I);
         yAxisDLTS[c].insert(yAxisDLTS[c].begin() + offset, I);
     }
     }catch(std::exception &e){ MessageBox(0, e.what(), "", 0); }

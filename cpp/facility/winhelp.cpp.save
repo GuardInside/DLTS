@@ -19,6 +19,9 @@ BOOL BuildMenu(HWND hWnd)
     HMENU hMenu = GetMenu(hWnd);
     HMENU hFileMenu = GetSubMenu(hMenu, 0);
     HMENU hAnalysisMenu = GetSubMenu(hMenu, 1);
+    HMENU hAndlysisDLTSMenu = GetSubMenu(hAnalysisMenu, 1);
+    HMENU hAndlysisDLTSNormalizeMenu = GetSubMenu(hAndlysisDLTSMenu, 0);
+
     LONG metric = GetMenuCheckMarkDimensions();
     int height = HIWORD(metric);
     int width = LOWORD(metric);
@@ -38,12 +41,21 @@ BOOL BuildMenu(HWND hWnd)
     SetMenuItemBitmaps(hFileMenu, ID_BUTTON_EXIT, MF_BYCOMMAND, hbmpExit, hbmpExit);
     /* Analysis */
     HBITMAP hbmpFitting = (HBITMAP)LoadImage(hInst, MAKEINTRESOURCE(ID_BITMAP_PLOT), IMAGE_BITMAP, width, height, LR_SHARED);
+    HBITMAP hbmpExp = (HBITMAP)LoadImage(hInst, MAKEINTRESOURCE(ID_BITMAP_PLOT_EXP), IMAGE_BITMAP, width, height, LR_SHARED);
     HBITMAP hbmpDLTS = (HBITMAP)LoadImage(hInst, MAKEINTRESOURCE(ID_BITMAP_PLOT_DLTS), IMAGE_BITMAP, width, height, LR_SHARED);
     HBITMAP hbmpPeak = (HBITMAP)LoadImage(hInst, MAKEINTRESOURCE(ID_BITMAP_PLOT_DLTS_PEAK), IMAGE_BITMAP, width, height, LR_SHARED);
+    HBITMAP hbmpNormalize = (HBITMAP)LoadImage(hInst, MAKEINTRESOURCE(ID_BITMAP_NORMALIZE), IMAGE_BITMAP, width, height, LR_SHARED);
+    HBITMAP hbmpOne = (HBITMAP)LoadImage(hInst, MAKEINTRESOURCE(ID_BITMAP_ONE), IMAGE_BITMAP, width, height, LR_SHARED);
+    HBITMAP hbmpNothing = (HBITMAP)LoadImage(hInst, MAKEINTRESOURCE(ID_BITMAP_NOTHING), IMAGE_BITMAP, width, height, LR_SHARED);
+
     SetMenuItemBitmaps(hAnalysisMenu, 0, MF_BYPOSITION, hbmpFitting, hbmpFitting);
-        SetMenuItemBitmaps(hAnalysisMenu, ID_MENU_, MF_BYCOMMAND, hbmpPeak, hbmpPeak);
+        SetMenuItemBitmaps(hAnalysisMenu, ID_MENU_FITTING_EXPONENTIAL, MF_BYCOMMAND, hbmpExp, hbmpExp);
     SetMenuItemBitmaps(hAnalysisMenu, 1, MF_BYPOSITION, hbmpDLTS, hbmpDLTS);
         SetMenuItemBitmaps(hAnalysisMenu, ID_MENU_AUTO_PEAK_DETECTING, MF_BYCOMMAND, hbmpPeak, hbmpPeak);
+        SetMenuItemBitmaps(hAndlysisDLTSMenu, 1, MF_BYPOSITION, hbmpNormalize, hbmpNormalize);
+            SetMenuItemBitmaps(hAndlysisDLTSNormalizeMenu, ID_MENU_NORMALIZE_TO_ONE, MF_BYCOMMAND, hbmpOne, hbmpOne);
+            SetMenuItemBitmaps(hAndlysisDLTSNormalizeMenu, ID_MENU_NORMALIZE_TO_NOTHING, MF_BYCOMMAND, hbmpNothing, hbmpNothing);
+
     return EXIT_SUCCESS;
 }
 

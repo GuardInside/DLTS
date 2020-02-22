@@ -107,12 +107,16 @@ UINT CALLBACK LoadFile(PVOID)
             for(auto it = xAxisDLTS.begin(); it != xAxisDLTS.end(); it++)
                 if(temp > *it) offset++;
             AddPointsDLTS(&vRelaxation, temp); //Передаем значение температуры
-            SavedRelaxations.insert(SavedRelaxations.begin()+offset, vRelaxation);
+            EnterCriticalSection(&csSavedRelaxation);
+                SavedRelaxations.insert(SavedRelaxations.begin()+offset, vRelaxation);
+            LeaveCriticalSection(&csSavedRelaxation);
             index_relax = offset;
         }
         if(index_mode == ITS)
         {
-            SavedRelaxations.push_back(vRelaxation);
+            EnterCriticalSection(&csSavedRelaxation);
+                SavedRelaxations.push_back(vRelaxation);
+            LeaveCriticalSection(&csSavedRelaxation);
             index_relax = SavedRelaxations.size() - 1; //без единицы, потому что индекс
         }
         SendMessage(hProgress, PBM_SETPOS, 100.0*i/uQuantity, 0);

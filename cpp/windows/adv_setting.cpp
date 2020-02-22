@@ -31,6 +31,9 @@ BOOL CALLBACK asdlg_proc(HWND hAdvSetDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
                 //Вывести текущие настройки канала выхода генератора
                 rewrite(buff) << Generator.channel;
                 SetDlgItemText(hAdvSetDlg, ID_EDITCONTROL_OUT_CHANNEL, buff.str().data());
+                //Вывести текущие настройки пора аналогового входа емкости
+                rewrite(buff) << ai_port_capacity;
+                SetDlgItemText(hAdvSetDlg, ID_EDITCONTROL_AI_CAPACITY, buff.str().data());
             }
             return TRUE;
             case WM_COMMAND:
@@ -56,10 +59,12 @@ BOOL CALLBACK asdlg_proc(HWND hAdvSetDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
                         ai_port = ApplySettingEditBox(hAdvSetDlg, ID_EDITCONTROL_AI);
                         //Применить настройки порта ТТЛ сигнала
                         pfi_ttl_port = ApplySettingEditBox(hAdvSetDlg, ID_EDITCONTROL_TTL);
-                        //Применить настройки пора аналогового входа
+                        //Применить настройки пора аналогового входа импульсов
                         ai_port_pulse = ApplySettingEditBox(hAdvSetDlg, ID_EDITCONTROL_AI_PULSE);
                         //Вывести текущие настройки канала выхода генератора
                         Generator.channel = ApplySettingEditBox(hAdvSetDlg, ID_EDITCONTROL_OUT_CHANNEL);
+                        //Применить настройки пора аналогового входа емкости
+                        ai_port_capacity = ApplySettingEditBox(hAdvSetDlg, ID_EDITCONTROL_AI_CAPACITY);
                         //Применить настройки к физическим устройствам и сохранить файл настроек
                         ApplySettings();
                         write_settings();

@@ -672,6 +672,7 @@ LRESULT CALLBACK gwin::_gWinProcess(HWND hWnd, UINT message, WPARAM wParam, LPAR
     {
         HANDLE_MSG(hWnd, WM_PAINT, _gOnPaint);
         HANDLE_MSG(hWnd, WM_LBUTTONDOWN, _gOnLButtonDown);
+        //HANDLE_MSG(hWnd, WM_SETFOCUS, _gOnSetFocus);
         //HANDLE_MSG(hWnd, WM_COMMAND, _gOnCommand);
         //HANDLE_MSG(hWnd, WM_TIMER, MainWindow_OnTimer);
         case WM_CREATE:
