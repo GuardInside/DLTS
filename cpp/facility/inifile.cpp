@@ -10,14 +10,27 @@ using namespace ini;
 
 File::File(std::string FileName)
 {
-    Rename(FileName);
-}
-VOID File::Rename(std::string FileName)
-{
     TCHAR szFileName[MAX_PATH], szPath[MAX_PATH];
     GetModuleFileName(NULL, szFileName, MAX_PATH);
     ExtractFilePath(szFileName, szPath);
-    Path = std::string(szPath) + FileName;
+    Dir = std::string(szPath);
+    Name = FileName;
+    Path = Dir + Name;
+}
+VOID File::Clear()
+{
+    DeleteFile(Path.c_str());
+}
+VOID File::Rename(std::string NewName)
+{
+    Name = NewName;
+    Path = Dir + NewName;
+}
+
+VOID File::Redir(std::string NewDir)
+{
+    Dir = NewDir;
+    Path = Dir + Name;;
 }
 /* Функции чтения */
 BOOL File::ReadString(std::string section, std::string key, std::string *value, std::string default_value)

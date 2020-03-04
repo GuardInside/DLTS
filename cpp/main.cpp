@@ -313,6 +313,7 @@ void MainWindow_OnCommand(HWND hwnd, int id, HWND, UINT)
             break;
         /* Выход */
         case ID_BUTTON_EXIT:
+                Generator.Channel(GENERATOR::OFF);
                 Thermostat.Write("RANG 0");
                 DestroyWindow(hwnd);
             break;
@@ -358,6 +359,7 @@ UINT CALLBACK DataAcquisition_Process(void*)
 {
     gwin::gVector vData1, vData2;
     stringstream buff;
+    /* Если отображается сигнал с порта для импульсов */
     if(ai_port+offset_ai_port == ai_port_pulse)
     {
         double dBias = 0.0, dAmp = 0.0;
@@ -369,12 +371,10 @@ UINT CALLBACK DataAcquisition_Process(void*)
     else
     {
         double capacity = 0.0;
-        int port_c = 2; /* AI_2 */
-        DAQMeasure_Capacity(port_c, &capacity);
+        DAQMeasure_Capacity(::ai_port_capacity, &capacity);
         VoltageToCapacity(&capacity);
-        MyDAQMeasure(&vData2, 5, measure_time_DAQ*0.001, ai_port);
-        for(auto &Y: vData2)
-            VoltageToCapacity(&Y);
+
+        MyDAQMeasure(&vData2, 1, measure_time_DAQ*0.001, ai_port);
         buff << fixed << "AI: " << ai_port + offset_ai_port << endl
              << "Cap. [pF] = " << fixed << setprecision(3) << capacity;
         gAdditionalInfo(hGraph_DAQ, buff.str());
@@ -469,6 +469,7 @@ UINT CALLBACK ReadDLTS(void* MeanTemp_)
     vector<double> Relaxation;
     double MeanTemp = *(double*)MeanTemp_;
     int offset = 0; /* Величина смещения в массиве сохраненых релаксаций для записи следующей */
+    double capacity = 0.0;
     WaitForSingleObject(hDownloadEvent, INFINITE);
     /* Проверка на существование релаксации с текущей температурой */
     for(auto it = xAxisDLTS.begin(); it != xAxisDLTS.end(); it++)
@@ -482,7 +483,9 @@ UINT CALLBACK ReadDLTS(void* MeanTemp_)
         }
     }
     #ifndef TEST_MODE
-    MyDAQMeasure(&Relaxation, averaging_DAQ, measure_time_DAQ*0.001, ai_port, TRUE);
+    MyDAQMeasure(&Relaxation, averaging_DAQ, measure_time_DAQ*0.001, ai_port, TRUE); // небезопасный
+    DAQMeasure_Capacity(::ai_port_capacity, &capacity);
+    VoltageToCapacity(&capacity);
     #endif // TEST_MODE
     /* Создаем релаксацию руками */
     #ifdef TEST_MODE
@@ -493,18 +496,19 @@ UINT CALLBACK ReadDLTS(void* MeanTemp_)
 
     EnterCriticalSection(&csSavedRelaxation);
         SavedRelaxations.insert(SavedRelaxations.begin()+offset, Relaxation);
+        SavedCapacity.insert(SavedCapacity.begin()+offset, capacity);
     LeaveCriticalSection(&csSavedRelaxation);
     /* Добавляем точку на DLTS кривую */
-    AddPointsDLTS(&Relaxation, MeanTemp);
+    AddPointsDLTS(&Relaxation, MeanTemp, capacity);   // TUS
     /* Сохраняем релаксацию в файл */
-    SaveRelaxSignal(MeanTemp, &Relaxation, 0.0, 0.0);
+    SaveRelaxSignal(MeanTemp, &Relaxation, 0.0, 0.0, capacity);
     delete (double*)MeanTemp_;
     index_relax = offset;
-    PlotRelax();
-    PlotDLTS();
+    PlotRelax();    // TUS
+    PlotDLTS();     // TUS
     J1:
     /* Установка флага конца эксперимента */
-    Thermostat.BeginPoint += Thermostat.TempStep;
+    Thermostat.BeginPoint += Thermostat.TempStep;   // TUS
     if(!Thermostat.range_is_correct()) StartButPush();
     /* Выводим текущее значение Begin Point */
     rewrite(buff) << "Begin point " << Thermostat.BeginPoint << " K";
@@ -558,7 +562,7 @@ UINT CALLBACK ReadITS(void* MeanTemp)
         }
         Generator.Apply();
         /* Сохраняем релаксацию в файл */
-        SaveRelaxSignal(*(double*)MeanTemp, &Relaxation, dVoltBias, dVoltAmp);
+        SaveRelaxSignal(*(double*)MeanTemp, &Relaxation, dVoltBias, dVoltAmp, 0.0);
         delete (double*)MeanTemp;
         /* Отрисовываем график */
         PlotRelax();

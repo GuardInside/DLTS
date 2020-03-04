@@ -1,11 +1,22 @@
 #include <facility.h>
+
 #include "graph.h"
 #include "ini.h"
+#include "variable.h"
+
+void FileOpeningTest(ofstream& file)
+{
+    if(!file.is_open())
+    {
+        MessageBox(NULL, "Save file isn't being found.", "Error", MB_ICONERROR);
+        return;
+    }
+}
 
 void VoltageToCapacity(double *value)
 {
     static const double _SULA_CONST = 0.2;
-    *value = _SULA_CONST**int_range_sula[RANGE_SULA_index] / int_pre_amp_gain[PRE_AMP_GAIN_SULA_index];
+    *value = _SULA_CONST*(*value)*int_range_sula[RANGE_SULA_index];// / int_pre_amp_gain[PRE_AMP_GAIN_SULA_index];
 }
 
 void ClearMemmory()
@@ -37,7 +48,7 @@ void RefreshDLTS()
     ClearMemmoryDLTS();
     for(size_t i = 0; i < xAxis.size(); i++)
     {
-        AddPointsDLTS(&SavedRelaxations[i], xAxis[i]);
+        AddPointsDLTS(&SavedRelaxations[i], xAxis[i], SavedCapacity[i]);
         /* Обновление информации о ходе записи */
         progress = 99 * i/(xAxis.size());
         SendMessage(hProgress, PBM_SETPOS, progress, 0);
@@ -47,32 +58,23 @@ void RefreshDLTS()
     PlotDLTS();
 }
 
-void SaveRelaxSignal(double MeanTemp, const vector<double> *vData, double dBias, double dAmp)
+void SaveRelaxSignal(double MeanTemp, const vector<double> *vData, double dBias, double dAmp, double capacity)
 {
     string ext;
     if(index_mode == DLTS) ext = ".dlts";
     else if(index_mode == ITS) ext = ".its";
     string FullPath = FileSavePath + FileSaveName + ext;
     ofstream file;
-    if(bfNewfile)
+
+    ifstream ifile(FullPath.data());
+    if(bfNewfile == true || ifile.peek() == EOF)
     {
         file.open(FullPath.data());
         bfNewfile = false;
-    }
-    else
-        file.open(FullPath.data(), std::ofstream::app);
-    if(!file.is_open())
-    {
-        MessageBox(NULL, "Save file isn't being found.", "Error", MB_ICONERROR);
-        return;
-    }
-
-    file << setiosflags(ios::fixed) << setprecision(0);
-    ifstream ifile(FullPath.data());
-    if(ifile.peek() == EOF)
-    {
+        FileOpeningTest(file);
         /* Сохраняем настройки, если файл открыт впервые */
-        file<< averaging_DAQ << " "
+        file<< fixed << setprecision(0)
+            << averaging_DAQ << " "
             << measure_time_DAQ << " "
             << rate_DAQ << " "
             << gate_DAQ << endl << setprecision(VOLTAGE_PRECISION)
@@ -80,8 +82,14 @@ void SaveRelaxSignal(double MeanTemp, const vector<double> *vData, double dBias,
             << Generator.bias << endl;
         if(index_mode == ITS) file << setprecision(THERMO_PRECISION) << MeanTemp << endl;
     }
-    else file << endl;
-    if(index_mode == DLTS) file << setprecision(THERMO_PRECISION) << MeanTemp << endl;
+    else
+    {
+        file.open(FullPath.data(), std::ofstream::app);
+        FileOpeningTest(file);
+        file << fixed << setprecision(0) << endl;
+    }
+    if(index_mode == DLTS) file << setprecision(THERMO_PRECISION) << MeanTemp << " "
+                                << setprecision(VOLTAGE_PRECISION) << capacity << endl;
     else if(index_mode == ITS) /* Должен записывать истинное, а не установленное значение */
         file << setprecision(VOLTAGE_PRECISION) << dBias << " " << dAmp << endl;
     file << setprecision(VOLTAGE_PRECISION);
@@ -89,8 +97,7 @@ void SaveRelaxSignal(double MeanTemp, const vector<double> *vData, double dBias,
     for(uInt32 i = 0; i < uSamples; i++)
     {
         file << vData->at(i);
-        if(i != uSamples-1)
-            file << endl;
+        if(i != uSamples-1) file << endl;
     }
     ifile.close();
     file.close();

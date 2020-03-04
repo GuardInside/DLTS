@@ -58,6 +58,10 @@ UINT CALLBACK LoadFile(PVOID)
     string ext;
     if(index_mode == DLTS) ext = "dlts";
     else if(index_mode == ITS) ext = "its";
+
+    //ini::File _File{ FileSaveName + '.' + ext };
+    //_File.Redir(FileSavePath)
+
     string strName = FileSavePath + FileSaveName + '.' + ext;
     ifstream file;
     file.open(strName);
@@ -68,6 +72,7 @@ UINT CALLBACK LoadFile(PVOID)
     ResetEvent(hDownloadEvent);
     double itsBias = 0.0, itsAmp = 0.0;
     double buff = 0.0, temp = 0.0;
+    double capacity = 1.0;
     /** Загружаем настройки **/
     file >> averaging_DAQ >> measure_time_DAQ >> rate_DAQ >> gate_DAQ
          >> Generator.amplitude >> Generator.bias;
@@ -85,7 +90,7 @@ UINT CALLBACK LoadFile(PVOID)
     while(!file.eof())
     {
         if(index_mode == DLTS)
-            file >> temp;
+            file >> temp >> capacity;
         else if(index_mode == ITS)
         {
             file >> itsBias >> itsAmp;
@@ -94,7 +99,7 @@ UINT CALLBACK LoadFile(PVOID)
         }
         if(index_mode == DLTS && !xAxisDLTS.empty() && temp == xAxisDLTS.back())
             continue;
-        vector <double> vRelaxation;
+        vector <double> vRelaxation, vCapacity;
         UINT uSamples = rate_DAQ*measure_time_DAQ*0.001;
         for(size_t i = 0; i < uSamples; i++)
         {
@@ -106,9 +111,10 @@ UINT CALLBACK LoadFile(PVOID)
             int offset = 0;
             for(auto it = xAxisDLTS.begin(); it != xAxisDLTS.end(); it++)
                 if(temp > *it) offset++;
-            AddPointsDLTS(&vRelaxation, temp); //Передаем значение температуры
+            AddPointsDLTS(&vRelaxation, temp, capacity); //Передаем значение температуры
             EnterCriticalSection(&csSavedRelaxation);
                 SavedRelaxations.insert(SavedRelaxations.begin()+offset, vRelaxation);
+                SavedCapacity.insert(SavedCapacity.begin()+offset, capacity);
             LeaveCriticalSection(&csSavedRelaxation);
             index_relax = offset;
         }
@@ -123,10 +129,11 @@ UINT CALLBACK LoadFile(PVOID)
         i++;
     }
     SendMessage(hProgress, PBM_SETPOS, 0, 0);
-    //Индекс используется для просмотра снятых ранее релаксаций
     file.close();
     PlotRelax();
     PlotDLTS();
+    for(size_t i = 0; i < xAxisDLTS.size(); i++)
+        SaveRelaxSignal(xAxisDLTS[i], &SavedRelaxations[i], 0.0, 0.0, 1.0);
     /** Устанавливаем флаг окончания загрузки **/
     SetEvent(hDownloadEvent);
     return TRUE;

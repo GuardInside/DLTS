@@ -89,18 +89,25 @@ INT DAQmxReadAnalog(UINT uDev, UINT uAIPort, INT iTrigPort, float64 dRate, float
     return 0;
 }
 
-
 BOOL DAQMeasure_Capacity(UINT AIPort, double *capacity)
 {
     vector<double> vResult;
     EnterCriticalSection(&csDataAcquisition);
+    Generator.Pulses(GENERATOR::OFF);
+    /* Время ожидания много больше времени измерения */
+    Sleep(10 * measure_time_DAQ);
     DAQmxReadAnalog(id_DAQ, AIPort, pfi_ttl_port,
                 rate_DAQ, gate_DAQ*0.000001, DAQmx_Val_Rising, index_range, (Generator.period - Generator.width)*0.001,
                 &vResult);
+    Generator.Pulses(GENERATOR::ON);
     LeaveCriticalSection(&csDataAcquisition);
-    for(auto &it: vResult)
-        *capacity += it;
-    *capacity /= vResult.size();
+    size_t counter = 0; /* Считаем, что емкость релаксирует за треть времени измерения */
+    while(counter < vResult.size())
+    {
+        *capacity += vResult.at(counter);
+        counter++;
+    }
+    *capacity /= counter;
     return TRUE;
 }
 

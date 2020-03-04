@@ -24,8 +24,8 @@ string          ApplySettingEditBoxString(HWND hwnd, int nIDEditBox);
 bool            EmptyEditBox(HWND hwnd, int nIDEditBox);
 
 //Запись/Чтение настроек
-void write_settings();
-void read_settings();
+void write_settings(string name = "");
+void read_settings(string name = "");
 //Применяет текущие настройки зон к физическому устройству
 void SetZones();
 //Инициализация сборщика данных, термостата и зон для PID регулировки
@@ -41,8 +41,8 @@ void ClearMemmory();
 void OrderRelaxation();
 //Обновление DLTS-кривых
 void RefreshDLTS();
-void SaveRelaxSignal(double MeanTemp, const vector<double> *vData, double dBias, double dAmp);
-void AddPointsDLTS(const vector<double> *vRelaxation, const double temp);
+void SaveRelaxSignal(double MeanTemp, const vector<double> *vData, double dBias, double dAmp, double capacity);
+void AddPointsDLTS(const vector<double> *vRelaxation, const double temp, const double capacity);
 /* Возвращает расширение открытого файла */
 string GetExtensionFile(string str);
 /* Преобразует значение напряжения в емкость */

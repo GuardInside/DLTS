@@ -20,7 +20,6 @@ BOOL BuildMenu(HWND hWnd)
     HMENU hFileMenu = GetSubMenu(hMenu, 0);
     HMENU hAnalysisMenu = GetSubMenu(hMenu, 1);
     HMENU hAndlysisDLTSMenu = GetSubMenu(hAnalysisMenu, 1);
-    HMENU hAndlysisDLTSNormalizeMenu = GetSubMenu(hAndlysisDLTSMenu, 0);
 
     LONG metric = GetMenuCheckMarkDimensions();
     int height = HIWORD(metric);
@@ -53,8 +52,8 @@ BOOL BuildMenu(HWND hWnd)
     SetMenuItemBitmaps(hAnalysisMenu, 1, MF_BYPOSITION, hbmpDLTS, hbmpDLTS);
         SetMenuItemBitmaps(hAnalysisMenu, ID_MENU_AUTO_PEAK_DETECTING, MF_BYCOMMAND, hbmpPeak, hbmpPeak);
         SetMenuItemBitmaps(hAndlysisDLTSMenu, 1, MF_BYPOSITION, hbmpNormalize, hbmpNormalize);
-            SetMenuItemBitmaps(hAndlysisDLTSNormalizeMenu, ID_MENU_NORMALIZE_TO_ONE, MF_BYCOMMAND, hbmpOne, hbmpOne);
-            SetMenuItemBitmaps(hAndlysisDLTSNormalizeMenu, ID_MENU_NORMALIZE_TO_NOTHING, MF_BYCOMMAND, hbmpNothing, hbmpNothing);
+            SetMenuItemBitmaps(hAndlysisDLTSMenu, ID_MENU_NORMALIZE_TO_ONE, MF_BYCOMMAND, hbmpOne, hbmpOne);
+            SetMenuItemBitmaps(hAndlysisDLTSMenu, ID_MENU_NORMALIZE_TO_NOTHING, MF_BYCOMMAND, hbmpNothing, hbmpNothing);
 
     return EXIT_SUCCESS;
 }

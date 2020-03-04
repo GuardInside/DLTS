@@ -11,7 +11,9 @@ namespace ini
     public:
         /* Файл .ini создается в директории с .exe */
         File(std::string FileName);
-        VOID Rename(std::string FileName);
+        VOID Rename(std::string NewName);
+        VOID Redir(std::string NewDir);
+        VOID Clear();
         /* Функции чтения */
         BOOL ReadString(std::string section, std::string key, std::string *value, std::string default_value = "0");
         BOOL ReadDouble(std::string section, std::string key, double *value, std::string default_value = "0.0");
@@ -26,10 +28,12 @@ namespace ini
         BOOL WriteDouble(std::string section, std::string key, double value, std::stringstream *buff);
         /* Вспомогательные функции */
         //BOOL IsEmpty();
-
+    private:
+        LPTSTR ExtractFilePath(LPCTSTR FileName, LPTSTR buf);
     private:
         std::string Path;
-        LPTSTR ExtractFilePath(LPCTSTR FileName, LPTSTR buf);
+        std::string Name;
+        std::string Dir;
     };
 }
 

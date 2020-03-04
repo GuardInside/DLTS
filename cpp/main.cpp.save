@@ -207,7 +207,11 @@ void MainWindow_OnCommand(HWND hwnd, int id, HWND, UINT)
             CloseHandle((HANDLE)_beginthreadex(NULL, 0, dlg_success, NULL, 0, NULL));
             PlotDLTS();
             break;
-        
+        case ID_MENU_NORMALIZE_TO_NOTHING:
+            ::normaliz_dlts = false;
+            CloseHandle((HANDLE)_beginthreadex(NULL, 0, dlg_success, NULL, 0, NULL));
+            PlotDLTS();
+            break;
         /* Загрузить файл */
         case ID_MENU_OPEN:
             DownloadWindow();
@@ -354,6 +358,7 @@ UINT CALLBACK DataAcquisition_Process(void*)
 {
     gwin::gVector vData1, vData2;
     stringstream buff;
+    /* Если отображается сигнал с порта для импульсов */
     if(ai_port+offset_ai_port == ai_port_pulse)
     {
         double dBias = 0.0, dAmp = 0.0;
@@ -365,8 +370,7 @@ UINT CALLBACK DataAcquisition_Process(void*)
     else
     {
         double capacity = 0.0;
-        int port_c = 2; /* AI_2 */
-        DAQMeasure_Capacity(port_c, &capacity);
+        DAQMeasure_Capacity(::ai_port_capacity, &capacity);
         VoltageToCapacity(&capacity);
         MyDAQMeasure(&vData2, 5, measure_time_DAQ*0.001, ai_port);
         for(auto &Y: vData2)
@@ -478,7 +482,7 @@ UINT CALLBACK ReadDLTS(void* MeanTemp_)
         }
     }
     #ifndef TEST_MODE
-    MyDAQMeasure(&Relaxation, averaging_DAQ, measure_time_DAQ*0.001, ai_port, TRUE);
+    MyDAQMeasure(&Relaxation, averaging_DAQ, measure_time_DAQ*0.001, ai_port, TRUE); // небезопасный
     #endif // TEST_MODE
     /* Создаем релаксацию руками */
     #ifdef TEST_MODE
@@ -491,16 +495,16 @@ UINT CALLBACK ReadDLTS(void* MeanTemp_)
         SavedRelaxations.insert(SavedRelaxations.begin()+offset, Relaxation);
     LeaveCriticalSection(&csSavedRelaxation);
     /* Добавляем точку на DLTS кривую */
-    AddPointsDLTS(&Relaxation, MeanTemp);
+    AddPointsDLTS(&Relaxation, MeanTemp);   // TUS
     /* Сохраняем релаксацию в файл */
     SaveRelaxSignal(MeanTemp, &Relaxation, 0.0, 0.0);
     delete (double*)MeanTemp_;
     index_relax = offset;
-    PlotRelax();
-    PlotDLTS();
+    PlotRelax();    // TUS
+    PlotDLTS();     // TUS
     J1:
     /* Установка флага конца эксперимента */
-    Thermostat.BeginPoint += Thermostat.TempStep;
+    Thermostat.BeginPoint += Thermostat.TempStep;   // TUS
     if(!Thermostat.range_is_correct()) StartButPush();
     /* Выводим текущее значение Begin Point */
     rewrite(buff) << "Begin point " << Thermostat.BeginPoint << " K";

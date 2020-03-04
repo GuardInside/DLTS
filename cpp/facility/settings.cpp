@@ -21,9 +21,14 @@ UINT CALLBACK dlg_success(PVOID)
     return DialogBox(hInst, MAKEINTRESOURCE(ID_SUCCESS_WINDOW), HWND_DESKTOP, SuccessWndProc);
 }
 
-void write_settings()
+void write_settings(string name)
 {
     ini::File iniFile{"settings.ini"};
+    if(!name.empty())
+    {
+        iniFile.Rename(name);
+        iniFile.Redir(::FileSavePath);
+    }
         /* Пользовательские настройки */
     /* Сохраняем настройки блока Термостата */
     iniFile.WriteDoubleFix("Thermostat", "step", Thermostat.TempStep, THERMO_PRECISION);
@@ -33,24 +38,29 @@ void write_settings()
     iniFile.WriteInt("DAQ", "averaging", averaging_DAQ);
     iniFile.WriteInt("DAQ", "rate", rate_DAQ);
     iniFile.WriteInt("DAQ", "time", measure_time_DAQ);
-    iniFile.WriteDoubleFix("DAQ", "gate", gate_DAQ, 2);
+    iniFile.WriteDoubleFix("DAQ", "gate", gate_DAQ, TIME_PRECISION);
     /* Сохраняем настройки блока SULA */
     iniFile.WriteInt("SULA", "range_capacity", RANGE_SULA_index);
     iniFile.WriteInt("SULA", "pre_amp_gain", PRE_AMP_GAIN_SULA_index);
     /* Сохраняем настройки блока генератора импульсов */
-    iniFile.WriteDoubleFix("Generator", "period", Generator.period, 2);
-    iniFile.WriteDoubleFix("Generator", "width", Generator.width, 2);
-    iniFile.WriteDoubleFix("Generator", "amplitude", Generator.amplitude, 3);
-    iniFile.WriteDoubleFix("Generator", "bias", Generator.bias, 3);
+    iniFile.WriteDoubleFix("Generator", "period", Generator.period, TIME_PRECISION);
+    iniFile.WriteDoubleFix("Generator", "width", Generator.width, TIME_PRECISION);
+    iniFile.WriteDoubleFix("Generator", "amplitude", Generator.amplitude, VOLTAGE_PRECISION);
+    iniFile.WriteDoubleFix("Generator", "bias", Generator.bias, VOLTAGE_PRECISION);
     iniFile.WriteBool("Generator", "isActive", Generator.is_active);
     /* Сохраняем настройки блока ITS */
-    iniFile.WriteDoubleFix("Generator", "step_voltage", Generator.step_voltage, 3);
-    iniFile.WriteDoubleFix("Generator", "begin_amplitude", Generator.begin_amplitude, 3);
-    iniFile.WriteDoubleFix("Generator", "end_amplitude", Generator.end_amplitude, 3);
+    iniFile.WriteDoubleFix("Generator", "step_voltage", Generator.step_voltage, VOLTAGE_PRECISION);
+    iniFile.WriteDoubleFix("Generator", "begin_amplitude", Generator.begin_amplitude, VOLTAGE_PRECISION);
+    iniFile.WriteDoubleFix("Generator", "end_amplitude", Generator.end_amplitude, VOLTAGE_PRECISION);
     /* Сохраняем настройки блока общее */
     iniFile.WriteString("General", "save_path", FileSavePath);
     iniFile.WriteString("General", "file", FileSaveName);
     iniFile.WriteInt("General", "mode", index_mode);
+    if(!name.empty())
+    {
+        CloseHandle((HANDLE)_beginthreadex(NULL, 0, dlg_success, NULL, 0, NULL));
+        return;
+    }
     /* Сохраняем настройки блока математической модели */
     iniFile.WriteDoubleSc("Model", "mass", dEfMass, 3);
     iniFile.WriteInt("Model", "g", (int)dFactorG);
@@ -68,7 +78,7 @@ void write_settings()
     iniFile.WriteInt("DAQ", "ai_capacity", ai_port_capacity);
         /* Настройки корреляторов */
     /* Параметры корреляторов */
-    iniFile.WriteDoubleFix("Сorrelator", "width", correlation_width, 2);
+    iniFile.WriteDoubleFix("Сorrelator", "width", correlation_width, TIME_PRECISION);
     iniFile.WriteDoubleFix("Сorrelator", "c", correlation_c, 2);
     iniFile.WriteInt("Сorrelator", "type", CorType);
     /* Количество корреляторов */
@@ -77,7 +87,7 @@ void write_settings()
     for(size_t i = 0; i < CorTime.size(); i++)
     {
         rewrite(buff) << "_" << i;
-        iniFile.WriteDoubleFix("Сorrelator", buff.str(), CorTime[i], 2);
+        iniFile.WriteDoubleFix("Сorrelator", buff.str(), CorTime[i], TIME_PRECISION);
     }
         /* Настройки аппроксимации */
     iniFile.WriteDoubleSc("Fitting", "abs_error", AprErr, 0);
@@ -95,11 +105,10 @@ void write_settings()
         iniFile.WriteInt(buff.str().data(), "D", Thermostat.ZoneTable.D[i]);
         iniFile.WriteInt(buff.str().data(), "RANGE", Thermostat.ZoneTable.range[i]);
     }
-    HANDLE hThreadSuccess = (HANDLE)_beginthreadex(NULL, 0, dlg_success, NULL, 0, NULL);
-    CloseHandle(hThreadSuccess);
+    CloseHandle((HANDLE)_beginthreadex(NULL, 0, dlg_success, NULL, 0, NULL));
 }
 
-void read_settings()
+void read_settings(string name)
 {
     ini::File iniFile{"settings.ini"};
         /* Пользовательские настройки */

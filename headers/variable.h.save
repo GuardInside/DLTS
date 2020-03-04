@@ -1,5 +1,6 @@
 #ifndef VARIABLE_H_INCLUDED
 #define VARIABLE_H_INCLUDED
+#include <atomic>
 #include <string>
 #include <vector>
 #include <sstream>
@@ -60,11 +61,11 @@ extern vector<double>           itsAmpVoltages;
 extern vector<double>           itsBiasVoltages;  /* Хранит значения напряжений импульсов в режиме ITS */
 
 extern vector<vector<double>> SavedRelaxations; //Хранит все сохраненные или загруженные релаксации
-extern size_t index_relax;  //Номер текущей релаксации для отображения
-extern size_t index_range;  //Номер текущего диапазона
-extern size_t index_mode;   //Режим работы программы DLTS или ITS
-extern size_t index_plot_DLTS; //Отображать DLTS или гр. Аррениуса
-extern int32 offset_ai_port;//Смещение номера порта ai_port при отображении в реальном времени
+extern atomic_size_t index_relax;  //Номер текущей релаксации для отображения
+extern atomic_size_t index_range;  //Номер текущего диапазона
+extern atomic_size_t index_mode;   //Режим работы программы DLTS или ITS
+extern atomic_size_t index_plot_DLTS; //Отображать DLTS или гр. Аррениуса
+extern atomic<int32> offset_ai_port;//Смещение номера порта ai_port при отображении в реальном времени
 
 /* Диапазоны измерений напряжения DAQ */
 extern const string range[];
@@ -101,14 +102,14 @@ extern bool AprEnableDLTS;
 extern int  AprIter;
 extern double AprErr;
 /* Флаги */
-extern bool start;              //Нажата кнопка старт
-extern bool stability;          //Температура стабилизировалась вблизи сетпоинта
-extern bool bfDAQ0k;            //DAQ работает в штатном режиме
-extern bool fbThermostat0k;     //Термостат работает в штатном режиме
-extern bool bfNewfile;          //Создавать ли новый файл при старте эксперимента?
-extern bool fix_temp;           //Фиксация температуры
-extern bool auto_peak_search;   //Автоопределение пика методом золотого сечения
-extern bool normaliz_dlts;
+extern atomic_bool start;              //Нажата кнопка старт
+extern atomic_bool stability;          //Температура стабилизировалась вблизи сетпоинта
+extern atomic_bool bfDAQ0k;            //DAQ работает в штатном режиме
+extern atomic_bool fbThermostat0k;     //Термостат работает в штатном режиме
+extern atomic_bool bfNewfile;          //Создавать ли новый файл при старте эксперимента?
+extern atomic_bool fix_temp;           //Фиксация температуры
+extern atomic_bool auto_peak_search;   //Автоопределение пика методом золотого сечения
+extern atomic_bool normaliz_dlts;
 /* Параметры коррелятора */
 extern unsigned int CorType;
 extern double correlation_c;
@@ -123,7 +124,7 @@ extern HWND                        hRelax;     //Описатель окна графика релаксац
 extern HWND                        hGraph_DLTS;//Описатель окна графика DLTS
 extern HWND                        hProgress;  //Прогресс чтения данных
 extern CRITICAL_SECTION            csDataAcquisition;//Используется всегда при чтении данных DAQ
-extern CRITICAL_SECTION            cs
+extern CRITICAL_SECTION            csSavedRelaxation;
 extern HANDLE                      hDownloadEvent;
 
 

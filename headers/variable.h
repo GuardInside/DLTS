@@ -1,5 +1,6 @@
 #ifndef VARIABLE_H_INCLUDED
 #define VARIABLE_H_INCLUDED
+#include <atomic>
 #include <string>
 #include <vector>
 #include <sstream>
@@ -11,13 +12,11 @@
 using namespace std;
 
 /* Активация режима отладки */
-#define TEST_MODE
+//#define TEST_MODE
 
 /* Идентификаторы */
 #define WM_NEW_CORTIME              200 //Сообщение win_weight_func для обновления графика
 #define ID_PROGRESS                 999 //Идентификатор прогрессбара
-#define DLTS                        0
-#define ITS                         1
 
 #define BUFF_SIZE                   256 //Размер строкового буффера для работы со строками в стиле С
 
@@ -50,6 +49,7 @@ using namespace std;
 #define PI                          3.1415926535897932384626433832795
 
 enum CORTYPE{DoubleBoxCar, LockIn, ExpW, SinW};
+enum MODE{DLTS, ITS};
 
 extern vector<double>           xAxisDLTS;
 extern vector<double>           *yAxisDLTS;
@@ -59,12 +59,13 @@ extern vector<double>           CorTime;
 extern vector<double>           itsAmpVoltages;
 extern vector<double>           itsBiasVoltages;  /* Хранит значения напряжений импульсов в режиме ITS */
 
-extern vector<vector<double>> SavedRelaxations; //Хранит все сохраненные или загруженные релаксации
-extern size_t index_relax;  //Номер текущей релаксации для отображения
-extern size_t index_range;  //Номер текущего диапазона
-extern size_t index_mode;   //Режим работы программы DLTS или ITS
-extern size_t index_plot_DLTS; //Отображать DLTS или гр. Аррениуса
-extern int32 offset_ai_port;//Смещение номера порта ai_port при отображении в реальном времени
+extern vector<vector<double>>   SavedRelaxations; //Хранит все сохраненные или загруженные релаксации
+extern vector<double>           SavedCapacity;    //Хранит все сохраненные или загруженные значения емкости
+extern atomic_size_t index_relax;  //Номер текущей релаксации для отображения
+extern atomic_size_t index_range;  //Номер текущего диапазона
+extern atomic_size_t index_mode;   //Режим работы программы DLTS или ITS
+extern atomic_size_t index_plot_DLTS; //Отображать DLTS или гр. Аррениуса
+extern atomic<int32> offset_ai_port;//Смещение номера порта ai_port при отображении в реальном времени
 
 /* Диапазоны измерений напряжения DAQ */
 extern const string range[];
@@ -101,14 +102,14 @@ extern bool AprEnableDLTS;
 extern int  AprIter;
 extern double AprErr;
 /* Флаги */
-extern bool start;              //Нажата кнопка старт
-extern bool stability;          //Температура стабилизировалась вблизи сетпоинта
-extern bool bfDAQ0k;            //DAQ работает в штатном режиме
-extern bool fbThermostat0k;     //Термостат работает в штатном режиме
-extern bool bfNewfile;          //Создавать ли новый файл при старте эксперимента?
-extern bool fix_temp;           //Фиксация температуры
-extern bool auto_peak_search;   //Автоопределение пика методом золотого сечения
-extern bool normaliz_dlts;
+extern atomic_bool start;              //Нажата кнопка старт
+extern atomic_bool stability;          //Температура стабилизировалась вблизи сетпоинта
+extern atomic_bool bfDAQ0k;            //DAQ работает в штатном режиме
+extern atomic_bool fbThermostat0k;     //Термостат работает в штатном режиме
+extern atomic_bool bfNewfile;          //Создавать ли новый файл при старте эксперимента?
+extern atomic_bool fix_temp;           //Фиксация температуры
+extern atomic_bool auto_peak_search;   //Автоопределение пика методом золотого сечения
+extern atomic_bool normaliz_dlts;
 /* Параметры коррелятора */
 extern unsigned int CorType;
 extern double correlation_c;

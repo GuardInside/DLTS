@@ -125,10 +125,11 @@ VOID CorWindow_OnCommand(HWND hWnd, INT id, HWND, UINT)
                     case SinW: w = sin_w;
                     break;
                 }
-                for(double time = 0.0; time < measure_time_DAQ; time += 0.001*correlation_width)
+                double dt = 1000.0 * pow(rate_DAQ, -1);
+                for(double time = 0.0; time < measure_time_DAQ; time += dt)
                 {
                     xAxis.push_back(time);
-                    yAxis.push_back(w(time/1000.0, t1));
+                    yAxis.push_back(w(0.001 * time, t1));
                 }
                 gwin::gData(hWeightGraph, &xAxis, &yAxis);
             }

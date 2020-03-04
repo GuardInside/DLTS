@@ -69,15 +69,61 @@ void VI::ReadDigit(int& digit)
 /* ********************* */
 /* Виртуальный генератор */
 /* ********************* */
+void GENERATOR::Pulses(SWITCHER state)
+{
+    static const double K = 2.3;
+    Write(":HOLD VOLT");
+    stringstream Buff;
+    if(state == OFF)
+    {
+        rewrite(Buff) << ":VOLT" << channel << ":HIGH " << 0.0 << "V";
+        Write(Buff);
+        rewrite(Buff) << ":VOLT" << channel << ":LOW " << 0.0 << "V";
+        Write(Buff);
+    }
+    else if(state == ON)
+    {
+        if(index_mode == DLTS)
+            rewrite(Buff) << ":VOLT" << channel << ":HIGH " << -1.0*round((amplitude)/(K), 3) << "V";
+        else if(index_mode == ITS)
+            rewrite(Buff) << ":VOLT" << channel << ":HIGH " << -1.0*round((begin_amplitude)/(K), 3) << "V";
+        Write(Buff);
+        rewrite(Buff) << ":VOLT" << channel << ":LOW " << -1.0*bias/(K) << "V";
+            Write(Buff);
+    }
+}
+
+void GENERATOR::Reset()
+{
+    Write("*RST");
+}
+
+void GENERATOR::ErrorCheck(SWITCHER state)
+{
+    if(state == OFF)
+        Write(":SYST:CHEC OFF");
+    else if(state == ON)
+        Write(":SYST:CHEC ON");
+}
+
+void GENERATOR::Channel(SWITCHER state)
+{
+    stringstream Buff;
+    if(state == OFF)
+        rewrite(Buff) << ":OUTPUT" << channel << " OFF";
+    else if(state == ON)
+        rewrite(Buff) << ":OUTPUT" << channel << " ON";
+    Write(Buff);
+}
 
 void GENERATOR::Apply()
 {
     if(is_active == false)
         return;
-    static const double K = 2.3;
     stringstream Buff;
-    rewrite(Buff) << ":OUTPUT" << channel << " OFF"; /* Channel out of range */
-        Write(Buff);
+    Reset();
+    ErrorCheck(OFF);
+    Channel(OFF);
     /* Временные настройки. Время в мс */
     rewrite(Buff) << ":PULSE:PER " << period*1000000 << "NS";
         Write(Buff);
@@ -88,24 +134,12 @@ void GENERATOR::Apply()
         Write(Buff);
     rewrite(Buff) << ":OUTP" << channel << ":IMP:EXT 1000000OHM";
         Write(Buff);
-    rewrite(Buff) << ":PULS:DOUB" << channel << " OFF"; /* Channel out of range */
+    rewrite(Buff) << ":PULS:DOUB" << channel << " OFF";
         Write(Buff);
-    rewrite(Buff) << ":PULS:TRIG1:VOLT TTL";
-        Write(Buff);
-    /* Настройки напряжения */
-    rewrite(Buff) << ":HOLD VOLT";
-        Write(Buff);
-    if(index_mode == DLTS)
-        rewrite(Buff) << ":VOLT" << channel << ":HIGH " << -1.0*round((amplitude)/(K), 3) << "V";
-    else if(index_mode == ITS)
-        rewrite(Buff) << ":VOLT" << channel << ":HIGH " << -1.0*round((begin_amplitude)/(K), 3) << "V";
-    Write(Buff);
-    rewrite(Buff) << ":HOLD VOLT";
-        Write(Buff);
-    rewrite(Buff) << ":VOLT" << channel << ":LOW " << -1.0*bias/(K) << "V";
-        Write(Buff);
-    rewrite(Buff) << ":OUTPUT" << channel << " ON"; /* Channel out of range */
-        Write(Buff);
+    Write(":PULS:TRIG1:VOLT TTL");
+    /* Конец скрытых настроек */
+    Pulses(ON);
+    Channel(ON);
 }
 
 /* ********************* */

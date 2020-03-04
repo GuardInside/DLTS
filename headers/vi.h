@@ -42,9 +42,15 @@ class VI
 
 struct GENERATOR: public VI
 {
+    enum SWITCHER {ON, OFF};
     GENERATOR(std::string arg_ViName){ ViName = arg_ViName; channel = 1; };
+
+    void Reset();
+    void ErrorCheck(SWITCHER);
+    void Channel(SWITCHER);
+    void Pulses(SWITCHER);
     /* Применить текущие настройки к прибору */
-    VOID Apply();
+    void Apply();
 
     double period, width, amplitude, bias;
     /* Для режима ITS */

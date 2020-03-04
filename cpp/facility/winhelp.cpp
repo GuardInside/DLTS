@@ -20,7 +20,6 @@ BOOL BuildMenu(HWND hWnd)
     HMENU hFileMenu = GetSubMenu(hMenu, 0);
     HMENU hAnalysisMenu = GetSubMenu(hMenu, 1);
     HMENU hAndlysisDLTSMenu = GetSubMenu(hAnalysisMenu, 1);
-    HMENU hAndlysisDLTSNormalizeMenu = GetSubMenu(hAndlysisDLTSMenu, 0);
 
     LONG metric = GetMenuCheckMarkDimensions();
     int height = HIWORD(metric);

@@ -18,15 +18,15 @@
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
+					<Add library="winmm" />
 					<Add library="visa/lib/visa32.lib" />
 					<Add library="DAQmx/lib/NIDAQmx.lib" />
-					<Add library="winmm" />
 				</Linker>
 			</Target>
 		</Build>
 		<Compiler>
 			<Add option="-Wall" />
-			<Add option="-std=c++14" />
+			<Add option="-std=c++1z" />
 			<Add directory="gsl/include" />
 			<Add directory="headers" />
 		</Compiler>
