@@ -1,4 +1,6 @@
 #include <winfunc.h>
+#define RANGE_NUM                  4   /* Число диапазонов напряжений для АЦП */
+
 #define ID_COMBOBOX_VOLTAGE_RANGE       200
 #define ID_COMBOBOX_MODE                201
 #define ID_COMBOBOX_RANGE_SULA          202
@@ -20,7 +22,6 @@ INT_PTR CALLBACK stwin_proc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
 }
 
 
-//BOOL SettingsWindow_OnCreate(HWND hwnd, LPCREATESTRUCT)
 BOOL SettingsWindow_OnInit(HWND hwnd, HWND, LPARAM)
 {
     HWND hComboBox_range;
@@ -30,18 +31,19 @@ BOOL SettingsWindow_OnInit(HWND hwnd, HWND, LPARAM)
     //Вывести возможны настройки диапазонов напряжений
     hComboBox_range = CreateWindow(WC_COMBOBOX, TEXT(""), CBS_DROPDOWNLIST | WS_CHILD | WS_OVERLAPPED | WS_VISIBLE,
     167, 63, 95, 125, hwnd, (HMENU)(ID_COMBOBOX_VOLTAGE_RANGE), hInst, NULL);
-    for (int i = 0; i < RANGE_SIZE; i++)
+    for (int i = 0; i < RANGE_NUM; i++)
         SendMessage(hComboBox_range, CB_ADDSTRING, 0, (LPARAM)range[i].data());
-    SendMessage(hComboBox_range, CB_SETCURSEL, index_range, 0);
+    SendMessage(hComboBox_range, CB_SETCURSEL, index_range.load(), 0);
     /* Настройка режима эксперимента */
     hComboBox_mode = CreateWindow(WC_COMBOBOX, TEXT(""), CBS_DROPDOWNLIST | WS_CHILD | WS_OVERLAPPED | WS_VISIBLE,
-    685, 180, 100, 125, hwnd, (HMENU)(ID_COMBOBOX_MODE), hInst, NULL);
+    555, 180, 100, 125, hwnd, (HMENU)(ID_COMBOBOX_MODE), hInst, NULL);
         ComboBox_AddString(hComboBox_mode, "DLTS");
         ComboBox_AddString(hComboBox_mode, "ITS");
-        ComboBox_SetCurSel(hComboBox_mode, index_mode);
+        ComboBox_AddString(hComboBox_mode, "CV");
+        ComboBox_SetCurSel(hComboBox_mode, index_mode.load());
     /* Настройка SULA.CAPACITY_RANGE */
     hComboBox_RangeSula = CreateWindow(WC_COMBOBOX, TEXT(""), CBS_DROPDOWNLIST | WS_CHILD | WS_OVERLAPPED | WS_VISIBLE,
-    300, 62, 100, 125, hwnd, (HMENU)(ID_COMBOBOX_RANGE_SULA), hInst, NULL);
+    425, 62, 100, 125, hwnd, (HMENU)(ID_COMBOBOX_RANGE_SULA), hInst, NULL);
     stringstream buff;
     for(int i = 0; i < 5; i++)
     {
@@ -51,26 +53,22 @@ BOOL SettingsWindow_OnInit(HWND hwnd, HWND, LPARAM)
     ComboBox_SetCurSel(hComboBox_RangeSula, RANGE_SULA_index);
     /* Настройка SULA.PRE_AMP_GAIN */
     hComboBox_PreAmpGain = CreateWindow(WC_COMBOBOX, TEXT(""), CBS_DROPDOWNLIST | WS_CHILD | WS_OVERLAPPED | WS_VISIBLE,
-    300, 122, 100, 125, hwnd, (HMENU)(ID_COMBOBOX_PRE_AMP_GAIN_SULA), hInst, NULL);
+    425, 122, 100, 125, hwnd, (HMENU)(ID_COMBOBOX_PRE_AMP_GAIN_SULA), hInst, NULL);
     for(int i = 0; i < 5; i++)
     {
-        rewrite(buff) << int_pre_amp_gain[i];
+        rewrite(buff) << int_pre_amplifier[i];
         ComboBox_AddString(hComboBox_PreAmpGain, buff.str().c_str());
     }
     ComboBox_SetCurSel(hComboBox_PreAmpGain, PRE_AMP_GAIN_SULA_index);
     /* Вывод значений в эдитбокс */
     PostMessage(hwnd, WM_COMMAND, WM_INITDLG, 0);
-    /* Декорации */
-    HWND hDropList = GetDlgItem(hwnd, ID_COMBO_BOX_TEST);
-    ComboBox_AddItemData(hDropList, "SD");
-    ComboBox_
     return TRUE;
 }
 
 BOOL SettingsWindow_OnCommand(HWND hwnd, int ID, HWND, UINT codeNotify)
 {
-    static UINT index_mode = ::index_mode;
-    static BOOL GenAgilent_is_active = Generator.is_active;
+    static mode index_mode = ::index_mode.load();
+    static BOOL Generator_Agilent_is_active = Generator.is_active.load();
     switch(ID)
     {
         case WM_INITDLG:
@@ -111,23 +109,13 @@ BOOL SettingsWindow_OnCommand(HWND hwnd, int ID, HWND, UINT codeNotify)
                 SetDlgItemText(hwnd, ID_EDITCONTROL_WIDTHPULSE, buff.str().data());
                 //Вывести текущие настройки амплитуды импульса в вольтах
                 rewrite(buff) << setprecision(3);
-                rewrite(buff) << Generator.amplitude;
+                rewrite(buff) << Generator.amp;
                 SetDlgItemText(hwnd, ID_EDITCONTROL_AMPLITUDE, buff.str().data());
                 //Вывести текущие настройки смещения импульса в вольтах
                 rewrite(buff) << Generator.bias;
                 SetDlgItemText(hwnd, ID_EDITCONTROL_BIAS, buff.str().data());
-                //Вывести текущие настройки шага ITS в вольтах
-                rewrite(buff) << Generator.step_voltage;
-                SetDlgItemText(hwnd, ID_EDITCONTROL_STEP_AMPLITUDE, buff.str().data());
-                //Вывести текущие настройки старта ITS в вольтах
-                rewrite(buff) << Generator.begin_amplitude;
-                SetDlgItemText(hwnd, ID_EDITCONTROL_BEGIN_AMPLITUDE, buff.str().data());
-                //Вывести текущие настройки конца ITS в вольтах
-                rewrite(buff) << Generator.end_amplitude;
-                SetDlgItemText(hwnd, ID_EDITCONTROL_END_AMPLITUDE, buff.str().data());
-                rewrite(buff) << setprecision(2);
                 //Вывести текущие настройки режима генератора (SULA\AGILENT)
-                CheckDlgButton(hwnd, ID_CHECKBOX_USE_GENERATOR, GenAgilent_is_active);
+                CheckDlgButton(hwnd, ID_CHECKBOX_USE_GENERATOR, Generator.is_active.load());
                 PostMessage(hwnd, WM_COMMAND, ID_CHECKBOX_USE_GENERATOR, 0);
                 //Вывести текущие настройки эффективной массы
                 rewrite(buff) << setprecision(3) << scientific << ::dEfMass;
@@ -150,52 +138,32 @@ BOOL SettingsWindow_OnCommand(HWND hwnd, int ID, HWND, UINT codeNotify)
         return TRUE;
         case ID_BUTTON_CLOSE_SETTINGS:
             /* Возврат статических переменных */
-            GenAgilent_is_active = Generator.is_active;
-            index_mode = ::index_mode;
+            Generator_Agilent_is_active = Generator.is_active.load();
+            index_mode = ::index_mode.load();
             DestroyWindow(hwnd);
         return TRUE;
         /* Изменилось состояние чекбокса */
         case ID_CHECKBOX_USE_GENERATOR:
             {
-            bool CBState = SendMessage(GetDlgItem(hwnd, ID_CHECKBOX_USE_GENERATOR), BM_GETCHECK, 0, 0);
-            if(CBState == false)
-            {
-                EnableWindow(GetDlgItem(hwnd, ID_EDITCONTROL_PERIOD), FALSE);
-                EnableWindow(GetDlgItem(hwnd, ID_EDITCONTROL_WIDTHPULSE), FALSE);
-                EnableWindow(GetDlgItem(hwnd, ID_EDITCONTROL_AMPLITUDE), FALSE);
-                EnableWindow(GetDlgItem(hwnd, ID_EDITCONTROL_BIAS), FALSE);
-                EnableWindow(GetDlgItem(hwnd, ID_EDITCONTROL_STEP_AMPLITUDE), FALSE);
-                EnableWindow(GetDlgItem(hwnd, ID_EDITCONTROL_BEGIN_AMPLITUDE), FALSE);
-                EnableWindow(GetDlgItem(hwnd, ID_EDITCONTROL_END_AMPLITUDE), FALSE);
-            }
-            else
-            {
-                /* Блокировка опций в зависимости от режима */
-                BOOL state = TRUE;
-                if(index_mode == ITS)
-                    state = FALSE;
-                EnableWindow(GetDlgItem(hwnd, ID_EDITCONTROL_PERIOD),           TRUE);
-                EnableWindow(GetDlgItem(hwnd, ID_EDITCONTROL_WIDTHPULSE),       TRUE);
-                EnableWindow(GetDlgItem(hwnd, ID_EDITCONTROL_AMPLITUDE),        state);
-                EnableWindow(GetDlgItem(hwnd, ID_EDITCONTROL_BIAS),             TRUE);
-                EnableWindow(GetDlgItem(hwnd, ID_EDITCONTROL_STEP_AMPLITUDE),  !state);
-                EnableWindow(GetDlgItem(hwnd, ID_EDITCONTROL_BEGIN_AMPLITUDE), !state);
-                EnableWindow(GetDlgItem(hwnd, ID_EDITCONTROL_END_AMPLITUDE),   !state);
-            }
-            GenAgilent_is_active = CBState;
+                bool state = SendMessage(GetDlgItem(hwnd, ID_CHECKBOX_USE_GENERATOR), BM_GETCHECK, 0, 0);
+                EnableWindow(GetDlgItem(hwnd, ID_EDITCONTROL_PERIOD), state);
+                EnableWindow(GetDlgItem(hwnd, ID_EDITCONTROL_WIDTHPULSE), state);
+                EnableWindow(GetDlgItem(hwnd, ID_EDITCONTROL_AMPLITUDE), state);
+                EnableWindow(GetDlgItem(hwnd, ID_EDITCONTROL_BIAS), state);
+                Generator_Agilent_is_active = state;
             }
             return TRUE;
         case ID_COMBOBOX_MODE:
             if(codeNotify == CBN_SELCHANGE)
             {
-                index_mode = SendMessage(GetDlgItem(hwnd, ID_COMBOBOX_MODE), CB_GETCURSEL, 0, 0);
+                index_mode = static_cast<mode>(SendMessage(GetDlgItem(hwnd, ID_COMBOBOX_MODE), CB_GETCURSEL, 0, 0));
                 PostMessage(hwnd, WM_COMMAND, ID_CHECKBOX_USE_GENERATOR, 0);
             }
             return TRUE;
         case ID_EDITCONTROL_SAVE_PATH:
             break;
         case ID_BUTTON_APPLY_SETTINGS:
-            if(start)
+            if(start.load())
             {
                 MessageBox(hwnd, "Stop the experiment and try again.", "Warning", MB_ICONWARNING);
                 return TRUE;
@@ -208,7 +176,7 @@ BOOL SettingsWindow_OnCommand(HWND hwnd, int ID, HWND, UINT codeNotify)
                 //Применить настройки имени файла сохранений
                 FileSaveName = ApplySettingEditBoxString(hwnd, ID_EDITCONTROL_FILE_SAVE_NAME);
                 //Применить настройки режима работы программы
-                index_mode = SendMessage(GetDlgItem(hwnd, ID_COMBOBOX_MODE), CB_GETCURSEL, 0, 0);
+                //::index_mode.store( static_cast<mode>(SendMessage(GetDlgItem(hwnd, ID_COMBOBOX_MODE), CB_GETCURSEL, 0, 0)) );
                 /* Настройки LakeShore */
                 //Применить настройки шага стабилизации
                 Thermostat.TempStep = ApplySettingEditBox(hwnd, ID_EDITCONTROL_STEP, 2);
@@ -231,29 +199,19 @@ BOOL SettingsWindow_OnCommand(HWND hwnd, int ID, HWND, UINT codeNotify)
                 //Применить настройки диапазона напряжений
                 PRE_AMP_GAIN_SULA_index = ComboBox_GetCurSel(GetDlgItem(hwnd, ID_COMBOBOX_PRE_AMP_GAIN_SULA));
                 /* Настройки генератора импульсов */
-                //Применить настройки периода
-                Generator.period = ApplySettingEditBox(hwnd, ID_EDITCONTROL_PERIOD, 2);
-                //Вывести текущие настройки ширины импульсов
-                Generator.width = ApplySettingEditBox(hwnd, ID_EDITCONTROL_WIDTHPULSE, 2);
-                if(Generator.width >= Generator.period) alright = false;
-                //Применить настройки амплитуды импульса в вольтах
-                Generator.amplitude = ApplySettingEditBox(hwnd, ID_EDITCONTROL_AMPLITUDE, 3);
-                if(Generator.amplitude > MAX_VOLTAGE_PULSE || Generator.amplitude < MIN_VOLTAGE_PULSE) alright = false;
-                //Применить настройки смещения импульса в вольтах
-                Generator.bias = ApplySettingEditBox(hwnd, ID_EDITCONTROL_BIAS, 3);
-                if(Generator.bias < MIN_VOLTAGE_PULSE || Generator.bias > MAX_VOLTAGE_PULSE) alright = false;
-                if(index_mode == ITS)
+                if(Generator_Agilent_is_active)
                 {
-                    //Применить настройки шага ITS в вольтах
-                    Generator.step_voltage = ApplySettingEditBox(hwnd, ID_EDITCONTROL_STEP_AMPLITUDE, 3);
-                    //Применить настройки начала ITS в вольтах
-                    Generator.begin_amplitude = ApplySettingEditBox(hwnd, ID_EDITCONTROL_BEGIN_AMPLITUDE, 3);
-                    //Применить настройки конца ITS в вольтах
-                    Generator.end_amplitude = ApplySettingEditBox(hwnd, ID_EDITCONTROL_END_AMPLITUDE, 3);
-                    if(Generator.begin_amplitude < MIN_VOLTAGE_PULSE || Generator.begin_amplitude > MAX_VOLTAGE_PULSE) alright = false;
-                    else if(Generator.end_amplitude < MIN_VOLTAGE_PULSE || Generator.end_amplitude > MAX_VOLTAGE_PULSE) alright = false;
-                    else if(Generator.end_amplitude < Generator.begin_amplitude && Generator.step_voltage > 0.0) alright = false;
-                    else if(Generator.end_amplitude > Generator.begin_amplitude && Generator.step_voltage < 0.0) alright = false;
+                    //Применить настройки периода
+                    Generator.period = ApplySettingEditBox(hwnd, ID_EDITCONTROL_PERIOD, 2);
+                    //Вывести текущие настройки ширины импульсов
+                    Generator.width = ApplySettingEditBox(hwnd, ID_EDITCONTROL_WIDTHPULSE, 2);
+                    if(Generator.width >= Generator.period) alright = false;
+                    //Применить настройки амплитуды импульса в вольтах
+                    Generator.amp = ApplySettingEditBox(hwnd, ID_EDITCONTROL_AMPLITUDE, 3);
+                    if(Generator.amp > MAX_VOLTAGE_PULSE || Generator.amp < MIN_VOLTAGE_PULSE) alright = false;
+                    //Применить настройки смещения импульса в вольтах
+                    Generator.bias = ApplySettingEditBox(hwnd, ID_EDITCONTROL_BIAS, 3);
+                    if(Generator.bias < MIN_VOLTAGE_PULSE || Generator.bias > MAX_VOLTAGE_PULSE) alright = false;
                 }
                 //Применить настройки эффективной массы
                 {
@@ -267,11 +225,11 @@ BOOL SettingsWindow_OnCommand(HWND hwnd, int ID, HWND, UINT codeNotify)
                 //Применить настройки к физическим устройствам и сохранить файл настроек при условии их корректности
                 if(alright == true)
                 {
-                    Generator.is_active = GenAgilent_is_active;
-                    ::index_mode = index_mode;
+                    Generator.is_active = Generator_Agilent_is_active;
+                    ::index_mode.store(index_mode);
                     ApplySettings();
                     write_settings();
-                    PlotDLTS(); /* При обновлении модели эксперимента это необходимо */
+                    SendMessage(hMainWindow, WM_COMMAND, WM_PAINT_DLTS, 0); /* При обновлении модели эксперимента это необходимо */
                 }
                 else
                     MessageBox(hwnd, "Incorrect settings.\nYou should be more careful.", "Warning", MB_ICONWARNING);

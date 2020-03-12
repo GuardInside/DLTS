@@ -56,9 +56,9 @@ BOOL Analysis_OnCommand(HWND hWnd, INT id, HWND, UINT)
                 CloseHandle(hThreadSuccess);
                 /* Пересчитываем и обновляем графики */
                 if(prevEnableRelax != AprEnableRelax)
-                    PlotRelax();
+                    SendMessage(hMainWindow, WM_COMMAND, WM_PAINT_RELAX, 0);
                 if(prevEnableDLTS != AprEnableDLTS)
-                    RefreshDLTS();
+                    SendMessage(hMainWindow, WM_COMMAND, WM_PAINT_DLTS, 0);
             }
             return TRUE;
         case ID_BUTTON_CLOSE:

@@ -1,66 +1,65 @@
 #include "vi.h"
+#include "dlts_math.h"
 #include <cmath>
-using namespace std;
+#include <stdexcept>
+#include <windows.h>
 
-GENERATOR  Generator("Pulse generator Agilent");
-THERMOSTAT Thermostat("Thermostat Lake Shore");
+vi_generator  Generator;
+vi_thermostat Thermostat;
 
 /* ****************** */
 /* Виртуальный прибор */
 /* ****************** */
 
-VI::VI()
+vi::vi(): gpib{0}, bfvi0k{true}, hResMeneger{0}, hInstrument{0}
 {
     viOpenDefaultRM(&hResMeneger);
-    hInstrument = 0;
 }
-
-/* Инициализация при создании */
-void VI::InitSession()
-{
-    #ifndef TEST_MODE
-    string message = "An instrument " + ViName + " isn't initialized.";
-    if(Init() != VI_SUCCESS)
-        MessageBox(NULL, message.data(), "VI", 0);
-    #endif // TEST_MODE
-}
-
-//Инициализация сессии по умолчанию;
-ViStatus VI::Init()
+void vi::connect()
 {
     stringstream buff;
-    if(ID < 10) buff << "GPIB0::" << ID << "::INSTR";
-    else buff << "GPIB::" << ID << "::INSTR";
-    if(hInstrument) viClose(hInstrument);
-    return viOpen(hResMeneger, (ViRsrc)buff.str().data(), VI_NULL, VI_NULL, &hInstrument);
-}
+    buff << "GPIB" << (gpib < 10 ? "0": "") << "::" << gpib << "::INSTR";
 
-/* Записать сообщение в очередь */
-ViStatus VI::Write(const stringstream& mes, ViUInt32*  rcount)
-{
-    return viWrite(hInstrument, (ViBuf)mes.str().data(), (ViUInt32)mes.str().length(), rcount);
+    viClose(hInstrument);
+    ViStatus state = viOpen(hResMeneger, (ViRsrc)buff.str().data(), VI_NULL, VI_NULL, &hInstrument);
+    if(state == VI_SUCCESS)
+        bfvi0k.store(true);
+    else bfvi0k.store(false);
+//bfvi0k.store(true);
+    #ifndef TEST_MODE
+    if(bfvi0k.load() == false)
+    {
+        string message = "An instrument " + ViName + " isn't initialized.";
+        MessageBox(NULL, message.data(), "vi", 0);
+    }
+    #endif // TEST_MODE
 }
-ViStatus VI::Write(const string mes, ViUInt32*  rcount)
+ViStatus vi::Write(stringstream &message, ViUInt32* rcount)
 {
-    return viWrite(hInstrument, (ViBuf)mes.data(), (ViUInt32)mes.length(), rcount);
+    ViStatus status = viWrite(hInstrument, (ViBuf)message.str().data(), (ViUInt32)message.str().length(), rcount);
+    message.str("");
+    return status;
 }
-void VI::Read(string& strResult)
+ViStatus vi::Write(string const &message, ViUInt32* rcount)
+{
+    return viWrite(hInstrument, (ViBuf)message.data(), (ViUInt32)message.length(), rcount);
+}
+void vi::ReadStr(string &strResult)
 {
     ZeroMemory(ViBuffer, READ_BUFFER_SIZE);
-    viRead(hInstrument, ViBuffer, READ_BUFFER_SIZE-1, &read);
+    viRead(hInstrument, ViBuffer, READ_BUFFER_SIZE-1, nullptr);
     strResult = (string)(char*)ViBuffer;
 }
-
-/* Прочитать сообщение-число из очереди */
-void VI::ReadDigit(double& digit)
+void vi::ReadDigit(double& digit)
 {
+    ViUInt32 read = 0;
     viRead(hInstrument, ViBuffer, READ_BUFFER_SIZE-1, &read);
     ViBuffer[read] = '\0';
     digit = atof((char*)ViBuffer);
 }
-
-void VI::ReadDigit(int& digit)
+void vi::ReadDigit(int& digit)
 {
+    ViUInt32 read = 0;
     viRead(hInstrument, ViBuffer, READ_BUFFER_SIZE-1, &read);
     ViBuffer[read] = '\0';
     digit = atoi((char*)ViBuffer);
@@ -69,58 +68,115 @@ void VI::ReadDigit(int& digit)
 /* ********************* */
 /* Виртуальный генератор */
 /* ********************* */
-
-void GENERATOR::Apply()
+vi_generator::vi_generator(): vi{}, is_active{true}, curr_channel{0}, amp{0.0}, bias{0.0} { Reset(); }
+void vi_generator::Reset()
 {
-    if(is_active == false)
-        return;
-    Generator.channel
-    static const double K = 2.3;
+    ViName = "Agilent";
     stringstream Buff;
-    rewrite(Buff) << ":OUTPUT" << channel << " OFF"; /* Channel out of range */
+    Write("*RST");
+    Buff << ":OUTP" << curr_channel << ":IMP 50OHM";
         Write(Buff);
-    /* Временные настройки. Время в мс */
-    rewrite(Buff) << ":PULSE:PER " << period*1000000 << "NS";
+    Buff << ":OUTP" << curr_channel << ":IMP:EXT 1000000OHM";
         Write(Buff);
-    rewrite(Buff) << ":PULSE:WIDTH " << width*1000000 << "NS";
+    Buff << ":PULS:DOUB" << curr_channel << " OFF";
         Write(Buff);
-    /* Настройки, скрытые от пользователя */
-    rewrite(Buff) << ":OUTP" << channel << ":IMP 50OHM";
-        Write(Buff);
-    rewrite(Buff) << ":OUTP" << channel << ":IMP:EXT 1000000OHM";
-        Write(Buff);
-    rewrite(Buff) << ":PULS:DOUB" << channel << " OFF"; /* Channel out of range */
-        Write(Buff);
-    rewrite(Buff) << ":PULS:TRIG1:VOLT TTL";
-        Write(Buff);
-    /* Настройки напряжения */
-    rewrite(Buff) << ":HOLD VOLT";
-        Write(Buff);
-    if(index_mode == DLTS)
-        rewrite(Buff) << ":VOLT" << channel << ":HIGH " << -1.0*round((amplitude)/(K), 3) << "V";
-    else if(index_mode == ITS)
-        rewrite(Buff) << ":VOLT" << channel << ":HIGH " << -1.0*round((begin_amplitude)/(K), 3) << "V";
+    Write(":PULS:TRIG1:VOLT TTL");
+}
+void vi_generator::ErrorCheck(switcher state)
+{
+    if(state == off)
+        Write(":SYST:CHEC OFF");
+    else if(state == on)
+        Write(":SYST:CHEC ON");
+}
+void vi_generator::Channel(switcher state)
+{
+    stringstream Buff;
+    if(state == off)
+        Buff << ":OUTPUT" << curr_channel << " OFF";
+    else
+        Buff << ":OUTPUT" << curr_channel << " ON";
     Write(Buff);
-    rewrite(Buff) << ":HOLD VOLT";
+}
+void vi_generator::Pulses(switcher state)
+{
+    Write(":HOLD VOLT");
+    stringstream Buff;
+    if(state == off)
+    {
+        Buff << ":VOLT" << curr_channel << ":HIGH " << -1.0*bias/(K) << "V";
         Write(Buff);
-    rewrite(Buff) << ":VOLT" << channel << ":LOW " << -1.0*bias/(K) << "V";
+        Buff << ":VOLT" << curr_channel << ":LOW " << -1.0*bias/(K) << "V";
         Write(Buff);
-    rewrite(Buff) << ":OUTPUT" << channel << " ON"; /* Channel out of range */
+    }
+    else
+    {
+        Buff << ":VOLT" << curr_channel << ":HIGH " << -1.0*round((amp)/(K), 3) << "V";
         Write(Buff);
+        Buff << ":VOLT" << curr_channel << ":LOW " << -1.0*bias/(K) << "V";
+        Write(Buff);
+    }
+}
+void vi_generator::Period(double period)
+{
+    stringstream Buff;
+    Buff << ":PULSE:PER " << period*1000000 << "NS";
+    Write(Buff);
+}
+void vi_generator::Width(double width)
+{
+    stringstream Buff;
+    Buff << ":PULSE:WIDTH " << width*1000000 << "NS";
+    Write(Buff);
+}
+void vi_generator::Amp(double _amp)
+{
+    stringstream Buff;
+    Buff << ":VOLT" << curr_channel << ":HIGH " << -1.0*round((_amp)/(K), 3) << "V";
+    Write(Buff);
+}
+void vi_generator::Bias(double _bias)
+{
+    stringstream Buff;
+    Buff << ":VOLT" << curr_channel << ":LOW " << -1.0*(_bias)/(K) << "V";
+    Write(Buff);
+}
+void vi_generator::Apply()
+{
+    if(bfvi0k == false || is_active == false) return;
+    Reset();
+    ErrorCheck(vi::switcher::off);
+    Channel(vi::switcher::off);
+        Pulses(vi::switcher::on);
+        Period(period);
+        Width(width);
+    Channel(vi::switcher::on);
 }
 
 /* ********************* */
 /* Виртуальный термостат */
 /* ********************* */
 
-void THERMOSTAT::Apply()
+vi_thermostat::vi_thermostat(): vi{},
+    BeginPoint{0.0}, EndPoint{0.0}, TempStep{0.0}, TempDisp{0.0}
 {
-    /* Считываем данные с канала А */
+    ViName = "LakeShore";
     Write("CCHN A");
+    Write("TUNE 4"); /* PID, 0 = Manual, 1 = P, 2 = PI, 3 = PID, 4 = Zone */
+}
+heatlvl vi_thermostat::curr_heatlvl()
+{
+    double Temp = 0.0;
+    Write("CDAT?");
+    ReadDigit(Temp);
+    for(int i = 0; i < QUANTITY_ZONE; i++)
+        if(Temp <= table[i].upper_boundary)
+            return table[i].range;
+    throw std::runtime_error("Current temperature isn't in zone table range.");
 }
 
 /* Проверка корректности диапазона измерения температуры */
-bool THERMOSTAT::range_is_correct() const
+bool vi_thermostat::range_is_correct()
 {
     if(EndPoint >= BeginPoint && TempStep >= 0)
         return true;
@@ -128,63 +184,49 @@ bool THERMOSTAT::range_is_correct() const
         return true;
     return false;
 }
-
-/* */
-/* */
-
-/* Инициализация по умолчанию при создании таблицы */
-THERMOSTAT::PIDTABLE::PIDTABLE()
+void vi_thermostat::ApplyZones()
 {
+    stringstream buff;
+    buff << setprecision(2);
+    /* Применяем настройки зон */
     for(int i = 0; i < QUANTITY_ZONE; i++)
     {
-        P[i] = 50; I[i] = 20; D[i] = 0;
-        range[i] = 0;
-        upper_boundary[i] = 0;
+        buff << "ZONE " << i+1 << ",+" << table[i].upper_boundary << ","
+                      << static_cast<int>(table[i].range) << "," << table[i].P << ","
+                      << table[i].I << "," << table[i].D;
+        Write(buff);
     }
 }
-
-UINT THERMOSTAT::PIDTABLE::GetActuallyHeatRange()
+void vi_thermostat::SetPoint(double T)
 {
-    double Temperature = 0.0;
-    Thermostat.Write("CDAT?");
-    Thermostat.ReadDigit(Temperature);
-    for(int i = 0; i < QUANTITY_ZONE; i++)
-        if(Temperature <= upper_boundary[i])
-            return range[i];
-    MessageBox(0, "Invalid GetActuallyHeatRange.\n", "Error", MB_ICONERROR);
-    return 1;
+    stringstream buff;
+    buff << "SETP " << T << "K";
+    Write(buff);
+}
+void vi_thermostat::CurrentTemp(double* T)
+{
+    Write("CDAT?");
+    ReadDigit(*T);
+}
+void vi_thermostat::CurrentHeatPercent(double* percent)
+{
+    Write("HEAT?");
+    ReadDigit(*percent);
+}
+void vi_thermostat::CurrentSetPoint(double* SetPoint)
+{
+    Write("SETP?");
+    ReadDigit(*SetPoint);
 }
 
-int THERMOSTAT::PIDTABLE::GetIDRes(const int i, const string str)
+void vi_thermostat::SwitchHeater(switcher state)
 {
-    if(str == "UPPER_BOUNDARY")
+    stringstream buff;
+    if(state == off)
+        Write("RANG 0");
+    else
     {
-        const int id_upper_bound[] = {ID_EDITCONTROL_UBOUNDARY_1, ID_EDITCONTROL_UBOUNDARY_2, ID_EDITCONTROL_UBOUNDARY_3,
-                            ID_EDITCONTROL_UBOUNDARY_4, ID_EDITCONTROL_UBOUNDARY_5, ID_EDITCONTROL_UBOUNDARY_6,
-                            ID_EDITCONTROL_UBOUNDARY_7, ID_EDITCONTROL_UBOUNDARY_8, ID_EDITCONTROL_UBOUNDARY_9,
-                            ID_EDITCONTROL_UBOUNDARY_10};
-        return id_upper_bound[i];
+        buff << "RANG " << static_cast<int>(curr_heatlvl());
+        Write(buff);
     }
-    else if(str == "P")
-    {
-        const int id_p[] = {ID_EDITCONTROL_P_1, ID_EDITCONTROL_P_2, ID_EDITCONTROL_P_3, ID_EDITCONTROL_P_4,
-                        ID_EDITCONTROL_P_5, ID_EDITCONTROL_P_6, ID_EDITCONTROL_P_7, ID_EDITCONTROL_P_8,
-                        ID_EDITCONTROL_P_9, ID_EDITCONTROL_P_10};
-        return id_p[i];
-    }
-    else if(str == "I")
-    {
-        const int id_i[] = {ID_EDITCONTROL_I_1, ID_EDITCONTROL_I_2, ID_EDITCONTROL_I_3, ID_EDITCONTROL_I_4,
-                        ID_EDITCONTROL_I_5, ID_EDITCONTROL_I_6, ID_EDITCONTROL_I_7, ID_EDITCONTROL_I_8,
-                        ID_EDITCONTROL_I_9, ID_EDITCONTROL_I_10};
-        return id_i[i];
-    }
-    else if(str == "D")
-    {
-        const int id_d[] = {ID_EDITCONTROL_D_1, ID_EDITCONTROL_D_2, ID_EDITCONTROL_D_3, ID_EDITCONTROL_D_4,
-                        ID_EDITCONTROL_D_5, ID_EDITCONTROL_D_6, ID_EDITCONTROL_D_7, ID_EDITCONTROL_D_8,
-                        ID_EDITCONTROL_D_9, ID_EDITCONTROL_D_10};
-        return id_d[i];
-    }
-    return -1;
 }

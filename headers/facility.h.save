@@ -15,21 +15,26 @@
 #include "variable.h"
 using namespace std;
 
-enum SAVE_MODE {SAVE_RELAXATIONS, SAVE_DLTS, SAVE_ARRHENIUS};
+enum SAVE_MODE {SAVE_SETTINGS, SAVE_RELAXATIONS, SAVE_DLTS, SAVE_ARRHENIUS};
 
 stringstream&   rewrite(stringstream& buff);
 UINT            GetDlgItemTextMod(HWND hwnd, int nIDItem, stringstream& str_buf);
 double          ApplySettingEditBox(HWND hwnd, int nIDEditBox, int prec = 0);
 string          ApplySettingEditBoxString(HWND hwnd, int nIDEditBox);
 bool            EmptyEditBox(HWND hwnd, int nIDEditBox);
+int             GetResPidTable(int, string const&);
+
+double MeanSquareErrorOfTemp(std::vector<double>::const_iterator b,
+                             std::vector<double>::const_iterator e);
+double MeanOfTemp(std::vector<double>::const_iterator b,
+                  std::vector<double>::const_iterator e);
 
 //Запись/Чтение настроек
 void write_settings(string name = "");
-void read_settings(string path = "");
-//Применяет текущие настройки зон к физическому устройству
-void SetZones();
+void read_settings();
 //Инициализация сборщика данных, термостата и зон для PID регулировки
 void ApplySettings();
+void InitializeVirtualInstruments();
 /* Функции для сохранения и загрузки save-файлов */
 VOID DownloadWindow();
 UINT CALLBACK LoadFile(PVOID);

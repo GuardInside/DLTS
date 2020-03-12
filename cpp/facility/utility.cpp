@@ -3,6 +3,67 @@
 #include "graph.h"
 #include "ini.h"
 #include "variable.h"
+#include "dlts_math.h"
+
+int GetResPidTable(int i, string const &str)
+{
+    if(str == "UPPER_BOUNDARY")
+    {
+        const int id_upper_bound[] = {ID_EDITCONTROL_UBOUNDARY_1, ID_EDITCONTROL_UBOUNDARY_2, ID_EDITCONTROL_UBOUNDARY_3,
+                            ID_EDITCONTROL_UBOUNDARY_4, ID_EDITCONTROL_UBOUNDARY_5, ID_EDITCONTROL_UBOUNDARY_6,
+                            ID_EDITCONTROL_UBOUNDARY_7, ID_EDITCONTROL_UBOUNDARY_8, ID_EDITCONTROL_UBOUNDARY_9,
+                            ID_EDITCONTROL_UBOUNDARY_10};
+        return id_upper_bound[i];
+    }
+    else if(str == "P")
+    {
+        const int id_p[] = {ID_EDITCONTROL_P_1, ID_EDITCONTROL_P_2, ID_EDITCONTROL_P_3, ID_EDITCONTROL_P_4,
+                        ID_EDITCONTROL_P_5, ID_EDITCONTROL_P_6, ID_EDITCONTROL_P_7, ID_EDITCONTROL_P_8,
+                        ID_EDITCONTROL_P_9, ID_EDITCONTROL_P_10};
+        return id_p[i];
+    }
+    else if(str == "I")
+    {
+        const int id_i[] = {ID_EDITCONTROL_I_1, ID_EDITCONTROL_I_2, ID_EDITCONTROL_I_3, ID_EDITCONTROL_I_4,
+                        ID_EDITCONTROL_I_5, ID_EDITCONTROL_I_6, ID_EDITCONTROL_I_7, ID_EDITCONTROL_I_8,
+                        ID_EDITCONTROL_I_9, ID_EDITCONTROL_I_10};
+        return id_i[i];
+    }
+    else if(str == "D")
+    {
+        const int id_d[] = {ID_EDITCONTROL_D_1, ID_EDITCONTROL_D_2, ID_EDITCONTROL_D_3, ID_EDITCONTROL_D_4,
+                        ID_EDITCONTROL_D_5, ID_EDITCONTROL_D_6, ID_EDITCONTROL_D_7, ID_EDITCONTROL_D_8,
+                        ID_EDITCONTROL_D_9, ID_EDITCONTROL_D_10};
+        return id_d[i];
+    }
+    return -1;
+}
+
+double MeanSquareErrorOfTemp(std::vector<double>::const_iterator b,
+                             std::vector<double>::const_iterator e)
+{
+    /* Используем последние N отсчетов температуры для рассчета среднего и отклонения,
+       для того чтобы ускорить процесс стабилизации */
+    constexpr static const size_t LNS = AVERAGING_TIME/(0.001*REFRESH_TIME_THERMOSTAT);
+    size_t range = static_cast<size_t>( std::abs( std::distance(b, e) ) );
+    size_t diff = LNS;
+    if(range < LNS) diff = range;
+    double result = MeanSquareError(e - diff, e);
+    constexpr double lower_MSK = pow(10, -THERMO_PRECISION);
+    return (result < lower_MSK) ? 0.0 : result;
+}
+
+double MeanOfTemp(std::vector<double>::const_iterator b,
+                  std::vector<double>::const_iterator e)
+{
+    /* Используем последние N отсчетов температуры для рассчета среднего и отклонения,
+       для того чтобы ускорить процесс стабилизации */
+    constexpr static const size_t LNS = 0.001*REFRESH_TIME_THERMOSTAT*AVERAGING_TIME;
+    size_t range = static_cast<size_t>( std::abs( std::distance(b, e) ) );
+    size_t diff = LNS;
+    if(range < LNS) diff = range;
+    return Mean(e - diff, e);
+}
 
 void FileOpeningTest(ofstream& file)
 {
@@ -22,11 +83,12 @@ void VoltageToCapacity(double *value)
 void ClearMemmory()
 {
     /* Включить автопоиск минимума */
-    auto_peak_search = true;
+    auto_peak_search.store(true);
     ClearMemmoryDLTS();
     itsBiasVoltages.clear();
     itsAmpVoltages.clear();
-    gwin::gMulVector().swap(SavedRelaxations);
+    SavedCapacity.clear();
+    SavedRelaxations.clear();
     gwin::gDefaultPlot(hRelax, "\0");
     gwin::gDefaultPlot(hGraph_DLTS, "\0");
 }
@@ -54,33 +116,32 @@ void RefreshDLTS()
         SendMessage(hProgress, PBM_SETPOS, progress, 0);
     }
     SendMessage(hProgress, PBM_SETPOS, 0, 0);
-    auto_peak_search = true;
-    PlotDLTS();
+    auto_peak_search.store(true);
+    SendMessage(hMainWindow, WM_COMMAND, WM_PAINT_DLTS, 0);
 }
 
 void SaveRelaxSignal(double MeanTemp, const vector<double> *vData, double dBias, double dAmp, double capacity)
 {
     string ext;
-    if(index_mode == DLTS) ext = ".dlts";
-    else if(index_mode == ITS) ext = ".its";
+    if(index_mode.load() == DLTS) ext = ".dlts";
+    else if(index_mode.load() == AITS) ext = ".its";
     string FullPath = FileSavePath + FileSaveName + ext;
     ofstream file;
 
     ifstream ifile(FullPath.data());
-    if(bfNewfile == true || ifile.peek() == EOF)
+    if(bfNewfile.load() == true || ifile.peek() == EOF)
     {
         file.open(FullPath.data());
-        bfNewfile = false;
+        bfNewfile.store(false);
         FileOpeningTest(file);
         /* Сохраняем настройки, если файл открыт впервые */
-        file<< fixed << setprecision(0)
-            << averaging_DAQ << " "
-            << measure_time_DAQ << " "
-            << rate_DAQ << " "
-            << gate_DAQ << endl << setprecision(VOLTAGE_PRECISION)
-            << Generator.amplitude << " "
-            << Generator.bias << endl;
-        if(index_mode == ITS) file << setprecision(THERMO_PRECISION) << MeanTemp << endl;
+        file << fixed << setprecision(0)
+             << measure_time_DAQ << " "
+             << gate_DAQ << " "
+             << rate_DAQ << setprecision(VOLTAGE_PRECISION) << endl
+             << Generator.bias << " "
+             << Generator.amp << endl;
+        if(index_mode.load() == AITS) file << setprecision(THERMO_PRECISION) << MeanTemp << endl;
     }
     else
     {
@@ -88,9 +149,9 @@ void SaveRelaxSignal(double MeanTemp, const vector<double> *vData, double dBias,
         FileOpeningTest(file);
         file << fixed << setprecision(0) << endl;
     }
-    if(index_mode == DLTS) file << setprecision(THERMO_PRECISION) << MeanTemp << " "
+    if(index_mode.load() == DLTS) file << setprecision(THERMO_PRECISION) << MeanTemp << " "
                                 << setprecision(VOLTAGE_PRECISION) << capacity << endl;
-    else if(index_mode == ITS) /* Должен записывать истинное, а не установленное значение */
+    else if(index_mode.load() == AITS) /* Должен записывать истинное, а не установленное значение */
         file << setprecision(VOLTAGE_PRECISION) << dBias << " " << dAmp << endl;
     file << setprecision(VOLTAGE_PRECISION);
     UINT32 uSamples = rate_DAQ*measure_time_DAQ*0.001;

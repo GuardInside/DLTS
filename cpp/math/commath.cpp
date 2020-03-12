@@ -1,36 +1,39 @@
-#include <dlts_math.h>
+#include <numeric>
+#include <exception>
 #include "interpolation.h"
+#include "dlts_math.h"
 
-/*int sgn(double val) {
+#define tau 1.618
+
+int sgn(double val) {
     return (0.0 < val) - (val < 0.0);
-}*/
+}
 
-#define tay 1.618
-double GoldSerch(double a, double b, double eps, interp &Fun)
+double GoldSerch(double a, double b, double eps, interp &Fun, int sign)
 {
     //std::cout<<"\n\n\n\tМетод золотого сечения:\n";
     double x1, x2, _x, xf1, xf2;
     //int iter(0);
-    x1 = a + (b - a) / (tay * tay);
-    x2 = a + (b - a) / tay;
-    xf1 = Fun.at(x1);
-    xf2 = Fun.at(x2);
+    x1 = a + (b - a) / (tau * tau);
+    x2 = a + (b - a) / tau;
+    xf1 = sign*Fun.at(x1);
+    xf2 = sign*Fun.at(x2);
   P:
     //iter++;
     if(xf1 >= xf2)
     {
         a = x1;
         x1 = x2;
-        xf1 = Fun.at(x2);
-        x2 = a + (b - a) / tay;
-        xf2 = Fun.at(x2);
+        xf1 = sign*Fun.at(x2);
+        x2 = a + (b - a) / tau;
+        xf2 = sign*Fun.at(x2);
     }
     else
     {
         b = x2;
         x2 = x1;
         xf2 = xf1;
-        x1 = a + (b - a) / (tay * tay);
+        x1 = a + (b - a) / (tau * tau);
         xf1 = Fun.at(x1);
     }
     if(fabs(b - a) < eps)
@@ -49,8 +52,7 @@ double round(double d, int n)
     return int(d*pow(10,n) + 0.5)/pow(10,n);
 }
 
-//Получить параметры линейной регрессии Y = a + b*X
-void GetParam(const vector <double> &X, const vector <double> &Y, double &a, double &b)
+void GetParam(vector<double> const &X, vector<double> const &Y, double &a, double &b)
 {
     if(X.size() != Y.size())
         return;
@@ -62,7 +64,9 @@ void GetParam(const vector <double> &X, const vector <double> &Y, double &a, dou
         x[i] = X[i];
         y[i] = Y[i];
     }
-    double c0, c1, cov00, cov01, cov11, sumq;
+    double c0, c1;
+    /* Коэффициенты матрицы ковариации и значение суммы квадратов не используются */
+    double cov00, cov01, cov11, sumq;
     gsl_fit_linear(x, 1, y, 1, size, &c0, &c1, &cov00, &cov01, &cov11, &sumq);
     a = c0;
     b = c1;
@@ -70,34 +74,23 @@ void GetParam(const vector <double> &X, const vector <double> &Y, double &a, dou
     delete []y;
 }
 
-//Среднее значение чесел в наборе, начиная последнего
-double mean(const std::vector<double> &temp)
+double Mean(std::vector<double>::const_iterator b,
+            std::vector<double>::const_iterator e)
 {
-    if(temp.empty())
-        return 0.0;
-    size_t i = 0;
-    double result = 0.0;
-    for(vector<double>::const_reverse_iterator it = temp.crbegin(); it != temp.crend(); it++)
-    {
-        result += *it;
-        i++;
-    }
-    return result/i;
+    size_t range = e - b;
+    if( range <= 0 ) throw math_exception("In function mean(b, e)\n\
+                                           begin iterator equal or less than end iterator.");
+    return std::accumulate(b, e, static_cast<double>(0.0)) / range;
 }
 
-//Средняя квадратичная флуктуация
-double AverSqFluct(const vector<double> &temp)
+double MeanSquareError(std::vector<double>::const_iterator b,
+                       std::vector<double>::const_iterator e)
 {
-    if(temp.empty())
-        return 0.0;
-    size_t i = 0;
-    double result = 0.0, m = mean(temp);
-    for(vector<double>::const_reverse_iterator it = temp.crbegin(); it != temp.crend(); it++)
-    {
-        result += pow(*it, 2.0);
-        i++;
-    }
-    result /= i;
-    result = result - pow(m, 2.0);
-    return pow(result, 0.5) > 0.01 ? pow(result, 0.5) : 0.00;
+    size_t range = e - b;
+    if( range <= 0 ) throw math_exception("In function MeanSquareError(b, e)\n\
+                                           begin iterator equal or less than end iterator.");
+    double MeanValue = Mean(b, e);
+    double MeanFromSquares = std::accumulate(b, e, static_cast<double> (0.0),
+                                [](double init, double value){ return init + pow(value, 2);}) / range;
+    return round( pow(MeanFromSquares - pow(MeanValue, 2), 0.5), 2);
 }

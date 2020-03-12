@@ -1,5 +1,6 @@
 #include <dlts_math.h>
 #include <algorithm>
+#include "facility.h"
 #include "gwin.h"
 #include "ini.h"
 
@@ -8,7 +9,7 @@ void AddPoint_with_approx(const vector<double> *vRelaxation, const double temp);
 
 double exp_w(double x, double t1)
 {
-    double t2 = t1*correlation_c;           //начало второго испульса
+    double t2 = t1*correlation_c;
     double t_0 = (t2-t1)/2+t1;
     if(x >= t1 && x <= t_0)
         return exp(-(x-t1)/(0.4*(t2-t1)));
@@ -19,7 +20,7 @@ double exp_w(double x, double t1)
 
 double sin_w(double x, double t1)
 {
-    double t2 = t1*correlation_c;           //начало второго испульса
+    double t2 = t1*correlation_c;
     if(x >= t1 && x <= t2)
         return sin((x-t1)*2*PI/(t2-t1));
     return 0.0;
@@ -27,7 +28,7 @@ double sin_w(double x, double t1)
 
 double lock_in(double x, double t1)
 {
-    double t2 = t1*correlation_c;           //начало второго испульса
+    double t2 = t1*correlation_c;
     double t_0 = (t2-t1)/2+t1;
     if(x >= t1 && x <= t_0)
         return 1;
@@ -38,8 +39,8 @@ double lock_in(double x, double t1)
 
 double double_boxcar(double x, double t1)
 {
-    double t2 = t1*correlation_c;           //начало второго испульса
-    double dt = correlation_width/1000000.0;   //ширина импульсов в сек
+    double t2 = t1*correlation_c;               //начало второго испульса
+    double dt = correlation_width/1000000.0;    //ширина импульсов в сек
     if(x >= t1 && x <= t1+dt)
         return 1;
     if(x >= t2-dt && x <= t2)
@@ -68,10 +69,7 @@ void AddPointsDLTS(const vector<double> *vRelaxation, const double temp, const d
     size_t N = 10; /* Число узлов интегрирования между сэмплами по умолчанию */
     switch(CorType)
     {
-        case DoubleBoxCar:  w = double_boxcar;
-            /* Дистанция между двумя сэмплами; все переводим в мс */
-            //N =  N * ( (double)measure_time_DAQ / vRelaxation->size() ) / ( 0.001 * correlation_width );
-            break;
+        //case DoubleBoxCar:  w = double_boxcar;  break;
         case LockIn:        w = lock_in;        break;
         case ExpW:          w = exp_w;          break;
         case SinW:          w = sin_w;          break;
@@ -95,12 +93,35 @@ void AddPointsDLTS(const vector<double> *vRelaxation, const double temp, const d
             for(size_t c = 0; c < CorTime.size(); c++)          //Пробегаемся по всем корреляторам
             {
                 double t1 = 0.001*CorTime[c];
+                if(CorType == DoubleBoxCar)
+                {
+                    double t2 = t1*correlation_c;               //начало второго испульса
+                    double dt = correlation_width/1000000.0;    //ширина импульсов в сек
+                    double buffer = 0.0;
+                    int counter = 0;
+                    for(double t = t1; t <= t1+dt; t += h)
+                    {
+                        buffer += f.at(t);
+                        counter++;
+                    }
+                    I += ( buffer / counter );
+                    counter = 0;
+                    buffer = 0.0;
+                    for(double t = t2; t <= t2+dt; t += h)
+                    {
+                        buffer += f.at(t);
+                        counter++;
+                    }
+                    I -= (buffer / counter);
+
+                }
+                else
                 for(double x_i = a; x_i <= a+h*(n-1); x_i += h) //Метод трапеций
                     if(w(x_i,t1) != 0.0)
                         I += h*(f.at(x_i)*w(x_i,t1) + f.at(x_i+h)*w(x_i+h, t1))/2;
                 /* Добавляем по точке на каждой из осей */
                 VoltageToCapacity(&I);
-                I /= int_pre_amp_gain[PRE_AMP_GAIN_SULA_index] * capacity;
+                I /= ( int_pre_amplifier[PRE_AMP_GAIN_SULA_index] * capacity );
                 yAxisDLTS[c].insert(yAxisDLTS[c].begin() + offset, I);
             }
         }
@@ -114,6 +135,28 @@ void AddPointsDLTS(const vector<double> *vRelaxation, const double temp, const d
             for(size_t c = 0; c < CorTime.size(); c++)          //Пробегаемся по всем корреляторам
             {
                 double t1 = 0.001*CorTime[c];
+                if(CorType == DoubleBoxCar)
+                {
+                    double t2 = t1*correlation_c;               //начало второго испульса
+                    double dt = correlation_width/1000000.0;    //ширина импульсов в сек
+                    double buffer = 0.0;
+                    int counter = 0;
+                    for(double t = t1; t <= t1+dt; t += h)
+                    {
+                        buffer += ( A * exp(- t / tau) + B );
+                        counter++;
+                    }
+                    I += ( buffer / counter );
+                    counter = 0;
+                    buffer = 0.0;
+                    for(double t = t2; t <= t2+dt; t += h)
+                    {
+                        buffer += ( A * exp(- t / tau) + B );
+                        counter++;
+                    }
+                    I -= (buffer / counter);
+                }
+                else
                 for(double x_i = a; x_i <= a+h*(n-1); x_i += h) //Метод трапеций
                     if(w(x_i,t1) != 0.0)
                     {
@@ -123,7 +166,7 @@ void AddPointsDLTS(const vector<double> *vRelaxation, const double temp, const d
                     }
                 /* Добавляем по точке на каждой из осей */
                 VoltageToCapacity(&I);
-                I /= int_pre_amp_gain[PRE_AMP_GAIN_SULA_index] * capacity;
+                I /= int_pre_amplifier[PRE_AMP_GAIN_SULA_index] * capacity;
                 yAxisDLTS[c].insert(yAxisDLTS[c].begin() + offset, I);
             }
         }

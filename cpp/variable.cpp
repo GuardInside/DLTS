@@ -12,19 +12,19 @@ vector<vector<double>>  SavedRelaxations;//Хранит все сохраненные и загруженные 
 vector<double>          SavedCapacity;    //Хранит все сохраненные или загруженные значения емкости
 atomic_size_t index_relax{0}; //Номер текущей релаксации для отображения
 atomic_size_t index_range{0}; //Номер текущего диапазона
-atomic_size_t index_mode{DLTS}; //Режим работы программы DLTS или ITS
-atomic_size_t index_plot_DLTS{0}; //Отображать DLTS или гр. Аррениуса
-atomic<int32> offset_ai_port{0};//Смещение номера порта ai_port при отображении в реальном времени
+atomic<mode>  index_mode{DLTS}; //Режим работы программы DLTS или ITS
+atomic_size_t index_w4{0}; //Отображать DLTS или гр. Аррениуса
+atomic<int32> index_w2{0};//Смещение номера порта ai_port при отображении в реальном времени
 
 const string        names_wFunc[] = {"Double box-car", "Lock-in", "Exponent", "Sine"};
 const string        range[] = {"±10", "±5", "±0.5", "±0.05"};
 const int           int_range_sula[] = {10, 30, 100, 300, 1000};
-const int           int_pre_amp_gain[] = {1, 3, 10, 30, 100};
+const int           int_pre_amplifier[] = {1, 3, 10, 30, 100};
 const string        strHeatingRange[] = {"Off", "Low", "Med", "High"};
       string        FileSaveName;
       string        FileSavePath;
 
-double dEfMass = MASS_ELECTRON;
+double dEfMass = ELECTRON_MASS;
 double dFactorG = 1;
 
 double itsTemperature = 0.0; /* Температура в режиме ITS */
@@ -48,8 +48,6 @@ double AprErr = 1e-6;
 /* Флаги */
 atomic_bool start{false};            //Нажата кнопка старт
 atomic_bool stability{false};        //Температура стабилизировалась вблизи сетпоинта
-atomic_bool bfDAQ0k{true};           //DAQ работает в штатном режиме
-atomic_bool fbThermostat0k{true};    //Термостат работает в штатном режиме
 atomic_bool bfNewfile{true};         //Создавать ли новый файл при старте эксперимента?
 atomic_bool fix_temp{false};         //Фиксация температуры
 atomic_bool auto_peak_search{true};  //Автоопределение пика методом золотого сечения
@@ -67,6 +65,5 @@ HWND                        hRelax;     //Описатель окна графика релаксации
 HWND                        hGraph_DAQ; //Описатель окна графика сигнала с DAQ
 HWND                        hGraph_DLTS;//Описатель окна графика DLTS
 HWND                        hProgress;  //Прогресс чтения данных
-CRITICAL_SECTION            csDataAcquisition;//Используется всегда при чтении данных DAQ
 CRITICAL_SECTION            csSavedRelaxation;
 HANDLE                      hDownloadEvent;

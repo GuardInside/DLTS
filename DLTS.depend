@@ -1,18 +1,19 @@
 # depslib dependency file v1.0
-1583232686 source:c:\users\Виктор\documents\github\dlts\cpp\daq.cpp
+1584016713 source:c:\users\Виктор\documents\github\dlts\cpp\daq.cpp
 	<algorithm>
 	"daq.h"
-	"variable.h"
 	"vi.h"
+	"variable.h"
 
-1574680662 c:\users\Виктор\documents\github\dlts\headers\daq.h
+1583840754 c:\users\Виктор\documents\github\dlts\headers\daq.h
 	<windows.h>
+	<atomic>
 	<string>
 	<sstream>
 	<vector>
 	"NIDAQmx.h"
 
-1583234776 c:\users\Виктор\documents\github\dlts\headers\variable.h
+1584016741 c:\users\Виктор\documents\github\dlts\headers\variable.h
 	<atomic>
 	<string>
 	<vector>
@@ -23,7 +24,7 @@
 	"gwin.h"
 	"vi.h"
 
-1575558334 c:\users\Виктор\documents\github\dlts\headers\gwin.h
+1583523648 c:\users\Виктор\documents\github\dlts\headers\gwin.h
 	<windows.h>
 	<windowsx.h>
 	<string>
@@ -33,18 +34,14 @@
 	<iomanip>
 	<cmath>
 
-1583232672 c:\users\Виктор\documents\github\dlts\headers\vi.h
-	<windows.h>
+1584012714 c:\users\Виктор\documents\github\dlts\headers\vi.h
+	<atomic>
 	<visatype.h>
 	<visa.h>
 	<string>
 	<sstream>
-	<variable.h>
-	<facility.h>
-	<daq.h>
-	"resource.h"
 
-1583265335 c:\users\Виктор\documents\github\dlts\headers\facility.h
+1584017956 c:\users\Виктор\documents\github\dlts\headers\facility.h
 	<string>
 	<sstream>
 	<cmath>
@@ -59,7 +56,7 @@
 	"gwin.h"
 	"variable.h"
 
-1574195874 c:\users\Виктор\documents\github\dlts\headers\dlts_math.h
+1583955492 c:\users\Виктор\documents\github\dlts\headers\dlts_math.h
 	<fstream>
 	<cmath>
 	<vector>
@@ -112,9 +109,9 @@
 	<stdlib.h>
 	<gsl/gsl_types.h>
 
-1582393106 c:\users\Виктор\documents\github\dlts\headers\resource.h
+1584019482 c:\users\Виктор\documents\github\dlts\headers\resource.h
 
-1583272793 source:c:\users\Виктор\documents\github\dlts\cpp\facility\load_save.cpp
+1584021541 source:c:\users\Виктор\documents\github\dlts\cpp\facility\load_save.cpp
 	<sstream>
 	<string>
 	<exception>
@@ -128,7 +125,7 @@
 	<windows.h>
 	"gwin.h"
 
-1582393658 source:c:\users\Виктор\documents\github\dlts\cpp\facility\plot.cpp
+1584016716 source:c:\users\Виктор\documents\github\dlts\cpp\facility\plot.cpp
 	<algorithm>
 	"graph.h"
 	"variable.h"
@@ -138,21 +135,24 @@
 	"interpolation.h"
 	"ini.h"
 
-1583270023 source:c:\users\Виктор\documents\github\dlts\cpp\facility\settings.cpp
+1584017970 source:c:\users\Виктор\documents\github\dlts\cpp\facility\settings.cpp
 	<facility.h>
 	"ini.h"
+	"vi.h"
+	"daq.h"
 
-1583275860 source:c:\users\Виктор\documents\github\dlts\cpp\facility\utility.cpp
+1584016715 source:c:\users\Виктор\documents\github\dlts\cpp\facility\utility.cpp
 	<facility.h>
 	"graph.h"
 	"ini.h"
 	"variable.h"
+	"dlts_math.h"
 
-1583182496 source:c:\users\Виктор\documents\github\dlts\cpp\facility\winhelp.cpp
+1584017255 source:c:\users\Виктор\documents\github\dlts\cpp\facility\winhelp.cpp
 	"facility.h"
 	"winfunc.h"
 
-1575713678 c:\users\Виктор\documents\github\dlts\headers\winfunc.h
+1584005719 c:\users\Виктор\documents\github\dlts\headers\winfunc.h
 	<string>
 	<sstream>
 	<windows.h>
@@ -168,55 +168,61 @@
 	<dlts_math.h>
 	"gwin.h"
 
-1583272678 source:c:\users\Виктор\documents\github\dlts\cpp\math\weighfunc.cpp
+1584015335 source:c:\users\Виктор\documents\github\dlts\cpp\math\weighfunc.cpp
 	<dlts_math.h>
 	<algorithm>
+	"facility.h"
 	"gwin.h"
 	"ini.h"
 
-1583233536 source:c:\users\Виктор\documents\github\dlts\cpp\variable.cpp
+1584018901 source:c:\users\Виктор\documents\github\dlts\cpp\variable.cpp
 	"variable.h"
 
-1583233058 source:c:\users\Виктор\documents\github\dlts\cpp\vi.cpp
+1584014150 source:c:\users\Виктор\documents\github\dlts\cpp\vi.cpp
 	"vi.h"
+	"dlts_math.h"
 	<cmath>
+	<stdexcept>
+	<windows.h>
 
-1582388202 source:c:\users\Виктор\documents\github\dlts\cpp\windows\adv_setting.cpp
+1583782630 source:c:\users\Виктор\documents\github\dlts\cpp\windows\adv_setting.cpp
 	<winfunc.h>
 
-1583180012 source:c:\users\Виктор\documents\github\dlts\cpp\windows\cor_setting.cpp
+1583952100 source:c:\users\Виктор\documents\github\dlts\cpp\windows\cor_setting.cpp
 	"winfunc.h"
 	"variable.h"
 
-1575897924 source:c:\users\Виктор\documents\github\dlts\cpp\windows\general_setting.cpp
+1584016829 source:c:\users\Виктор\documents\github\dlts\cpp\windows\general_setting.cpp
 	<winfunc.h>
 
-1572513510 source:c:\users\Виктор\documents\github\dlts\cpp\windows\pid_setting.cpp
+1583849216 source:c:\users\Виктор\documents\github\dlts\cpp\windows\pid_setting.cpp
 	<winfunc.h>
 
-1575288716 source:c:\users\Виктор\documents\github\dlts\cpp\windows\start_setting.cpp
+1584021504 source:c:\users\Виктор\documents\github\dlts\cpp\windows\start_setting.cpp
 	"winfunc.h"
 
-1582393104 source:c:\users\Виктор\documents\github\dlts\resource\resource.rc
+1584019482 source:c:\users\Виктор\documents\github\dlts\resource\resource.rc
 	<windows.h>
 	<commctrl.h>
 	<richedit.h>
 	"..\headers\resource.h"
 
-1575895894 source:c:\users\Виктор\documents\github\dlts\cpp\gwin.cpp
+1584021462 source:c:\users\Виктор\documents\github\dlts\cpp\gwin.cpp
 	<algorithm>
 	<cctype>
 	<cmath>
 	"gwin.h"
 
-1575285934 source:c:\users\Виктор\documents\github\dlts\cpp\math\commath.cpp
-	<dlts_math.h>
+1583955459 source:c:\users\Виктор\documents\github\dlts\cpp\math\commath.cpp
+	<numeric>
+	<exception>
 	"interpolation.h"
+	"dlts_math.h"
 
 1574170354 source:c:\users\Виктор\documents\github\dlts\cpp\math\interpolation.cpp
 	<interpolation.h>
 
-1583236982 source:c:\users\Виктор\documents\github\dlts\cpp\main.cpp
+1584019595 source:c:\users\Виктор\documents\github\dlts\cpp\main.cpp
 	<windows.h>
 	<windowsx.h>
 	<commctrl.h>
@@ -225,6 +231,7 @@
 	<iomanip>
 	<sstream>
 	<exception>
+	<atomic>
 	"gwin.h"
 	"variable.h"
 	"resource.h"
@@ -601,18 +608,18 @@
 	<iomanip>
 	<tchar.h>
 
-1583264237 c:\users\Виктор\documents\github\dlts\headers\ini.h
+1584018088 c:\users\Виктор\documents\github\dlts\headers\ini.h
 	<windows.h>
 	<string>
 
-1583268222 source:c:\users\Виктор\documents\github\dlts\cpp\facility\inifile.cpp
+1584018088 source:c:\users\Виктор\documents\github\dlts\cpp\facility\inifile.cpp
 	"ini.h"
 	<string>
 	<sstream>
 	<iomanip>
 	<tchar.h>
 
-1575806250 source:c:\users\Виктор\documents\github\dlts\cpp\windows\analysis.cpp
+1583860946 source:c:\users\Виктор\documents\github\dlts\cpp\windows\analysis.cpp
 	"winfunc.h"
 	"ini.h"
 

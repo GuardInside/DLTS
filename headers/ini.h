@@ -37,5 +37,4 @@ namespace ini
     };
 }
 
-
 #endif // INI_H_INCLUDED

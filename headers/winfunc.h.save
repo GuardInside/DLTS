@@ -36,8 +36,8 @@ ATOM CreateClass(HINSTANCE, std::string, WNDPROC);
 /* **************************** */
 
 VOID plotDAQ(gwin::gVector *vData1, gwin::gVector *vData2);
-VOID PlotRelax();
-VOID PlotDLTS();
+VOID PlotRelax(); // Вызывать только через SendMessage(hMainWindow, WM_COMMAND, WM_PAINT_RELA, 0);
+VOID PlotDLTS();  // Вызывать только через SendMessage(hMainWindow, WM_COMMAND, WM_PAINT_DLTS, 0);
 
 /* ************************************** */
 /* Специальные Функции обрабоки сообщений */
@@ -46,10 +46,11 @@ VOID PlotDLTS();
 BOOL dlts_mouse_message(HWND, UINT, WPARAM, LPARAM); //Оконная функция для обработки сообщений мыщи окна графика DLTS
 BOOL relax_mouse_message(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 BOOL daq_mouse_message(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
-/* **************************** */
-/* Функции отображения и настрой
-/* **************************** */
-BOOL BuildMenu(HWND hWnd)
+
+/* ************************************ */
+/* Функции отображения и настройки меню */
+/* ************************************ */
+BOOL BuildMenu(HWND hWnd);
 
 
 UINT CALLBACK dlg_success(PVOID);

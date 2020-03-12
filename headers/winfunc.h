@@ -35,9 +35,11 @@ ATOM CreateClass(HINSTANCE, std::string, WNDPROC);
 /* Функции отображения графиков */
 /* **************************** */
 
+extern CRITICAL_SECTION csDAQPaint;
+
 VOID plotDAQ(gwin::gVector *vData1, gwin::gVector *vData2);
-VOID PlotRelax();
-VOID PlotDLTS();
+VOID PlotRelax(); // Вызывать только через SendMessage(hMainWindow, WM_COMMAND, WM_PAINT_RELAX, 0);
+VOID PlotDLTS();  // Вызывать только через SendMessage(hMainWindow, WM_COMMAND, WM_PAINT_DLTS, 0);
 
 /* ************************************** */
 /* Специальные Функции обрабоки сообщений */

@@ -1,86 +1,118 @@
+/* Любой виртаульный пирибор, наследуемый от vi, должен обязательно вызвать метод connect
+перед первым использованием
+*/
+
 #ifndef GPIB_H
 #define GPIB_H
 
-#include <windows.h>
+#include <atomic>
 #include <visatype.h>
 #include <visa.h>
 #include <string>
 #include <sstream>
-#include <variable.h>
-#include <facility.h>
-#include <daq.h>
-#include "resource.h"
 
 #define READ_BUFFER_SIZE  64
-#define WRITE_BUFFER_SIZE 64
 #define QUANTITY_ZONE     10
 
-/* Базовый класс */
-class VI
+using std::string;      using std::stringstream;
+using std::atomic_bool;
+
+enum class heatlvl{off, low, mid, high};
+
+class vi
 {
     public:
-        VI();
-        /* Инициализация сессии по умолчанию; */
-        VOID InitSession();
-        /* Записать сообщение в очередь */
-        ViStatus Write(const std::stringstream& mes, ViUInt32*  rcount = nullptr);
-        ViStatus Write(const std::string mes, ViUInt32*  rcount = nullptr);
-        VOID Read(std::string&);
-        /* Прочитать сообщение-число из очереди */
-        VOID ReadDigit(double& digit);
-        VOID ReadDigit(int& digit);
-        int& GetID(){ return ID; }
+        enum switcher {on, off};
+    public:
+        vi();
+        void connect();
     protected:
-        std::string     ViName;
+        /* Записать сообщение в очередь */
+        ViStatus Write(stringstream &message, ViUInt32*  rcount = static_cast<ViUInt32*>(nullptr));
+        ViStatus Write(string const &message, ViUInt32*  rcount = static_cast<ViUInt32*>(nullptr));
+        /* Прочитать сообщение-строку из очереди */
+        void ReadStr(string&);
+        /* Прочитать сообщение-число из очереди */
+        void ReadDigit(double& digit);
+        void ReadDigit(int& digit);
+    public:
+        string          ViName;
+        int             gpib;
+        atomic_bool     bfvi0k;
+    private:
         ViSession       hResMeneger;
         ViSession       hInstrument;
-        ViUInt32        read;
         unsigned char   ViBuffer[READ_BUFFER_SIZE];
-        int             ID;
-        ViStatus Init();
 };
 
-struct GENERATOR: public VI
+class vi_generator: public vi
 {
-    enum SWITCHER {ON, OFF};
-    GENERATOR(std::string arg_ViName){ ViName = arg_ViName; channel = 1; };
-
-    void Reset();
-    void ErrorCheck(SWITCHER);
-    void Channel(SWITCHER);
-    void Pulses(SWITCHER);
-    /* Применить текущие настройки к прибору */
-    void Apply();
-
-    double period, width, amplitude, bias;
-    /* Для режима ITS */
-    double begin_amplitude, end_amplitude, step_voltage;
-    unsigned int channel;
-    bool is_active;
-};
-
-struct THERMOSTAT: public VI
-{
-    private:
-        struct PIDTABLE
-        {
-            unsigned int P[QUANTITY_ZONE], I[QUANTITY_ZONE], D[QUANTITY_ZONE],
-                         range[QUANTITY_ZONE], upper_boundary[QUANTITY_ZONE];
-            PIDTABLE();
-            /* Возвращает идентификатор ресурса */
-            int GetIDRes(const int, const string);
-            UINT GetActuallyHeatRange();
-        };
     public:
-        THERMOSTAT(std::string arg_ViName){ ViName = arg_ViName; };
-        VOID Apply();
-        /* Проверка корректности диапазона измерения температуры */
-        bool range_is_correct() const;
-        double BeginPoint, EndPoint, TempStep, TempDisp;
-        PIDTABLE ZoneTable;
+        vi_generator();
+        void Reset();
+        void ErrorCheck(switcher);
+        void Channel(switcher);
+        void Pulses(switcher);
+        void Amp(double);
+        void Bias(double);
+        void Apply();
+    public:
+        atomic_bool is_active;
+        unsigned int curr_channel;
+        double amp;
+        double bias;
+        double period;
+        double width;
+    public:
+        double step_amp;
+        double begin_amp;
+        double end_amp;
+    public:
+        double step_bias;
+        double begin_bias;
+        double end_bias;
+    private:
+        void Period(double period);
+        void Width(double width);
+    private:
+        constexpr static double K = 2.3;
 };
 
-extern GENERATOR    Generator;
-extern THERMOSTAT   Thermostat;
+class zone
+{
+    public:
+        unsigned int P = 50;
+        unsigned int I = 20;
+        unsigned int D = 0;
+        unsigned int upper_boundary = 0;
+        heatlvl range = heatlvl::off;
+};
+
+class vi_thermostat: public vi
+{
+    public:
+        vi_thermostat();
+        void ApplyZones();
+        void ApplySetPoint();
+        void SetPoint(double);
+        void CurrentTemp(double*);
+        void CurrentHeatPercent(double*);
+        void CurrentSetPoint(double*);
+    public:
+        void SwitchHeater(switcher);
+    public:
+        bool range_is_correct();
+    public:
+        zone   table[QUANTITY_ZONE];
+        double BeginPoint;
+        double EndPoint;
+        double TempStep;
+        double TempDisp;
+    private:
+        heatlvl curr_heatlvl();
+};
+
+extern vi_generator Generator;
+extern vi_thermostat Thermostat;
 
 #endif

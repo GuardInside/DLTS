@@ -133,6 +133,7 @@ BOOL gwin::gBandGet(HWND hWnd, double* dMinX, double* dMaxX, double* dMinY, doub
         *dMinY = _gMap.at(hWnd).dMinY;
     if(dMaxY != NULL)
         *dMaxY = _gMap.at(hWnd).dMaxY;
+    return TRUE;
 }
 
 BOOL gwin::gDvToLp(HWND hWnd, gPoint *pt)
@@ -166,7 +167,7 @@ BOOL gwin::gGpToLp(HWND hWnd, gPoint *pt)
     return TRUE;
 }
 
-BOOL gwin::gCross(HWND hWnd, const gVector *vData1, const gVector *vData2)
+BOOL gwin::gCross(HWND hWnd, gVector const *vData1, gVector const *vData2)
 {
     if(vData1->size() == 0 || vData2->size() == 0 || vData1->size() != vData2->size())
         return FALSE;
@@ -269,7 +270,7 @@ BOOL gwin::gClose(HWND hWnd)
     return DestroyWindow(hWnd);
 }
 
-BOOL gwin::gMulData(HWND hWnd, const gVector *vData1, const gMulVector *vMulData)
+BOOL gwin::gMulData(HWND hWnd, gVector const *vData1, gMulVector const *vMulData)
 {
     /** Проверка полноты **/
     if(vData1->size() == 0)
@@ -295,7 +296,7 @@ BOOL gwin::gMulData(HWND hWnd, const gVector *vData1, const gMulVector *vMulData
     return TRUE;
 }
 
-BOOL gwin::gData(HWND hWnd, const gVector *vData1, const gVector *vData2)
+BOOL gwin::gData(HWND hWnd, gVector const *vData1, gVector const *vData2)
 {
     /** Проверка полноты **/
     if(vData1->empty())

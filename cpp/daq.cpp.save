@@ -1,26 +1,22 @@
 #include <algorithm>
 
 #include "daq.h"
-#include "variable.h"
 #include "vi.h"
+#include "variable.h"
+
+using std::stringstream;
+
+#define PBM_SETPOS (WM_USER+2)
 
 #define DAQmxErrChk(functionCall) { if( DAQmxFailed(error=(functionCall)) ) { goto Error; } }
 
-VOID DAQmxClearState()
-{
-    DAQmxReadAnalog(0,0,0,0,0,0,0,0,NULL,true);
-}
+atomic_bool         bfDAQ0k{true};
+CRITICAL_SECTION    csDataAcquisition;
 
-INT DAQmxReadAnalog(UINT uDev, UINT uAIPort, INT iTrigPort, float64 dRate, float64 dGate, INT iTrigEdge, UINT uRange, float64 uMesureTime, std::vector<double> *vData, BOOL bfResetError)
+INT ReadAnalogSignal(UINT uDev, UINT uAIPort, INT iTrigPort, float64 dRate, float64 dGate, INT iTrigEdge, UINT uRange, float64 uMesureTime, vector<double> *vData)
 {
     static const float64 fTimeout = 10.0; //Seconds//
-    /** Проверка и установка флага сбоя **/
-    if(bfResetError == TRUE)
-    {
-        bfDAQ0k = true;
-        return 1;
-    }
-    if(bfDAQ0k == false)
+    if(bfDAQ0k.load() == false)
         return -1;
     /** Подготовка */
     TaskHandle hTask = 0;
@@ -47,7 +43,7 @@ INT DAQmxReadAnalog(UINT uDev, UINT uAIPort, INT iTrigPort, float64 dRate, float
         buff.str("");
         buff << "/Dev" << uDev << "/PFI" << iTrigPort;
         DAQmxErrChk(DAQmxSetStartTrigDelayUnits(hTask, DAQmx_Val_Seconds));
-        if(!Generator.is_active)
+        if(Generator.bfvi0k.load() == false)
         {
             iTrigEdge = DAQmx_Val_Falling;
             DAQmxErrChk(DAQmxSetStartTrigDelay(hTask, dGate));
@@ -70,7 +66,7 @@ INT DAQmxReadAnalog(UINT uDev, UINT uAIPort, INT iTrigPort, float64 dRate, float
     if(DAQmxFailed(error))
     {
         /** Что-то пошло не по плану **/
-        bfDAQ0k = false;
+        bfDAQ0k.store(false);
         INT32 iBufferSize = DAQmxGetExtendedErrorInfo(NULL, 0);
         char *cstrBuffer = new char[iBufferSize];
         DAQmxGetExtendedErrorInfo(cstrBuffer, iBufferSize);
@@ -82,71 +78,82 @@ INT DAQmxReadAnalog(UINT uDev, UINT uAIPort, INT iTrigPort, float64 dRate, float
         return -1;
     }
     /** Все идет по плану **/
-    vector<double>().swap(*vData);
+    vData->clear();
+    vData->reserve( static_cast<size_t>(iRead) );
     for(int32 i = 0; i < iRead; i++)
         vData->push_back(Data[i]);
     delete[] Data;
     return 0;
 }
 
-
-BOOL DAQMeasure_Capacity(UINT AIPort, double *capacity)
+void CapacityMeasuring(UINT AIPort, double *capacity)
 {
     vector<double> vResult;
+    vResult.reserve(rate_DAQ*(Generator.period - Generator.width)*0.001);
     EnterCriticalSection(&csDataAcquisition);
-    DAQmxReadAnalog(id_DAQ, AIPort, pfi_ttl_port,
-                rate_DAQ, gate_DAQ*0.000001, DAQmx_Val_Rising, index_range, (Generator.period - Generator.width)*0.001,
+    Generator.Pulses(vi::switcher::off);
+    Sleep(10 * measure_time_DAQ);
+    ReadAnalogSignal(id_DAQ, AIPort, pfi_ttl_port,
+                rate_DAQ, gate_DAQ*0.000001, DAQmx_Val_Rising, index_range.load(), (Generator.period - Generator.width)*0.001,
                 &vResult);
+    Generator.Pulses(vi::switcher::on);
     LeaveCriticalSection(&csDataAcquisition);
-    for(auto &it: vResult)
-        *capacity += it;
+    *capacity = accumulate(vResult.begin(), vResult.end(), static_cast<double>(0.0));
     *capacity /= vResult.size();
-    return TRUE;
 }
 
-BOOL MyDAQMeasure(vector<double> *vResult, UINT AverNum, double time, UINT AIPort, BOOL bfProgress)
+void Measuring(vector<double> *vResult, UINT AverNum, double time, UINT AIPort,  size_t range_index, BOOL bfProgress)
 {
-    if(vResult == NULL || AverNum < 1) return FALSE;
+    if(vResult == NULL || AverNum < 1) return;
     vector<double> vData;
+    vData.reserve(rate_DAQ*time);
     vResult->clear();
+    vData.reserve(rate_DAQ*time);
     for(UINT i = 0; i < AverNum; i++)
     {
         EnterCriticalSection(&csDataAcquisition);
-        DAQmxReadAnalog(id_DAQ, AIPort, pfi_ttl_port,
-                    rate_DAQ, gate_DAQ*0.000001, DAQmx_Val_Rising, index_range, time,
+        ReadAnalogSignal(id_DAQ, AIPort, pfi_ttl_port,
+                    rate_DAQ, gate_DAQ*0.000001, DAQmx_Val_Rising, range_index, time,
                     &vData);
         LeaveCriticalSection(&csDataAcquisition);
-        if(i == 0) for(const auto &it: vData) vResult->push_back(it);
-        else for(size_t i = 0; i < vData.size(); i++)
-            vResult->at(i) += vData[i];
+        if(i == 0)
+            std::copy(vData.cbegin(), vData.cend(), vResult->begin());//for(const auto &it: vData) vResult->push_back(it);
+        else
+            std::transform(vData.cbegin(), vData.cend(), vResult->begin(), vResult->begin(), std::plus<double>());
+        //for(size_t i = 0; i < vData.size(); i++)
+                //vResult[i] += vData[i];
         if(bfProgress) SendMessage(hProgress, PBM_SETPOS, 100.0*i/AverNum, 0);
         vData.clear();
     }
     for(auto &it: *vResult)
         it = it/AverNum;
-    if(bfProgress)
-        SendMessage(hProgress, PBM_SETPOS, 0, 0);   //Очищаем Progress Bar
-    return TRUE;
+    if(bfProgress) SendMessage(hProgress, PBM_SETPOS, 0, 0);
 }
 
-BOOL MeasurePulse(vector<double> *vData, double *dVoltBias, double *dVoltAmp)
+void PulsesMeasuring(vector<double> *vData, double *dVoltBias, double *dVoltAmp)
 {
     static CONST UINT T_NUM = 2, A_NUM = 1;
-    static const double dV = 0.05;
     *dVoltBias = 0.0;
     *dVoltAmp = 0.0;
     UINT uiCount1 = 0, uiCount2 = 0;
-    vector<double> vData2;
     double dMeasTime = 0.0;
-    if(Generator.is_active) dMeasTime = Generator.period*T_NUM*0.001;
+    if(Generator.bfvi0k.load()) dMeasTime = Generator.period*T_NUM*0.001;
     else dMeasTime = measure_time_DAQ*T_NUM*0.001;
-    MyDAQMeasure(&vData2, A_NUM, dMeasTime, ai_port_pulse);
+    size_t range_index = 0;
+    vector<double> vData2;
+    vData2.reserve(rate_DAQ*dMeasTime);
+    Measuring(&vData2, A_NUM, dMeasTime, ai_port_pulse, range_index);
+    /* Допустимое отклонение напряжения в Вольтах*/
+    double dV = 0.05;
     /* Рассчитываем примерные значения амплитуды и смещения */
     double PredBias = 0.0, PredAmp = 0.0;
-    if(Generator.is_active)
+    if(Generator.bfvi0k.load())
     {
         PredBias = Generator.bias;
-        PredAmp = Generator.amplitude;
+        if(index_mode.load() == DLTS)
+            PredAmp = Generator.amp;
+        else if(index_mode.load() == AITS)
+            PredAmp = Generator.begin_amp;
     }
     else
     {
@@ -175,6 +182,9 @@ BOOL MeasurePulse(vector<double> *vData, double *dVoltBias, double *dVoltAmp)
     if(uiCount2 != 0)
         *dVoltBias /= uiCount2;
     else *dVoltBias = 0.0;
+    if(std::abs(PredBias) > 10.0)
+        *dVoltBias = PredBias;
+    if(std::abs(PredAmp) > 10.0)
+        *dVoltAmp = PredAmp;
     if(vData != NULL) *vData = vData2;
-    return TRUE;
 }

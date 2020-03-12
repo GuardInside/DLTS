@@ -138,6 +138,11 @@ VOID CorWindow_OnCommand(HWND hWnd, INT id, HWND, UINT)
             EndDialog(hWnd, 0);
             break;
          case ID_BUTTON_APPLY_SETTINGS:
+            if(start.load())
+            {
+                MessageBox(hWnd, "Stop the experiment and try again.", "Warning", MB_ICONWARNING);
+                break;
+            }
             {
                 ::CorType = CorType;
                 char cstrBuff[BUFF_SIZE];
@@ -147,7 +152,7 @@ VOID CorWindow_OnCommand(HWND hWnd, INT id, HWND, UINT)
                 //Применить настройки константы отношения
                 correlation_c = ApplySettingEditBox(hWnd, ID_EDITCONTROL_C, 2);
                 //Применить настройки времен корреляторов
-                vector<double>().swap(CorTime);
+                CorTime.clear();
                 for (int i = 0; i < SendMessage(hWeightList, LB_GETCOUNT, 0, 0); i++)
                 {
                     SendMessage(hWeightList, LB_GETTEXT, (WPARAM)i, (LPARAM)cstrBuff);
@@ -161,6 +166,7 @@ VOID CorWindow_OnCommand(HWND hWnd, INT id, HWND, UINT)
                 write_settings();
                 RefreshDLTS();
             }
+            SendMessage(hWnd, WM_COMMAND, WM_REPAINT, 0);
             break;
     }
 }

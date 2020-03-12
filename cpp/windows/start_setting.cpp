@@ -1,19 +1,48 @@
 #include "winfunc.h"
 
-BOOL StartWnd_OnInit(HWND, HWND, LPARAM);
-BOOL StartWnd_OnCommand(HWND, int, HWND, UINT);
+BOOL StartWnd_DLTS_OnInit(HWND, HWND, LPARAM);
+BOOL StartWnd_DLTS_OnCommand(HWND, int, HWND, UINT);
+
+BOOL StartWnd_ITS_OnInit(HWND, HWND, LPARAM);
+BOOL StartWnd_ITS_OnCommand(HWND, int, HWND, UINT);
+
+BOOL StartWnd_CV_OnInit(HWND, HWND, LPARAM);
+BOOL StartWnd_CV_OnCommand(HWND, int, HWND, UINT);
 
 INT_PTR CALLBACK srwin_proc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    switch (message)
+    switch (index_mode.load())
     {
-        HANDLE_MSG(hWnd, WM_INITDIALOG, StartWnd_OnInit);
-        HANDLE_MSG(hWnd, WM_COMMAND, StartWnd_OnCommand);
+        case DLTS:
+            switch(message)
+            {
+                HANDLE_MSG(hWnd, WM_INITDIALOG, StartWnd_DLTS_OnInit);
+                HANDLE_MSG(hWnd, WM_COMMAND, StartWnd_DLTS_OnCommand);
+            }
+            break;
+        case AITS:
+            switch(message)
+            {
+                HANDLE_MSG(hWnd, WM_INITDIALOG, StartWnd_ITS_OnInit);
+                HANDLE_MSG(hWnd, WM_COMMAND, StartWnd_ITS_OnCommand);
+            }
+            break;
+        case BITS:
+            break;
+        case PITS:
+            break;
+        case CV:
+            switch(message)
+            {
+                HANDLE_MSG(hWnd, WM_INITDIALOG, StartWnd_CV_OnInit);
+                HANDLE_MSG(hWnd, WM_COMMAND, StartWnd_CV_OnCommand);
+            }
+            break;
     }
     return FALSE;
 }
 
-BOOL StartWnd_OnInit(HWND hWnd, HWND, LPARAM)
+BOOL StartWnd_DLTS_OnInit(HWND hWnd, HWND, LPARAM)
 {
     stringstream buff;
     rewrite(buff) << FileSaveName;
@@ -21,16 +50,15 @@ BOOL StartWnd_OnInit(HWND hWnd, HWND, LPARAM)
     CheckRadioButton(hWnd, ID_RADIO_APPEND, ID_RADIO_NEW, ID_RADIO_NEW);
     return TRUE;
 }
-
-BOOL StartWnd_OnCommand(HWND hWnd, int id, HWND, UINT)
+BOOL StartWnd_DLTS_OnCommand(HWND hWnd, int id, HWND, UINT)
 {
     switch(id)
     {
         case ID_BUTTON_CONTINUE:
             if(IsDlgButtonChecked(hWnd, ID_RADIO_NEW) == BST_CHECKED)
-                bfNewfile = true;
+                bfNewfile.store(true);
             else if(IsDlgButtonChecked(hWnd, ID_RADIO_APPEND) == BST_CHECKED)
-                bfNewfile = false;
+                bfNewfile.store(false);
             //Применить настройки имени файла сохранений
             FileSaveName = ApplySettingEditBoxString(hWnd, ID_EDITCONTROL_SAVE_FILE_NAME);
             StartButPush();
@@ -41,22 +69,143 @@ BOOL StartWnd_OnCommand(HWND hWnd, int id, HWND, UINT)
     return FALSE;
 }
 
+BOOL StartWnd_ITS_OnInit(HWND hWnd, HWND, LPARAM)
+{
+    if(Generator.is_active.load() == false)
+    {
+        MessageBox(hWnd, "You cannot use ITS method.\nYou should change generator settings.", "Warning", MB_ICONHAND);
+        EndDialog(hWnd, 0);
+        return TRUE;
+    }
+    stringstream buff;
+    rewrite(buff) << FileSaveName;
+    SetDlgItemText(hWnd, ID_EDITCONTROL_SAVE_FILE_NAME, buff.str().data());
+    //Вывести текущие настройки шага ITS в вольтах
+    buff << setprecision(3) << fixed;
+    rewrite(buff) << Generator.step_amp;
+    SetDlgItemText(hWnd, ID_EDITCONTROL_STEP_AMPLITUDE, buff.str().data());
+    //Вывести текущие настройки старта ITS в вольтах
+    rewrite(buff) << Generator.begin_amp;
+    SetDlgItemText(hWnd, ID_EDITCONTROL_BEGIN_AMPLITUDE, buff.str().data());
+    //Вывести текущие настройки конца ITS в вольтах
+    rewrite(buff) << Generator.end_amp;
+    SetDlgItemText(hWnd, ID_EDITCONTROL_END_AMPLITUDE, buff.str().data());
+    //Вывести текущие настройки смещения импульса в вольтах
+    rewrite(buff) << Generator.bias;
+    SetDlgItemText(hWnd, ID_EDITCONTROL_BIAS, buff.str().data());
+    return TRUE;
+}
+BOOL StartWnd_ITS_OnCommand(HWND hWnd, int id, HWND, UINT)
+{
+    static bool alright = true;
+    switch(id)
+    {
+        case ID_BUTTON_CONTINUE:
+            Generator.bias = ApplySettingEditBox(hWnd, ID_EDITCONTROL_BIAS, 3);
+            //Применить настройки шага ITS в вольтах
+            Generator.step_amp = ApplySettingEditBox(hWnd, ID_EDITCONTROL_STEP_AMPLITUDE, 3);
+            //Применить настройки начала ITS в вольтах
+            Generator.begin_amp = ApplySettingEditBox(hWnd, ID_EDITCONTROL_BEGIN_AMPLITUDE, 3);
+            //Применить настройки конца ITS в вольтах
+            Generator.end_amp = ApplySettingEditBox(hWnd, ID_EDITCONTROL_END_AMPLITUDE, 3);
+            //Проверка корректности введенных значений
+            if(Generator.bias < MIN_VOLTAGE_PULSE || Generator.bias > MAX_VOLTAGE_PULSE) alright = false;
+            else if(Generator.begin_amp < MIN_VOLTAGE_PULSE || Generator.begin_amp > MAX_VOLTAGE_PULSE) alright = false;
+            else if(Generator.end_amp < MIN_VOLTAGE_PULSE || Generator.end_amp > MAX_VOLTAGE_PULSE) alright = false;
+            else if(Generator.end_amp < Generator.begin_amp && Generator.step_amp > 0.0) alright = false;
+            else if(Generator.end_amp > Generator.begin_amp && Generator.step_amp < 0.0) alright = false;
+            if(alright)
+            {
+                Generator.Bias(Generator.bias);
+                bfNewfile.store(true);
+                FileSaveName = ApplySettingEditBoxString(hWnd, ID_EDITCONTROL_SAVE_FILE_NAME);
+                StartButPush();
+            }
+            else
+            {
+                MessageBox(hWnd, "Incorrect settings.\nYou should be more careful.", "Warning", MB_ICONWARNING);
+            }
+        case ID_BUTTON_CANCEL:
+            EndDialog(hWnd, 0);
+            return TRUE;
+    }
+    return FALSE;
+}
+
+BOOL StartWnd_CV_OnInit(HWND hWnd, HWND, LPARAM)
+{
+    if(Generator.is_active.load() == false)
+    {
+        MessageBox(hWnd, "You cannot use ITS method.\nYou should change generator settings.", "Warning", MB_ICONHAND);
+        EndDialog(hWnd, 0);
+        return TRUE;
+    }
+    stringstream buff;
+    rewrite(buff) << FileSaveName;
+    SetDlgItemText(hWnd, ID_EDITCONTROL_SAVE_FILE_NAME, buff.str().data());
+    //Вывести текущие настройки шага CV в вольтах
+    buff << setprecision(3) << fixed;
+    rewrite(buff) << Generator.step_bias;
+    SetDlgItemText(hWnd, ID_EDITCONTROL_STEP_BIAS, buff.str().data());
+    //Вывести текущие настройки старта ITS в вольтах
+    rewrite(buff) << Generator.begin_bias;
+    SetDlgItemText(hWnd, ID_EDITCONTROL_BEGIN_BIAS, buff.str().data());
+    //Вывести текущие настройки конца ITS в вольтах
+    rewrite(buff) << Generator.end_bias;
+    SetDlgItemText(hWnd, ID_EDITCONTROL_END_BIAS, buff.str().data());
+    return TRUE;
+}
+BOOL StartWnd_CV_OnCommand(HWND hWnd, int id, HWND, UINT)
+{
+    static bool alright = true;
+    switch(id)
+    {
+        case ID_BUTTON_CONTINUE:
+            //Применить настройки шага в вольтах
+            Generator.step_bias = ApplySettingEditBox(hWnd, ID_EDITCONTROL_STEP_BIAS, 3);
+            //Применить настройки начала ITS в вольтах
+            Generator.begin_bias = ApplySettingEditBox(hWnd, ID_EDITCONTROL_BEGIN_BIAS, 3);
+            //Применить настройки конца ITS в вольтах
+            Generator.end_bias = ApplySettingEditBox(hWnd, ID_EDITCONTROL_END_BIAS, 3);
+            //Проверка корректности введенных значений
+            if(Generator.begin_bias < MIN_VOLTAGE_PULSE || Generator.begin_bias > MAX_VOLTAGE_PULSE) alright = false;
+            else if(Generator.end_bias < MIN_VOLTAGE_PULSE || Generator.end_bias > MAX_VOLTAGE_PULSE) alright = false;
+            else if(Generator.end_bias < Generator.begin_bias && Generator.step_bias > 0.0) alright = false;
+            else if(Generator.end_bias > Generator.begin_bias && Generator.step_bias < 0.0) alright = false;
+            if(alright)
+            {
+                bfNewfile.store(true);
+                FileSaveName = ApplySettingEditBoxString(hWnd, ID_EDITCONTROL_SAVE_FILE_NAME);
+                StartButPush();
+            }
+            else
+            {
+                MessageBox(hWnd, "Incorrect settings.\nYou should be more careful.", "Warning", MB_ICONWARNING);
+            }
+        case ID_BUTTON_CANCEL:
+            EndDialog(hWnd, 0);
+            return TRUE;
+    }
+    return FALSE;
+}
+
+
 void StartButPush()
 {
     /* Реализовать запрос на очистку DLTS-кривых и всех буферов перед */
     stringstream buff;
-    if(start == false)
+    if(start.load() == false)
         buff << "Stop";
-    else if(start == true)
+    else if(start.load() == true)
         buff << "Start";
-    EnableWindow(GetDlgItem(hMainWindow, ID_BUTTON_SET), start);
-    EnableWindow(GetDlgItem(hMainWindow, ID_EDITCONTROL_END), start);
-    EnableWindow(GetDlgItem(hMainWindow, ID_EDITCONTROL_BEGIN), start);
-    EnableWindow(GetDlgItem(hMainWindow, ID_BUTTON_EXIT), start);
+    EnableWindow(GetDlgItem(hMainWindow, ID_BUTTON_SET), start.load());
+    EnableWindow(GetDlgItem(hMainWindow, ID_EDITCONTROL_END), start.load());
+    EnableWindow(GetDlgItem(hMainWindow, ID_EDITCONTROL_BEGIN), start.load());
+    EnableWindow(GetDlgItem(hMainWindow, ID_BUTTON_EXIT), start.load());
     SetDlgItemText(hMainWindow, ID_BUTTON_START, buff.str().data());
-    if(start == false)
+    if(start.load() == false)
     {
-        if(bfNewfile == true || index_mode == ITS)
+        if(bfNewfile.load() == true || index_mode.load() == AITS)
         {
             /* Очищаем буфферы при запуске с флагом bfNewfilew */
             ClearMemmory();
@@ -67,19 +216,16 @@ void StartButPush()
             CloseHandle(thDownload);
         }
         /* Установка флагов */
-        start = true;
+        start.store(true);
         /* Установка сетпоинта для термостата */
-        rewrite(buff) << "SETP " << Thermostat.BeginPoint << "K";
-        Thermostat.Write(buff);
+        Thermostat.SetPoint(Thermostat.BeginPoint);
         /* Установка RANGE в соответствии с текущей зоной */
-        rewrite(buff) << "RANG " << Thermostat.ZoneTable.GetActuallyHeatRange();
-        Thermostat.Write(buff);
+        Thermostat.SwitchHeater(vi::switcher::on);
     }
-    else if(start == true)
+    else if(start.load() == true)
     {
-        stability = false;
-        start = false;
-        /* Стоп нагрев в текущей зоне */
-        Thermostat.Write("RANG 0");
+        stability.store(false);
+        start.store(false);
+        Thermostat.SwitchHeater(vi::switcher::off);
     }
 }

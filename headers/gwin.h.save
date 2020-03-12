@@ -21,8 +21,8 @@ struct gPoint{double x; double y;};
 
 HWND gCreateWindow(HINSTANCE hInst, HWND hWndParent, DWORD style);
 BOOL gClose(HWND hWnd);
-BOOL gMulData(HWND hWnd, const gVector *vData1, const gMulVector *vMulData);
-BOOL gData(HWND hWnd, const gVector *vData1, const gVector *vData2);
+BOOL gMulData(HWND hWnd, gVector const *vData1, gMulVector const *vMulData);
+BOOL gData(HWND hWnd, gVector const *vData1, gVector const *vData2);
 BOOL gPosition(HWND hWnd, INT x, INT y);
 BOOL gSize(HWND hWnd, INT x, INT y);
 BOOL gFont(HWND hWnd, int iHeight, int iWidth, int iAngle, int iWeight, std::string strFontName = "");
@@ -31,9 +31,9 @@ BOOL gMark(HWND hWnd, int iMark1, int iMark2, int iAdMark1, int iAdMark2);
 BOOL gPrecision(HWND hWnd, INT iPrec1, INT iPrec2);
 BOOL gBand(HWND hWnd, double dMinX, double dMaxX, double dMinY, double dMaxY);
 BOOL gDefaultPlot(HWND hWnd, std::string message);
-BOOL gCross(HWND hWnd, const gVector *vData1, const gVector *vData2);
+BOOL gCross(HWND hWnd, gVector const*vData1, const gVector *vData2);
 
-BOOL gB
+BOOL gBandGet(HWND hWnd, double* dMinX, double* dMaxX, double* dMinY, double* dMaxY);
 
 BOOL gDvToLp(HWND hWnd, gPoint *pt);
 BOOL gLpToGp(HWND hWnd, gPoint *pt); //Логические координаты

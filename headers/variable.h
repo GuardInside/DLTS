@@ -12,7 +12,11 @@
 using namespace std;
 
 /* Активация режима отладки */
-//#define TEST_MODE
+#define TEST_MODE
+
+/* Сообщения главному окну */
+#define WM_PAINT_RELAX  WM_USER
+#define WM_PAINT_DLTS   WM_USER+1
 
 /* Идентификаторы */
 #define WM_NEW_CORTIME              200 //Сообщение win_weight_func для обновления графика
@@ -29,27 +33,27 @@ using namespace std;
 #define REFRESH_TIME_THERMOSTAT     500 //Интервала между повторными считываниями LakeShore
 
 /* Мировые константы */
-#define MAX_VOLTAGE_PULSE           5
+#define MAX_VOLTAGE_PULSE           (13.5)
 #define MIN_VOLTAGE_PULSE           -MAX_VOLTAGE_PULSE
 #define MAX_TEMPERATURE             320 //Наибольшее устанавливаемое значение SetPoint и EndPoint
 #define MIN_TEMPERATURE             0   //Наименьшее устанавливаемое значение SetPoint и EndPoint
 #define MAX_POINT_TEMP_GRAPH        100 //Количество точек на графике температуры
-#define RANGE_SIZE                  4   //Число диапазонов напряжений для АЦП
-#define RANGE_HEATING_SIZE          4   //Число уровней нагрева ТЭН'а
-#define VOLTAGE_PRECISION           6   //Вольт
-#define THERMO_PRECISION            2   //Кельвин
-#define TIME_PRECISION              4   //Секунды
-#define AVERAGING_TIME              15  //Время, необходимое для получения среднего значения T и дисперсии.
-                                        //Должно быть меньше, чем MAX_POINT_TEMP_GRAPH*0.001*REFRESH_TIME_THERMOSTA
+#define AVERAGING_TIME              20  //Время, необходимое для получения среднего значения T и дисперсии.
+                                        //Должно быть меньше, чем MAX_POINT_TEMP_GRAPH*0.001*REFRESH_TIME_THERMOSTAT
+
+/* Число знаков после десятично запятой для хранения данных */
+#define VOLTAGE_PRECISION           6
+#define THERMO_PRECISION            2
+#define TIME_PRECISION              4
 
 /* Физические константы */
 #define BOLTZMANN                   (1.380649e-23)      //Дж/К
 #define PLANCKS_CONSTANT_H          (6.62607015e-34)    //Дж*с
-#define MASS_ELECTRON               (9.10938188e-31)    //[кг] По умолчанию.
+#define ELECTRON_MASS               (9.10938188e-31)    //[кг], значение по умолчанию
 #define PI                          3.1415926535897932384626433832795
 
 enum CORTYPE{DoubleBoxCar, LockIn, ExpW, SinW};
-enum MODE{DLTS, ITS};
+enum mode{DLTS, AITS, BITS, PITS, CV};
 
 extern vector<double>           xAxisDLTS;
 extern vector<double>           *yAxisDLTS;
@@ -59,18 +63,20 @@ extern vector<double>           CorTime;
 extern vector<double>           itsAmpVoltages;
 extern vector<double>           itsBiasVoltages;  /* Хранит значения напряжений импульсов в режиме ITS */
 
+/* SavedRelaxations и SavedCapacity вызываются только в кр. секции csSavedRelaxation */
 extern vector<vector<double>>   SavedRelaxations; //Хранит все сохраненные или загруженные релаксации
 extern vector<double>           SavedCapacity;    //Хранит все сохраненные или загруженные значения емкости
-extern atomic_size_t index_relax;  //Номер текущей релаксации для отображения
-extern atomic_size_t index_range;  //Номер текущего диапазона
-extern atomic_size_t index_mode;   //Режим работы программы DLTS или ITS
-extern atomic_size_t index_plot_DLTS; //Отображать DLTS или гр. Аррениуса
-extern atomic<int32> offset_ai_port;//Смещение номера порта ai_port при отображении в реальном времени
+
+extern atomic_size_t index_relax;   //Номер текущей релаксации для отображения
+extern atomic_size_t index_range;   //Номер текущего диапазона
+extern atomic<mode>  index_mode;    //Режим работы программы DLTS или ITS
+extern atomic_size_t index_w4;      //Отображать DLTS или гр. Аррениуса
+extern atomic<int32> index_w2;      //Смещение номера порта ai_port при отображении в реальном времени
 
 /* Диапазоны измерений напряжения DAQ */
 extern const string range[];
 extern const int    int_range_sula[];
-extern const int    int_pre_amp_gain[];
+extern const int    int_pre_amplifier[];
 /* Диапазон уровней нагрева */
 extern const string strHeatingRange[];
 /* Имя файла для сохранения FileSaveName.txt */
@@ -104,8 +110,6 @@ extern double AprErr;
 /* Флаги */
 extern atomic_bool start;              //Нажата кнопка старт
 extern atomic_bool stability;          //Температура стабилизировалась вблизи сетпоинта
-extern atomic_bool bfDAQ0k;            //DAQ работает в штатном режиме
-extern atomic_bool fbThermostat0k;     //Термостат работает в штатном режиме
 extern atomic_bool bfNewfile;          //Создавать ли новый файл при старте эксперимента?
 extern atomic_bool fix_temp;           //Фиксация температуры
 extern atomic_bool auto_peak_search;   //Автоопределение пика методом золотого сечения
@@ -123,7 +127,6 @@ extern HWND                        hGraph_DAQ; //Описатель окна графика сигнала 
 extern HWND                        hRelax;     //Описатель окна графика релаксации
 extern HWND                        hGraph_DLTS;//Описатель окна графика DLTS
 extern HWND                        hProgress;  //Прогресс чтения данных
-extern CRITICAL_SECTION            csDataAcquisition;//Используется всегда при чтении данных DAQ
 extern CRITICAL_SECTION            csSavedRelaxation;
 extern HANDLE                      hDownloadEvent;
 

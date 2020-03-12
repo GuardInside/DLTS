@@ -8,23 +8,40 @@
 #include "variable.h"
 #include "interpolation.h"
 
+int sgn(double val);
+
+class math_exception: public std::exception
+{
+    public:
+        math_exception(const std::string _message) : exception(), message{_message} {}
+        const char* what() const noexcept override
+        {
+            return static_cast<const char*>(message.c_str());
+        }
+    private:
+        std::string message;
+};
+
 /* Экспоненцианальная аппроксимация */
 int get_exponent_fitt(const vector<double> *x, const vector<double> *y, const vector<double> *sigma,
                       double *A, double *tau, double *b, double *dA, double *dtau, double *db, double *ReducedChiSqr,
                       size_t *iter, size_t max_iter,
                       double epsabs, double epsrel,
                       string *strStatusMSG);
-/* Поиск минимума */
-double GoldSerch(double a, double b, double eps, interp &Fun);
+/* Поиск минимума (sign == 1) или максимума (sign == -1) */
+double GoldSerch(double a, double b, double eps, interp &Fun, int sign = 1);
 /* Округлить до n значащих цифр после запятой */
 double round(double d, int n);
 /* Получить параметры линейной регрессии Y = a + b*X */
-void GetParam(const std::vector <double> &X, const std::vector <double> &Y, double &a, double &b);
-/* Среднее значение чесел в наборе, начиная последнего */
-double mean(const std::vector<double> &temp);
+void GetParam(std::vector<double> const &X, std::vector<double> const &Y, double &a, double &b);
+/* Среднее значение */
+double Mean(std::vector<double>::const_iterator b,
+            std::vector<double>::const_iterator e);
 /* Средняя квадратичная флуктуация */
-double AverSqFluct(const std::vector<double> &temp);
-
+double MeanSquareError(std::vector<double>::const_iterator b,
+                       std::vector<double>::const_iterator e);
+double MeanSquareErrorOfTemp(std::vector<double>::const_iterator b,
+                             std::vector<double>::const_iterator e);
 double double_boxcar(double x, double t1);
 double lock_in(double x, double t1);
 double sin_w(double x, double t1);
