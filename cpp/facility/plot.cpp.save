@@ -26,8 +26,20 @@ CRITICAL_SECTION csDAQPaint;
 VOID plotDAQ(gwin::gVector *vData1, gwin::gVector *vData2)
 {
     if(vData1->empty()) return;
+    std::string Title, xSubscribe{"Time [ms]"}, ySubscribe{"Voltage [V]"};
     if(TryEnterCriticalSection (&csDAQPaint) == TRUE)
     {
+        switch(index_w2)
+        {
+            case 0:
+                Title = "Capacity relaxation in real time";
+                break;
+            case 1:
+                Title = "Injection pulses in real time";
+                break;
+        }
+        gwin::gTitle(hGraph_DAQ, Title);
+        gwin::gAxisInfo(hGraph_DAQ, xSubscribe, ySubscribe);
         gwin::gData(hGraph_DAQ, vData1, vData2);
         LeaveCriticalSection(&csDAQPaint);
     }
@@ -38,6 +50,7 @@ VOID PlotRelax()
     if(SavedRelaxations.empty())
         return;
     EnterCriticalSection(&csSavedRelaxation);
+        int limit_index_relax = SavedRelaxations.size();
         gwin::gVector vData2{SavedRelaxations[index_relax.load()]};
         double capacity = SavedCapacity[index_relax.load()];
     LeaveCriticalSection(&csSavedRelaxation);
@@ -71,7 +84,12 @@ VOID PlotRelax()
     else if(index_mode.load() == AITS && !itsBiasVoltages.empty())
         buffer << fixed << setprecision(2) << "T [K] = " << itsTemperature << endl
                         << setprecision(3) << "Bias [V] = " << itsBiasVoltages[index_relax.load()] << endl << "Amp [V] =  " << itsAmpVoltages[index_relax.load()];
+    std::string Title{"Selective recording "}, xSubscribe{"Time [ms]"}, ySubscribe{"Voltage [V]"};
+    rewrite(buffer) << "[" << index_relax + 1 << "|" << limit_index_relax << "]";
+    Title = Title + buffer.str();
+    gwin::gTitle(hRelax, Title);
     gwin::gAdditionalInfo(hRelax, buffer.str());
+    gwin::gAxisInfo(hRelax, xSubscribe, ySubscribe);
     gwin::gMulData(hRelax, &vData1, &vMulData);
 }
 
@@ -79,13 +97,13 @@ VOID PlotDLTS()
 {
     if(index_mode.load() == AITS)
     {
-        gwin::gDefaultPlot(hGraph_DLTS, "\0");
+        gwin::gDefaultPlot(hGraph_DLTS, "In this mode the graph cannot be plot.\0");
         return;
     }
     if(xAxisDLTS.size() < 2)
     {
         if(xAxisDLTS.size() == 1)
-            gwin::gDefaultPlot(hGraph_DLTS, "You should measure the second point.");
+            gwin::gDefaultPlot(hGraph_DLTS, "You should measure the second point\nfor plotting DLTS curves\0");
         return;
     }
     /* Точность определения пика */
@@ -96,6 +114,9 @@ VOID PlotDLTS()
     double dRightBorder = xAxisDLTS.at(xAxisDLTS.size()-1);
     if(index_w4.load() == 2)
     {
+        std::string Title{"Capacity recording"}, xSubscribe{"Temperature [K]"}, ySubscribe{"Capacity [pF]"};
+        gwin::gTitle(hGraph_DLTS, Title);
+        gwin::gAxisInfo(hGraph_DLTS, xSubscribe, ySubscribe);
         gwin::gAdditionalInfo(hGraph_DLTS, "");
         gwin::gPrecision(hGraph_DLTS, THERMO_PRECISION, 3);
         gwin::gBand(hGraph_DLTS, 0, 0, 0.0, 0.0);
@@ -184,11 +205,19 @@ VOID PlotDLTS()
             gwin::gBand(hGraph_DLTS, 0, 0, 0.0, 0.0);
             gwin::gPrecision(hGraph_DLTS, 2, 3);
         }
+        std::string Title{"DLTS curves"}, xSubscribe{"Temperature [K]"}, ySubscribe{"S [Arb.]"};
+        gwin::gTitle(hGraph_DLTS, Title);
+        gwin::gAxisInfo(hGraph_DLTS, xSubscribe, ySubscribe);
         gwin::gCross(hGraph_DLTS, &vMinData1, &vMinData2); /* Индикаторы пика */
         gwin::gMulData(hGraph_DLTS, &xAxisDLTS, &vMulData);
     }
     else if(index_w4.load() == 1) /* График Аррениуса */
     {
+        if(CorTime.size() < 2)
+        {
+            gwin::gDefaultPlot(hGraph_DLTS, "You should create a second correlator\nfor plotting Arrhenius graph.\0");
+            return;
+        }
         double B = sqrt(3.0)*pow(2.0, 2.5)*pow(::dFactorG,-1)*(::dEfMass*pow(BOLTZMANN,2)*pow(PLANCKS_CONSTANT_H,-3))*pow(PI, 1.5);
         gwin::gVector vData1, vData2, vData3;
         for(size_t i = 0; i < CorTime.size(); i++)
@@ -228,6 +257,9 @@ VOID PlotDLTS()
         buff << setprecision(2) << scientific << "CS: " << CrossSection << " [m^2]" << endl
              << "R: " << sqrt(CrossSection/PI) << " [m]" << endl
              << fixed << setprecision(0) << "E: " << 1000*Energy*(625e+16) << " [meV]";
+        std::string Title{"Arrhenius plot"}, xSubscribe{"1/kT [1/J]"}, ySubscribe{"-ln(tau T^2)"};
+        gwin::gTitle(hGraph_DLTS, Title);
+        gwin::gAxisInfo(hGraph_DLTS, xSubscribe, ySubscribe);
         gwin::gCross(hGraph_DLTS, &vData1, &vData2); /* Экспериментальные точки */
         gwin::gAdditionalInfo(hGraph_DLTS, buff.str());
         gwin::gBand(hGraph_DLTS, 0, 0, 0.0, 0.0);
@@ -268,6 +300,7 @@ VOID dlts_OnLButtonDown(HWND hWnd, BOOL fDoubleClick, INT x, INT y, UINT keyFlag
             if(PtInRect(&rt, POINT{(LONG)point.x, (LONG)point.y}))
             {
                 auto_peak_search.store(false);
+                SendMessage(hMainWindow, WM_COMMAND, WM_REFRESH_MENU, 0);
                 index = i;
                 capture = true;
                 SetCapture(hWnd);

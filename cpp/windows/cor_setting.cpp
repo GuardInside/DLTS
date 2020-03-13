@@ -131,6 +131,7 @@ VOID CorWindow_OnCommand(HWND hWnd, INT id, HWND, UINT)
                     xAxis.push_back(time);
                     yAxis.push_back(w(0.001 * time, t1));
                 }
+                gwin::gAxisInfo(hWeightGraph, "T i m e  [ m s ]", "W [Arb]");
                 gwin::gData(hWeightGraph, &xAxis, &yAxis);
             }
             break;

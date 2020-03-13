@@ -13,7 +13,7 @@
 	<vector>
 	"NIDAQmx.h"
 
-1584016741 c:\users\Виктор\documents\github\dlts\headers\variable.h
+1584117718 c:\users\Виктор\documents\github\dlts\headers\variable.h
 	<atomic>
 	<string>
 	<vector>
@@ -24,7 +24,7 @@
 	"gwin.h"
 	"vi.h"
 
-1584040086 c:\users\Виктор\documents\github\dlts\headers\gwin.h
+1584114124 c:\users\Виктор\documents\github\dlts\headers\gwin.h
 	<windows.h>
 	<windowsx.h>
 	<string>
@@ -125,7 +125,7 @@
 	<windows.h>
 	"gwin.h"
 
-1584016716 source:c:\users\Виктор\documents\github\dlts\cpp\facility\plot.cpp
+1584111161 source:c:\users\Виктор\documents\github\dlts\cpp\facility\plot.cpp
 	<algorithm>
 	"graph.h"
 	"variable.h"
@@ -141,7 +141,7 @@
 	"vi.h"
 	"daq.h"
 
-1584016715 source:c:\users\Виктор\documents\github\dlts\cpp\facility\utility.cpp
+1584110077 source:c:\users\Виктор\documents\github\dlts\cpp\facility\utility.cpp
 	<facility.h>
 	"graph.h"
 	"ini.h"
@@ -175,7 +175,7 @@
 	"gwin.h"
 	"ini.h"
 
-1584018901 source:c:\users\Виктор\documents\github\dlts\cpp\variable.cpp
+1584117709 source:c:\users\Виктор\documents\github\dlts\cpp\variable.cpp
 	"variable.h"
 
 1584014150 source:c:\users\Виктор\documents\github\dlts\cpp\vi.cpp
@@ -188,7 +188,7 @@
 1583782630 source:c:\users\Виктор\documents\github\dlts\cpp\windows\adv_setting.cpp
 	<winfunc.h>
 
-1583952100 source:c:\users\Виктор\documents\github\dlts\cpp\windows\cor_setting.cpp
+1584116793 source:c:\users\Виктор\documents\github\dlts\cpp\windows\cor_setting.cpp
 	"winfunc.h"
 	"variable.h"
 
@@ -207,7 +207,7 @@
 	<richedit.h>
 	"..\headers\resource.h"
 
-1584091981 source:c:\users\Виктор\documents\github\dlts\cpp\gwin.cpp
+1584116659 source:c:\users\Виктор\documents\github\dlts\cpp\gwin.cpp
 	<algorithm>
 	<cctype>
 	<cmath>
@@ -222,7 +222,7 @@
 1574170354 source:c:\users\Виктор\documents\github\dlts\cpp\math\interpolation.cpp
 	<interpolation.h>
 
-1584095039 source:c:\users\Виктор\documents\github\dlts\cpp\main.cpp
+1584118591 source:c:\users\Виктор\documents\github\dlts\cpp\main.cpp
 	<windows.h>
 	<windowsx.h>
 	<commctrl.h>

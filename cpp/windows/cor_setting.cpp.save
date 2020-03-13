@@ -131,6 +131,7 @@ VOID CorWindow_OnCommand(HWND hWnd, INT id, HWND, UINT)
                     xAxis.push_back(time);
                     yAxis.push_back(w(0.001 * time, t1));
                 }
+                gwin::gAxisInfo(hGraph_DAQ, "Time [ms]", "Voltage [V]");
                 gwin::gData(hWeightGraph, &xAxis, &yAxis);
             }
             break;

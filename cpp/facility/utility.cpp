@@ -84,6 +84,7 @@ void ClearMemmory()
 {
     /* Включить автопоиск минимума */
     auto_peak_search.store(true);
+    SendMessage(hMainWindow, WM_COMMAND, WM_REFRESH_MENU, 0);
     ClearMemmoryDLTS();
     itsBiasVoltages.clear();
     itsAmpVoltages.clear();
@@ -117,6 +118,7 @@ void RefreshDLTS()
     }
     SendMessage(hProgress, PBM_SETPOS, 0, 0);
     auto_peak_search.store(true);
+    SendMessage(hMainWindow, WM_COMMAND, WM_REFRESH_MENU, 0);
     SendMessage(hMainWindow, WM_COMMAND, WM_PAINT_DLTS, 0);
 }
 

@@ -17,6 +17,7 @@ using namespace std;
 /* Сообщения главному окну */
 #define WM_PAINT_RELAX  WM_USER
 #define WM_PAINT_DLTS   WM_USER+1
+#define WM_REFRESH_MENU WM_USER+2
 
 /* Идентификаторы */
 #define WM_NEW_CORTIME              200 //Сообщение win_weight_func для обновления графика

@@ -110,26 +110,26 @@ BOOL MainWindow_OnCreate(HWND hwnd, LPCREATESTRUCT)
     gPosition(hGraph, 10, 22);
     gSize(hGraph, 399, 276);
     gPrecision(hGraph, 0, 2);
-    gAxisInfo(hGraph, "Time [sec]", "T e m p e r a t u r e  [ K ]");
+    gTitle(hGraph, "Temperature from thermostat");
+    gAxisInfo(hGraph, "Time [sec]", "Temperature [K]");
     gDefaultPlot(hGraph, "\0");
     hGraph_DAQ = gCreateWindow(hInst, hwnd, WS_CHILD|WS_DLGFRAME|WS_VISIBLE);
     gPosition(hGraph_DAQ, 422, 22);
     gSize(hGraph_DAQ, 399, 276);
     gPrecision(hGraph_DAQ, 0, 3);
     gBand(hGraph_DAQ, 0, 0, -10.0, 10.0);
-    gAxisInfo(hGraph_DAQ, "Time [ms]", "V o l t a g e [ V ]");
     gDefaultPlot(hGraph_DAQ, "\0");
     hRelax = gCreateWindow(hInst, hwnd, WS_CHILD|WS_DLGFRAME|WS_VISIBLE);
     gPosition(hRelax, 10, 323);
     gSize(hRelax, 399, 276);
     gPrecision(hRelax, 0, 3);
     gBand(hRelax, 0, 0, -10.0, 10.0);
-    gAxisInfo(hRelax, "Time [ms]", "V o l t a g e [ V ]");
     gDefaultPlot(hRelax, "\0");
     hGraph_DLTS = gCreateWindow(hInst, hwnd, WS_CHILD|WS_DLGFRAME|WS_VISIBLE);
     gPosition(hGraph_DLTS, 422, 323);
     gSize(hGraph_DLTS, 399, 276);
-    gAxisInfo(hGraph_DLTS, "Temperature [K]", "S [ A r b ]");
+    gTitle(hGraph_DLTS, "DLTS curves");
+    gAxisInfo(hGraph_DLTS, "Temperature [K]", "S[Arb]");
     gDefaultPlot(hGraph_DLTS, "\0");
     /* Индикатор выполнения */
     hProgress = CreateWindow(PROGRESS_CLASS, NULL, WS_VISIBLE | WS_CHILD, 850, 195, 140, 20, hwnd, (HMENU)ID_PROGRESS, hInst, NULL);
@@ -223,13 +223,17 @@ void MainWindow_OnCommand(HWND hwnd, int id, HWND, UINT)
             break;
         case ID_MENU_AUTO_PEAK_DETECTING:
             auto_peak_search.store(auto_peak_search.load() ? false : true);
-            CheckMenuItem(GetSubMenu(GetMenu(hwnd), 1), ID_MENU_AUTO_PEAK_DETECTING, auto_peak_search.load() ? MF_CHECKED : MF_UNCHECKED);
+            SendMessage(hMainWindow, WM_COMMAND, WM_REFRESH_MENU, 0);
             SendMessage(hMainWindow, WM_COMMAND, WM_PAINT_DLTS, 0);
             break;
         case ID_MENU_NORMALIZE_TO_ONE:
             normaliz_dlts.store(normaliz_dlts.load() ? false : true);
-            CheckMenuItem(GetSubMenu(GetMenu(hwnd), 1), ID_MENU_NORMALIZE_TO_ONE, normaliz_dlts.load() ? MF_CHECKED : MF_UNCHECKED);
+            SendMessage(hMainWindow, WM_COMMAND, WM_REFRESH_MENU, 0);
             SendMessage(hMainWindow, WM_COMMAND, WM_PAINT_DLTS, 0);
+            break;
+        case WM_REFRESH_MENU:
+            CheckMenuItem(GetSubMenu(GetMenu(hwnd), 1), ID_MENU_AUTO_PEAK_DETECTING, auto_peak_search.load() ? MF_CHECKED : MF_UNCHECKED);
+            CheckMenuItem(GetSubMenu(GetMenu(hwnd), 1), ID_MENU_NORMALIZE_TO_ONE, normaliz_dlts.load() ? MF_CHECKED : MF_UNCHECKED);
             break;
         /* Загрузить файл */
         case ID_MENU_OPEN:

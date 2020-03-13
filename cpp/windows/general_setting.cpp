@@ -227,6 +227,8 @@ BOOL SettingsWindow_OnCommand(HWND hwnd, int ID, HWND, UINT codeNotify)
                 //Применить настройки к физическим устройствам и сохранить файл настроек при условии их корректности
                 if(alright == true)
                 {
+                    if(index_mode != ::index_mode.store)
+                        ClearMemmory();
                     Generator.is_active = Generator_Agilent_is_active;
                     ::index_mode.store(index_mode);
                     ApplySettings();
