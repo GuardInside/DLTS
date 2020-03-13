@@ -32,6 +32,8 @@ BOOL gPrecision(HWND hWnd, INT iPrec1, INT iPrec2);
 BOOL gBand(HWND hWnd, double dMinX, double dMaxX, double dMinY, double dMaxY);
 BOOL gDefaultPlot(HWND hWnd, std::string message);
 BOOL gCross(HWND hWnd, gVector const *vData1, gVector const *vData2);
+BOOL gAxisInfo(HWND hWnd, std::string, std::string);
+BOOL gTitle(HWND hWnd, std::string);
 
 BOOL gBandGet(HWND hWnd, double* dMinX, double* dMaxX, double* dMinY, double* dMaxY);
 

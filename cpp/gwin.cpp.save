@@ -9,9 +9,9 @@
 #define DEFAULT_WIDTH_FONT      20
 #define DEFAULT_PRECISION       3
 #define GWND_LOGICAL_SIZE       1200
-#define GPLOT_LOGICAL_SIZE      1000
-#define GPLOT_LOGICAL_X_BEGIN   150
-#define GPLOT_LOGICAL_Y_BEGIN   100
+#define GPLOT_LOGICAL_SIZE      950
+#define GPLOT_LOGICAL_X_BEGIN   200
+#define GPLOT_LOGICAL_Y_BEGIN   150
 using namespace gwin;
 
 namespace gwin
@@ -39,6 +39,7 @@ namespace gwin
                                  PROOF_QUALITY, FIXED_PITCH | FF_MODERN, "Courier New")},
             bfEnableGrid{true}, bfEnableAdInfo{true}, bfEnableScale{true}, bfEnableAxis{true},
             bfEnableScCor{true}, bfEnableCross{false}, bfEnableFixedXBand{false}, bfEnableFixedYBand{false},
+            bfEnableTitles{true},
             dMinX{0.0}, dMaxX{0.0}, dMinY{0.0}, dMaxY{0.0} {}
         HBITMAP hBitMap;
         UINT iMark1, iMark2, iAdMark1, iAdMark2;
@@ -47,7 +48,8 @@ namespace gwin
         COLORREF crTextColor, crAdInfoColor;
         HFONT hTextFont;
         BOOL bfEnableGrid, bfEnableAdInfo, bfEnableScale, bfEnableAxis,
-            bfEnableScCor, bfEnableCross, bfEnableFixedXBand, bfEnableFixedYBand;
+            bfEnableScCor, bfEnableCross, bfEnableFixedXBand, bfEnableFixedYBand,
+            bfEnableTitles;
         /*
         bfEnableGrid        отображать сетку
         bfEnableAdInfo      отображать доп. информацию, см. метод gAddInfo
@@ -59,6 +61,8 @@ namespace gwin
         bfEnableFixedYBand  диапазон отображаемых значений оси y фиксирован
         */
         std::string strAdInfo;
+        std::string xAxisInfo;
+        std::string yAxisInfo;
         double dMinX, dMaxX, dMinY, dMaxY;
         gVector vCrossX, vCrossY;
     };
@@ -123,6 +127,12 @@ namespace gwin
 /* ********************** */
 /*  Интерфейс библиотеки  */
 /* ********************** */
+BOOL gwin::gAxisInfo(HWND hWnd, std::string xstr, std::string ystr)
+{
+    _gMap.at(hWnd).xAxisInfo = xstr;
+    _gMap.at(hWnd).yAxisInfo = ystr;
+    return TRUE;
+}
 BOOL gwin::gBandGet(HWND hWnd, double* dMinX, double* dMaxX, double* dMinY, double* dMaxY)
 {
     if(dMinX != NULL)
@@ -133,6 +143,7 @@ BOOL gwin::gBandGet(HWND hWnd, double* dMinX, double* dMaxX, double* dMinY, doub
         *dMinY = _gMap.at(hWnd).dMinY;
     if(dMaxY != NULL)
         *dMaxY = _gMap.at(hWnd).dMaxY;
+    return TRUE;
 }
 
 BOOL gwin::gDvToLp(HWND hWnd, gPoint *pt)
@@ -168,11 +179,6 @@ BOOL gwin::gGpToLp(HWND hWnd, gPoint *pt)
 
 BOOL gwin::gCross(HWND hWnd, gVector const *vData1, gVector const *vData2)
 {
-    /*if(vData1 == nullptr && vData2 == nullptr)
-    {
-        _gMap.at(hWnd).bfEnableCross = false;
-        return TRUE;
-    }*/
     if(vData1->size() == 0 || vData2->size() == 0 || vData1->size() != vData2->size())
         return FALSE;
     _gMap.at(hWnd).bfEnableCross = true;
@@ -188,21 +194,25 @@ BOOL gwin::gDefaultPlot(HWND hWnd, std::string message)
     vData1.push_back(1);
     vData2.push_back(0);
     vData2.push_back(1);
-    BOOL fbOldEnableScale = _gMap.at(hWnd).bfEnableScale,
-         fbOldEnableAxis  = _gMap.at(hWnd).bfEnableAxis,
-         bfOldEnableGrid  = _gMap.at(hWnd).bfEnableGrid;
+    BOOL fbOldEnableScale   = _gMap.at(hWnd).bfEnableScale,
+         fbOldEnableAxis    = _gMap.at(hWnd).bfEnableAxis,
+         bfOldEnableGrid    = _gMap.at(hWnd).bfEnableGrid,
+         bfOldEnableTitles  = _gMap.at(hWnd).bfEnableTitles;
     _gMap.at(hWnd).bfEnableScale = FALSE;
     _gMap.at(hWnd).bfEnableAxis = FALSE;
     _gMap.at(hWnd).bfEnableGrid = FALSE;
+    _gMap.at(hWnd).bfEnableTitles = FALSE;
     HPEN hOldPlotPen = _gMap.at(hWnd).hPlotPen;
     _gMap.at(hWnd).hPlotPen = CreatePen(PS_NULL, 0, RGB(0,0,0));
     gAdditionalInfo(hWnd, message.data());
-    gData(hWnd, &vData1, &vData2);
+    gData(hWnd, &vData1, &vData2);  /* Отрисовываем стандартное окно */
     DeleteObject((HPEN)_gMap.at(hWnd).hPlotPen);
+    /* Возвращаем настройки */
     _gMap.at(hWnd).hPlotPen = hOldPlotPen;
     _gMap.at(hWnd).bfEnableScale = fbOldEnableScale;
     _gMap.at(hWnd).bfEnableAxis = fbOldEnableAxis;
     _gMap.at(hWnd).bfEnableGrid = bfOldEnableGrid;
+    _gMap.at(hWnd).bfEnableTitles = bfOldEnableTitles;
     return TRUE;
 }
 
@@ -376,6 +386,7 @@ BOOL gwin::gMulDrawPlot(HWND hWnd, HDC &hdc, const gVector *vData1, const gMulVe
     COLORREF OldTextColor;
     HFONT hOldFont;
     gBuffer buff;
+    SIZE szText;
     double  z = 0.0, hx = 0.0, hy = 0.0,
             max_y = vMulData2->at(0).at(0), min_y = vMulData2->at(0).at(0),
             max_x = vData1->at(0), min_x = vData1->at(0);
@@ -438,13 +449,6 @@ BOOL gwin::gMulDrawPlot(HWND hWnd, HDC &hdc, const gVector *vData1, const gMulVe
         expX--;
     }
     while(expX%3 != 0) expX--;
-    /* Установка шага по осям */
-    /*double max = max_x * pow(10, expX), min = min_x * pow(10, expX);
-    double value_min[] = {1000, 100, 10, 0, 0.1, 0.01, 0.001};
-    int i;
-    for(i = 0, min < value_min[i]; i++);
-    min = value_min.at(i+1);
-    */
     hx = (max_x - min_x)/iMark1;
     hy = (max_y - min_y)/iMark2;
     /* Сдвигаем начало координат */
@@ -481,7 +485,8 @@ BOOL gwin::gMulDrawPlot(HWND hWnd, HDC &hdc, const gVector *vData1, const gMulVe
             if(c == 0 && bfEnableScale)
             {
                 buff << z*pow(10, expX);
-                TextOut(hdc, x-0.5*pIndent.x, y - iIndent, buff.str().c_str(), buff.str().length());
+                GetTextExtentPoint32(hdc, buff.str().data(), buff.str().length(), &szText);
+                TextOut(hdc, x-szText.cx, y - iIndent, buff.str().c_str(), buff.str().length());
             }
         }
         /* Размечаем масштаб оси Y */
@@ -503,7 +508,8 @@ BOOL gwin::gMulDrawPlot(HWND hWnd, HDC &hdc, const gVector *vData1, const gMulVe
             if(c == 0 && bfEnableScale)
             {
                 buff << z*pow(10, expY);
-                TextOut(hdc, -pIndent.x, y+0.5*pIndent.y, buff.str().data(), buff.str().length());
+                GetTextExtentPoint32(hdc, buff.str().data(), buff.str().length(), &szText);
+                TextOut(hdc, -szText.cx, y + 0.5*pIndent.y, buff.str().data(), buff.str().length());
             }
         }
     }
@@ -599,7 +605,6 @@ BOOL gwin::gMulDrawPlot(HWND hWnd, HDC &hdc, const gVector *vData1, const gMulVe
     /* Выводим дополнительную информацию */
     SetTextColor(hdc, _gMap.at(hWnd).crAdInfoColor);
     int s = 0;
-    SIZE szText;
     if(_gMap.at(hWnd).bfEnableAdInfo)
     {
         gInfoVector vInfo;
@@ -622,6 +627,38 @@ BOOL gwin::gMulDrawPlot(HWND hWnd, HDC &hdc, const gVector *vData1, const gMulVe
         buff << "x: e" << expX;
         GetTextExtentPoint32(hdc, buff.str().data(), buff.str().length(), &szText);
         TextOut(hdc, iPlotSize-szText.cx-iIndent, iPlotSize - szText.cy*(s++), buff.str().data(), buff.str().length());
+    }
+    /* Выводим информацию об осях */
+    if(_gMap.at(hWnd).bfEnableTitles == true)
+    {
+        //SelectBrush(hdc, GetStockBrush(BLACK_BRUSH));
+        std::string xstr = _gMap.at(hWnd).xAxisInfo;
+        std::string ystr = _gMap.at(hWnd).yAxisInfo;
+        if(!ystr.empty())
+        for(int i = 1; i < ystr.length() - 1; i = i + 2)
+            ystr.insert(i, );
+        GetTextExtentPoint32(hdc, xstr.data(), xstr.length(), &szText);
+
+        LONG xTitleShiftToY = -szText.cy;   /* Сдвиги подобраны */
+        LONG yTitleShiftToX = -GPLOT_LOGICAL_X_BEGIN + 0.75*szText.cy;
+        RECT xrc{0, xTitleShiftToY, GPLOT_LOGICAL_SIZE, xTitleShiftToY-szText.cy}; /* left top right bottom */
+
+        DrawText(hdc, xstr.c_str(), xstr.length(), &xrc, DT_CENTER | DT_SINGLELINE);
+        //Rectangle(hdc, xrc.left, xrc.top, xrc.right, xrc.bottom);
+
+        PLOGFONT plf = (PLOGFONT)LocalAlloc(LPTR, sizeof(LOGFONT));
+        GetObject (_gMap.at(hWnd).hTextFont, sizeof(LOGFONT), plf);
+        plf->lfEscapement = -900;
+        HFONT hVFont = CreateFontIndirect(plf);
+
+        SelectObject(hdc, hVFont);
+        GetTextExtentPoint32(hdc, ystr.data(), ystr.length(), &szText);
+        RECT yrc{yTitleShiftToX - szText.cy, GPLOT_LOGICAL_SIZE, yTitleShiftToX, GPLOT_LOGICAL_SIZE / 2 - 0.25*ystr.length()*szText.cy};
+        //Rectangle(hdc, yrc.left, yrc.top, yrc.right, yrc.bottom);
+
+        DrawText(hdc, ystr.c_str(), ystr.length(), &yrc, DT_SINGLELINE | DT_BOTTOM);
+        LocalFree((LOCALHANDLE)plf);
+        DeleteObject(hVFont);
     }
     SelectObject(hdc, (HPEN)hOldPen);
     SelectObject(hdc, (HFONT)hOldFont);

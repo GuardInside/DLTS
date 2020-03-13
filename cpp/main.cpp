@@ -110,22 +110,26 @@ BOOL MainWindow_OnCreate(HWND hwnd, LPCREATESTRUCT)
     gPosition(hGraph, 10, 22);
     gSize(hGraph, 399, 276);
     gPrecision(hGraph, 0, 2);
+    gAxisInfo(hGraph, "Time [sec]", "T e m p e r a t u r e  [ K ]");
     gDefaultPlot(hGraph, "\0");
     hGraph_DAQ = gCreateWindow(hInst, hwnd, WS_CHILD|WS_DLGFRAME|WS_VISIBLE);
     gPosition(hGraph_DAQ, 422, 22);
     gSize(hGraph_DAQ, 399, 276);
     gPrecision(hGraph_DAQ, 0, 3);
     gBand(hGraph_DAQ, 0, 0, -10.0, 10.0);
+    gAxisInfo(hGraph_DAQ, "Time [ms]", "V o l t a g e [ V ]");
     gDefaultPlot(hGraph_DAQ, "\0");
     hRelax = gCreateWindow(hInst, hwnd, WS_CHILD|WS_DLGFRAME|WS_VISIBLE);
     gPosition(hRelax, 10, 323);
     gSize(hRelax, 399, 276);
     gPrecision(hRelax, 0, 3);
     gBand(hRelax, 0, 0, -10.0, 10.0);
+    gAxisInfo(hRelax, "Time [ms]", "V o l t a g e [ V ]");
     gDefaultPlot(hRelax, "\0");
     hGraph_DLTS = gCreateWindow(hInst, hwnd, WS_CHILD|WS_DLGFRAME|WS_VISIBLE);
     gPosition(hGraph_DLTS, 422, 323);
     gSize(hGraph_DLTS, 399, 276);
+    gAxisInfo(hGraph_DLTS, "Temperature [K]", "S [ A r b ]");
     gDefaultPlot(hGraph_DLTS, "\0");
     /* Индикатор выполнения */
     hProgress = CreateWindow(PROGRESS_CLASS, NULL, WS_VISIBLE | WS_CHILD, 850, 195, 140, 20, hwnd, (HMENU)ID_PROGRESS, hInst, NULL);

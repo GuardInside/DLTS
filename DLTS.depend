@@ -24,7 +24,7 @@
 	"gwin.h"
 	"vi.h"
 
-1583523648 c:\users\Виктор\documents\github\dlts\headers\gwin.h
+1584040086 c:\users\Виктор\documents\github\dlts\headers\gwin.h
 	<windows.h>
 	<windowsx.h>
 	<string>
@@ -109,9 +109,9 @@
 	<stdlib.h>
 	<gsl/gsl_types.h>
 
-1584019482 c:\users\Виктор\documents\github\dlts\headers\resource.h
+1584042325 c:\users\Виктор\documents\github\dlts\headers\resource.h
 
-1584021541 source:c:\users\Виктор\documents\github\dlts\cpp\facility\load_save.cpp
+1584043329 source:c:\users\Виктор\documents\github\dlts\cpp\facility\load_save.cpp
 	<sstream>
 	<string>
 	<exception>
@@ -201,13 +201,13 @@
 1584021504 source:c:\users\Виктор\documents\github\dlts\cpp\windows\start_setting.cpp
 	"winfunc.h"
 
-1584019482 source:c:\users\Виктор\documents\github\dlts\resource\resource.rc
+1584042325 source:c:\users\Виктор\documents\github\dlts\resource\resource.rc
 	<windows.h>
 	<commctrl.h>
 	<richedit.h>
 	"..\headers\resource.h"
 
-1584021462 source:c:\users\Виктор\documents\github\dlts\cpp\gwin.cpp
+1584091981 source:c:\users\Виктор\documents\github\dlts\cpp\gwin.cpp
 	<algorithm>
 	<cctype>
 	<cmath>
@@ -222,7 +222,7 @@
 1574170354 source:c:\users\Виктор\documents\github\dlts\cpp\math\interpolation.cpp
 	<interpolation.h>
 
-1584019595 source:c:\users\Виктор\documents\github\dlts\cpp\main.cpp
+1584095039 source:c:\users\Виктор\documents\github\dlts\cpp\main.cpp
 	<windows.h>
 	<windowsx.h>
 	<commctrl.h>

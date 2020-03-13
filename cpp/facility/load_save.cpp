@@ -277,7 +277,7 @@ UINT SaveRelax()
     file << fixed << setprecision(THERMO_PRECISION);
     file << "[ms]";
     EnterCriticalSection(&csSavedRelaxation);
-        size_t uSample = SavedRelaxations.at[0].size();
+        size_t uSample = SavedRelaxations[0].size();
         file << "\t" << xAxisDLTS[0];
         for(size_t j = 1; j < SavedRelaxations.size(); j++)
             file << "\t\t" << xAxisDLTS[j];
