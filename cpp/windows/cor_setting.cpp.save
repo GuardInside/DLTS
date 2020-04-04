@@ -1,12 +1,17 @@
 #include "winfunc.h"
 #include "variable.h"
+#include "dlts_math.h"
 
 #define WM_REPAINT WM_USER
 
 BOOL CorWindow_OnInit(HWND, HWND, WPARAM);
-VOID CorWindow_OnCommand(HWND, INT, HWND, UINT);
+BOOL CorWindow_OnCommand(HWND, INT, HWND, UINT);
 
 HWND hWeightGraph, hEdit, hWeightList;
+
+/* Имена весовых функций */
+const string names_wFunc[] = {"Double box-car", "Lock-in", "Exponent", "Sine",
+                              "Hodgart", "HiRes-3", "HiRes-4", "HiRes-5", "HiRes-6"};
 
 BOOL CALLBACK csdlg_proc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -22,153 +27,237 @@ BOOL CorWindow_OnInit(HWND hWnd, HWND, WPARAM)
 {
     stringstream buff;
     hWeightGraph = gwin::gCreateWindow(hInst, hWnd, WS_CHILD | WS_DLGFRAME | WS_VISIBLE);
-    gwin::gPosition(hWeightGraph, 13, 25);
-    gwin::gSize(hWeightGraph, 328, 230);
+    gwin::gPosition(hWeightGraph, 10, 18);
+    gwin::gSize(hWeightGraph, 400, 276);
     gwin::gPrecision(hWeightGraph, 0, 1);
+    gwin::gTitle(hWeightGraph, "Weight function");
     //Получаем описатели элементов управления
     hWeightList = GetDlgItem(hWnd, ID_LIST_CORRELATION);
     hEdit = GetDlgItem(hWnd, ID_EDITCONTROL_TIME_CORRELATION);
     //Вывод информации при инициализации
     buff << setprecision(2) << fixed;
-    //Вывести текущие настройки ширины импульсов
+    //Вывести текущие настройки ширины импульсов box-car
     rewrite(buff) << correlation_width;
     SetDlgItemText(hWnd, ID_EDITCONTROL_WIDTH, buff.str().data());
-    //Вывести текущие настройки константы отношения
+    //Вывести текущие настройки константы alpha: Ts = alpa * Tc
+    rewrite(buff) << correlation_alpha;
+    SetDlgItemText(hWnd, ID_EDITCONTROL_ALPHA, buff.str().data());
+    CheckDlgButton(hWnd, ID_CHECKBOX_USE_ALPHA, UseAlphaBoxCar);
+    PostMessage(hWnd, WM_COMMAND, ID_CHECKBOX_USE_ALPHA, 0);
+    //Вывести текущие настройки константы отношения Tc/Tg
     rewrite(buff) << correlation_c;
     SetDlgItemText(hWnd, ID_EDITCONTROL_C, buff.str().data());
     //Вывести текущие настройки времен корреляторов
-    for (size_t i = 0; i < CorTime.size(); i++)
+    for (size_t i = 0; i < CorTc.size(); i++)
     {
-        rewrite(buff) << CorTime[i];
+        rewrite(buff) << CorTc[i];
+        //ComboBox_AddString(hWeightList, buff.str().c_str());
         SendMessage(hWeightList, LB_ADDSTRING, 0, (LPARAM)buff.str().data());
     }
-    if(CorType == DoubleBoxCar)
+    if(::WeightType == DoubleBoxCar)
     {
         EnableWindow(GetDlgItem(hWnd, ID_BUTTON_PREVIOUS_WEIGHT_FUNC), FALSE);
         EnableWindow(GetDlgItem(hWnd, ID_EDITCONTROL_WIDTH), TRUE);
     }
     else
         EnableWindow(GetDlgItem(hWnd, ID_EDITCONTROL_WIDTH), FALSE);
-    if(CorType == SinW)
+
+    if(::WeightType == HiRes6)
         EnableWindow(GetDlgItem(hWnd, ID_BUTTON_NEXT_WEIGHT_FUNC), FALSE);
-    rewrite(buff) << names_wFunc[CorType];
+
+    rewrite(buff) << names_wFunc[::WeightType];
     SetDlgItemText(hWnd, ID_STR_WEIGHT_FUNCTION_NAME, buff.str().data());
     SendMessage(hWeightList, LB_SETCURSEL, 0, 0);
     SendMessage(hWnd, WM_COMMAND, WM_REPAINT, 0);
     return TRUE;
 }
 
-VOID CorWindow_OnCommand(HWND hWnd, INT id, HWND, UINT)
+BOOL CorWindow_OnCommand(HWND hWnd, INT id, HWND, UINT what)
 {
     stringstream buff;
-    static UINT CorType = ::CorType;
+    static int WeightType = ::WeightType;
+    static BOOL UseAlpha = UseAlphaBoxCar;
     switch(id)
     {
+        case ID_CHECKBOX_USE_ALPHA:
+                if(WeightType == DoubleBoxCar)
+                {
+                    bool state = SendMessage(GetDlgItem(hWnd, ID_CHECKBOX_USE_ALPHA), BM_GETCHECK, 0, 0);
+                    EnableWindow(GetDlgItem(hWnd, ID_EDITCONTROL_ALPHA), state);
+                    EnableWindow(GetDlgItem(hWnd, ID_EDITCONTROL_WIDTH), !state);
+                    UseAlpha = state;
+                }
+                else
+                {
+                    EnableWindow(GetDlgItem(hWnd, ID_EDITCONTROL_WIDTH), FALSE);
+                    EnableWindow(GetDlgItem(hWnd, ID_EDITCONTROL_ALPHA), FALSE);
+                    EnableWindow(GetDlgItem(hWnd, ID_CHECKBOX_USE_ALPHA), FALSE);
+                }
+                SendMessage(hWnd, WM_COMMAND, WM_REPAINT, 0);
+            return TRUE;
         case ID_BUTTON_PREVIOUS_WEIGHT_FUNC:
-            CorType--;
-            rewrite(buff) << names_wFunc[CorType];
+            WeightType--;
+            rewrite(buff) << names_wFunc[WeightType];
             SetDlgItemText(hWnd, ID_STR_WEIGHT_FUNCTION_NAME, buff.str().data());
-            if(CorType == DoubleBoxCar)
+            if(WeightType == DoubleBoxCar)
             {
                 EnableWindow(GetDlgItem(hWnd, ID_BUTTON_PREVIOUS_WEIGHT_FUNC), FALSE);
-                EnableWindow(GetDlgItem(hWnd, ID_EDITCONTROL_WIDTH), TRUE);
+
+                EnableWindow(GetDlgItem(hWnd, ID_EDITCONTROL_WIDTH), !UseAlpha);
+                EnableWindow(GetDlgItem(hWnd, ID_EDITCONTROL_ALPHA), UseAlpha);
+                EnableWindow(GetDlgItem(hWnd, ID_CHECKBOX_USE_ALPHA), TRUE);
             }
             EnableWindow(GetDlgItem(hWnd, ID_BUTTON_NEXT_WEIGHT_FUNC), TRUE);
             SendMessage(hWnd, WM_COMMAND, WM_REPAINT, 0);
-            break;
+            return TRUE;
         case ID_BUTTON_NEXT_WEIGHT_FUNC:
-            CorType++;
-            rewrite(buff) << names_wFunc[CorType];
+            WeightType++;
+            rewrite(buff) << names_wFunc[WeightType];
             SetDlgItemText(hWnd, ID_STR_WEIGHT_FUNCTION_NAME, buff.str().data());
-            if(CorType == SinW)
+            if(WeightType == HiRes6)
                 EnableWindow(GetDlgItem(hWnd, ID_BUTTON_NEXT_WEIGHT_FUNC), FALSE);
-            if(CorType != DoubleBoxCar)
+            if(WeightType != DoubleBoxCar)
+            {
                 EnableWindow(GetDlgItem(hWnd, ID_EDITCONTROL_WIDTH), FALSE);
+                EnableWindow(GetDlgItem(hWnd, ID_EDITCONTROL_ALPHA), FALSE);
+                EnableWindow(GetDlgItem(hWnd, ID_CHECKBOX_USE_ALPHA), FALSE);
+            }
             EnableWindow(GetDlgItem(hWnd, ID_BUTTON_PREVIOUS_WEIGHT_FUNC), TRUE);
             SendMessage(hWnd, WM_COMMAND, WM_REPAINT, 0);
-            break;
+            return TRUE;
         case ID_BUTTON_PUSH_CORRELATION:
             {
-                double time = ApplySettingEditBox(hWnd, ID_EDITCONTROL_TIME_CORRELATION, 2);
-                if(time < 0.00)
+                double Tc = ApplySettingEditBox(hWnd, ID_EDITCONTROL_TIME_CORRELATION, 2);
+                double Tg = Tc / correlation_c;
+                rewrite(buff) << fixed << setprecision(2) << Tc;
+                if(Tc <= 0.00)
                 {
                     MessageBox(hWnd, "The value must be positive and greater than zero.", "Information", MB_ICONINFORMATION);
-                    break;
+                    return TRUE;
                 }
-                if(time*correlation_c > measure_time_DAQ) //Все в мс
+                if(Tc + Tg > measure_time_DAQ) //Все в мс
                 {
-                    MessageBox(hWnd, "The value \"t_1*C\" must be less than \"T_measure-width\".", "Information", MB_ICONINFORMATION);
-                    break;
+                    MessageBox(hWnd, "The value \"Tc + Tg\" must be less than \"T_measure-width\".", "Information", MB_ICONINFORMATION);
+                    return TRUE;
                 }
-                rewrite(buff) << time;
-                SendMessage(hWeightList, LB_ADDSTRING, 0, (LPARAM)buff.str().data());
-                SetFocus(hEdit);
+                if(ListBox_FindString(hWeightList, -1, buff.str().data()) != LB_ERR)
+                {
+                    MessageBox(hWnd, "The value \"Tc\" is already exist.", "Information", MB_ICONINFORMATION);
+                    return TRUE;
+                }
+
+                int pos = ListBox_GetCount(hWeightList); /* По умолчанию в конец списка */
+                char szBuff[BUFF_SIZE];
+                do
+                {
+                    ListBox_GetText(hWeightList, --pos, szBuff);
+                }
+                while( Tc < atof(szBuff) && pos != LB_ERR);
+                ListBox_InsertString(hWeightList, pos + 1, buff.str().data());
+                ListBox_SetCurSel(hWeightList, ListBox_FindString(hWeightList, -1, buff.str().data()));
+                SendMessage(hWnd, WM_COMMAND, WM_REPAINT, 0);
+                SetFocus(hEdit);            /* устоановить фокус ввода */
+                Edit_SetSel(hEdit, 0, -1);  /* Выделить содержимое */
             }
-            break;
+            return TRUE;
         case ID_BUTTON_PULL_CORRELATION: //Отсчет с нуля
-                SendMessage(hWeightList, LB_DELETESTRING , (WPARAM)SendMessage(hWeightList, LB_GETCURSEL, 0, 0), 0);
-            break;
+            {
+                int pos = SendMessage(hWeightList, LB_GETCURSEL, 0, 0);
+                SendMessage(hWeightList, LB_DELETESTRING , (WPARAM)pos, 0);
+                if(--pos < 0) pos = 0;
+                SendMessage(hWeightList, LB_SETCURSEL, (WPARAM)pos, 0);
+                SendMessage(hWnd, WM_COMMAND, WM_REPAINT, 0);
+            }
+            return TRUE;
         case ID_LIST_CORRELATION:
+            /* without break */
         case WM_REPAINT:
             {
+                bool tmp = UseAlphaBoxCar;
+                UseAlphaBoxCar = UseAlpha;
                 char cstrBuff[BUFF_SIZE];
                 gwin::gVector xAxis, yAxis;
-                SendMessage(hWeightList, LB_GETTEXT, (WPARAM)SendMessage(hWeightList, LB_GETCURSEL, 0, 0), (LPARAM)cstrBuff);
-                double t1 = atof(cstrBuff)/1000.0;
-                double (*w) (double, double) = double_boxcar;
-                switch(CorType)
+                int pos = SendMessage(hWeightList, LB_GETCURSEL, 0, 0);
+                if(pos < 0)
                 {
-                    case LockIn: w = lock_in;
-                    break;
-                    case ExpW: w = exp_w;
-                    break;
-                    case SinW: w = sin_w;
-                    break;
+                    gwin::gDefaultPlot(hWeightGraph, "Set value in \"Tc edit box\" and\n click on \"Add\" button for\nadding a correlator.");
+                    return TRUE;
                 }
+                SendMessage(hWeightList, LB_GETTEXT, (WPARAM)pos, (LPARAM)cstrBuff);
+                double Tc = atof(cstrBuff);
+                double Tg =  Tc / correlation_c;
                 double dt = 1000.0 * pow(rate_DAQ, -1);
-                for(double time = 0.0; time < measure_time_DAQ; time += dt)
+                size_t points = 0.001 * measure_time_DAQ * rate_DAQ;
+
+                xAxis.reserve( points );
+                yAxis.reserve( points );
+
+                if(WeightType == DoubleBoxCar && correlation_width < 1000*10*dt)
                 {
-                    xAxis.push_back(time);
-                    yAxis.push_back(w(0.001 * time, t1));
+                    for(double time = 0.0; time < measure_time_DAQ; time += dt)
+                        xAxis.push_back(time);
+                    yAxis.assign(points, 0.0);
+                    yAxis[size_t(Tg / dt)] = 1.0;
+                    yAxis[size_t(Tg*correlation_c / dt)] = -1.0;
                 }
-                gwin::gAxisInfo(hGraph_DAQ, "Time [ms]", "Voltage [V]");
+                else
+                {
+                    double (*w) (double, double) = get_weight_function(WeightType);
+                    for(double time = 0.0; time < measure_time_DAQ; time += dt)
+                    {
+                        xAxis.push_back(time);
+                        yAxis.push_back(w(time, Tg));
+                    }
+                }
+
+                std::stringstream info;
+                //helper(measure_time_DAQ, Tg, Tc, WeightType);
+                info << std::fixed << std::setprecision(3)
+                     << "peak-tau: " << find_tau(Tg, Tc, WeightType)
+                     << " [ms]"
+                     //<< "\nA0: " << get_signal_level(Tg, Tc, WeightType)
+                     //<< "\nN: " << get_noize_level(Tg, Tc, WeightType)
+                     << "\nSN: " << SN(Tg, Tc, WeightType) << std::endl;
+
+                gwin::gAdditionalInfo(hWeightGraph, info.str());
+                gwin::gAxisInfo(hWeightGraph, "Time [ms]", "W [Arb]");
                 gwin::gData(hWeightGraph, &xAxis, &yAxis);
+                UseAlphaBoxCar = tmp;
             }
-            break;
+            return TRUE;
         case ID_BUTTON_CLOSE_SETTINGS:
-            EndDialog(hWnd, 0);
-            break;
+            WeightType = ::WeightType;
+            UseAlpha = UseAlphaBoxCar;
+            DestroyWindow(hWnd);
+            return TRUE;
          case ID_BUTTON_APPLY_SETTINGS:
             if(start.load())
             {
                 MessageBox(hWnd, "Stop the experiment and try again.", "Warning", MB_ICONWARNING);
-                break;
+                return TRUE;
             }
             {
-                ::CorType = CorType;
-                char cstrBuff[BUFF_SIZE];
-                double time = 0.0;
+                UseAlphaBoxCar = UseAlpha;
+                ::WeightType = WeightType;
                 //Применить настройки ширины импульсов
                 correlation_width = ApplySettingEditBox(hWnd, ID_EDITCONTROL_WIDTH, 2);
                 //Применить настройки константы отношения
                 correlation_c = ApplySettingEditBox(hWnd, ID_EDITCONTROL_C, 2);
+                correlation_alpha = ApplySettingEditBox(hWnd, ID_EDITCONTROL_ALPHA, 2);
                 //Применить настройки времен корреляторов
-                CorTime.clear();
+                CorTc.clear();
+                char cstrBuff[BUFF_SIZE];
                 for (int i = 0; i < SendMessage(hWeightList, LB_GETCOUNT, 0, 0); i++)
                 {
                     SendMessage(hWeightList, LB_GETTEXT, (WPARAM)i, (LPARAM)cstrBuff);
-                    time = atof(cstrBuff);
-                    CorTime.push_back(time);
+                    double Tc = atof(cstrBuff);
+                    CorTc.push_back(Tc);
                 }
-                sort(CorTime.begin(), CorTime.end());
-                if(yAxisDLTS != nullptr)
-                    delete []yAxisDLTS;
-                yAxisDLTS = new vector<double>[CorTime.size()]; ///Число осей совпадает с числом корреляторов
                 write_settings();
                 RefreshDLTS();
             }
             SendMessage(hWnd, WM_COMMAND, WM_REPAINT, 0);
-            break;
+            return TRUE;
     }
 }
 

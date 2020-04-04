@@ -15,7 +15,7 @@
 #include "variable.h"
 using namespace std;
 
-enum SAVE_MODE {SAVE_SETTINGS, SAVE_RELAXATIONS, SAVE_DLTS, SAVE_ARRHENIUS};
+enum SAVE_MODE {SAVE_SETTINGS, SAVE_RELAXATIONS, SAVE_DLTS, SAVE_ARRHENIUS, SAVE_CT};
 
 stringstream&   rewrite(stringstream& buff);
 UINT            GetDlgItemTextMod(HWND hwnd, int nIDItem, stringstream& str_buf);
@@ -46,7 +46,7 @@ void ClearMemmory();
 void OrderRelaxation();
 //Обновление DLTS-кривых
 void RefreshDLTS();
-void SaveRelaxSignal(double MeanTemp, const vector<double> *vData, double dBias, double dAmp, double capacity);
+void SaveRelaxSignalToFile(double MeanTemp, const vector<double> *vData, double dBias, double dAmp, double capacity);
 void AddPointsDLTS(const vector<double> *vRelaxation, const double temp, const double capacity);
 /* Возвращает расширение открытого файла */
 string GetExtensionFile(string str);

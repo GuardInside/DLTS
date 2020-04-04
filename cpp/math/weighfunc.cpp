@@ -7,41 +7,135 @@
 void AddPoint_with_interp(const vector<double> *vRelaxation, const double temp);
 void AddPoint_with_approx(const vector<double> *vRelaxation, const double temp);
 
-double exp_w(double x, double t1)
+/* t2 = Tg + Tc = Tg + c*Tg = Tg(1 + c) */
+double sin_w(double x, double Tg)
 {
-    double t2 = t1*correlation_c;
-    double t_0 = (t2-t1)/2+t1;
-    if(x >= t1 && x <= t_0)
-        return exp(-(x-t1)/(0.4*(t2-t1)));
-    if(x > t_0 && x <= t2)
-        return -1*exp(-(x-t_0)/(0.4*(t2-t1)));
+    double t2 = Tg*(1 + correlation_c);
+    if(x >= Tg && x <= t2)
+        return sin((x-Tg)*2*PI/(correlation_c*Tg));
     return 0.0;
 }
 
-double sin_w(double x, double t1)
+double Hodgart_w(double x, double Tg)
 {
-    double t2 = t1*correlation_c;
-    if(x >= t1 && x <= t2)
-        return sin((x-t1)*2*PI/(t2-t1));
+    double t2 = Tg * (1 + correlation_c);
+    double step_1 = Tg * (1 + 0.1 * correlation_c); /* Первый спад вниз, t1 = Tg + 0.1 Tc */
+    double step_2 = step_1 + 0.15 * correlation_c * Tg;
+    double a[] = {4.7, 1.45, -0.92};
+
+    if(x >= Tg && x <= step_1)
+        return a[0];
+    else if(x > step_1 && x <= step_2)
+        return a[1];
+    else if(x > step_2 && x <= t2)
+        return a[2];
     return 0.0;
 }
 
-double lock_in(double x, double t1)
+double HiRes3_w(double x, double Tg)
 {
-    double t2 = t1*correlation_c;
-    double t_0 = (t2-t1)/2+t1;
-    if(x >= t1 && x <= t_0)
+    double t2 = Tg * (1 + correlation_c);
+    double step = Tg * (1. / 3) * correlation_c;
+    double t[] = {(Tg + step), (Tg + 2*step)};
+    double a[] = {-1, 2, -1};
+    if(x >= Tg && x <= t[0])
+        return a[0];
+    else if(x > t[0] && x <= t[1])
+        return a[1];
+    else if(x > t[1] && x <= t2)
+        return a[2];
+    return 0.0;
+}
+
+double HiRes4_w(double x, double Tg)
+{
+    double t2 = Tg * (1 + correlation_c);
+    double step = Tg * 0.25 * correlation_c;
+    double t[] = {Tg + step, Tg + 2*step, Tg + 3*step};
+    double a[] = {-1, 3, -3, 1};
+    if(x >= Tg && x <= t[0])
+        return a[0];
+    else if(x > t[0] && x <= t[1])
+        return a[1];
+    else if(x > t[1] && x <= t[2])
+        return a[2];
+    else if(x > t[2] && x <= t2)
+        return a[3];
+    return 0.0;
+}
+
+double HiRes5_w(double x, double Tg)
+{
+    double t2 = Tg * (1 + correlation_c);
+    double step = Tg * 0.2 * correlation_c;
+    double t[] = {Tg + step, Tg + 2*step, Tg + 3*step, Tg + 4*step};
+    double a[] = {-1, 4, -6, 4, -1};
+    if(x >= Tg && x <= t[0])
+        return a[0];
+    else if(x > t[0] && x <= t[1])
+        return a[1];
+    else if(x > t[1] && x <= t[2])
+        return a[2];
+    else if(x > t[2] && x <= t[3])
+        return a[3];
+    else if(x > t[3] && x <= t2)
+        return a[4];
+    return 0.0;
+}
+//0,875 0,21875 0,015625
+double HiRes6_w(double x, double Tg)
+{
+    double t2 = Tg * (1 + correlation_c);
+    double step = Tg * 0.1 * correlation_c;
+    double a[] = {1, -7./8, 7./32, -7./64};
+    double t[] = {Tg + 1*step, Tg + 2*step, Tg + 4*step};
+    if(x >= Tg && x <= t[0])
+        return a[0];
+    else if(x > t[0] && x <= t[1])
+        return a[1];
+    else if(x > t[1] && x <= t[2])
+        return a[2];
+    else if(x > t[2] && x <= t2)
+        return a[3];
+    return 0.0;
+}
+
+map<double, double> exp_shift;
+double exp_w(double x, double Tg)
+{
+    if(exp_shift.find(Tg) == exp_shift.end())
+    {
+        exp_shift[Tg] = exp_w( find_middle_x0(Tg, Tg*correlation_c, ExpW), Tg );
+    }
+
+    double Tc = correlation_c*Tg;
+
+    if(x >= Tg && x <= Tg + Tc)
+        return exp(- x / ( 0.4 * Tc )) - exp_shift[Tg];
+    return 0.0;
+}
+
+double lock_in(double x, double Tg)
+{
+    double t2 = Tg*(1 + correlation_c);
+    double t_0 = 0.5 * (correlation_c * Tg) + Tg;
+    if(x >= Tg && x <= t_0)
         return 1;
     if(x > t_0 && x <= t2)
         return -1;
     return 0.0;
 }
 
-double double_boxcar(double x, double t1)
+double double_boxcar_width(double &Tg)
 {
-    double t2 = t1*correlation_c;               //начало второго испульса
-    double dt = correlation_width/1000000.0;    //ширина импульсов в сек
-    if(x >= t1 && x <= t1+dt)
+    return (UseAlphaBoxCar) ? correlation_alpha * Tg * correlation_c
+                                   : correlation_width/1000.0;
+}
+double double_boxcar(double x, double Tg)
+{
+    double t2 = Tg*(1 + correlation_c);     //начало второго испульса
+    double dt = double_boxcar_width(Tg);    //ширина импульсов в мсек
+    if(x >= Tg && x <= Tg+dt)
         return 1;
     if(x >= t2-dt && x <= t2)
         return -1;
@@ -64,111 +158,58 @@ void AddPointsDLTS(const vector<double> *vRelaxation, const double temp, const d
             return;
     }
     xAxisDLTS.insert(xAxisDLTS.begin() + offset, temp); // TUS
-    /* Определяем весовую функцию */
-    double (*w) (double, double) = NULL;
-    size_t N = 10; /* Число узлов интегрирования между сэмплами по умолчанию */
-    switch(CorType)
-    {
-        //case DoubleBoxCar:  w = double_boxcar;  break;
-        case LockIn:        w = lock_in;        break;
-        case ExpW:          w = exp_w;          break;
-        case SinW:          w = sin_w;          break;
-    }
-    /* Вводим обозначения */
-    size_t n = N*vRelaxation->size();                   //Число узлов инегрироания
-    double T_g = (0.000001*gate_DAQ);                   //Запаздывание начала отсчета
-    double dt = pow(rate_DAQ, -1);                      //Шаг дискретизации
-    double a = T_g, b = T_g + (n-1)*dt;                 //Нижний и верхний пределы
-    double h = (b-a)/(n-1);                             //Шаг сетки
-    double I = 0.0;                                     //Значение интеграла
-    /* Восстанавливаем ось времени */
+    /* Интерполируем кривую */
+    size_t  num     = 0.001 * measure_time_DAQ * rate_DAQ; // Все в мс
+    double  gate    = 0.001 * gate_DAQ;
+    double  delta   = 1000.0 / rate_DAQ;
     vector<double> TimeAxis;
-    for(size_t i = 0; i < vRelaxation->size(); i++)
-        TimeAxis.push_back(i*dt + T_g);
-    try{
-        if(AprEnableDLTS == false)
+    TimeAxis.reserve(num);
+    for(size_t i = 0; i < num; i++)
+        TimeAxis.push_back(gate + i*delta);
+    interp f(TimeAxis, *vRelaxation, vRelaxation->size(), gsl_interp_linear);
+    /* Определяем весовую функцию */
+    double (*w) (double, double) = get_weight_function(WeightType);
+    if(index_mode.load() == DLTS)
+    {
+        for(size_t c = 0; c < CorTc.size(); ++c)          //Пробегаемся по всем корреляторам
         {
-            /* Интерполируем кривую */
-            interp f(TimeAxis, *vRelaxation, vRelaxation->size(), gsl_interp_linear);
-            for(size_t c = 0; c < CorTime.size(); c++)          //Пробегаемся по всем корреляторам
-            {
-                double t1 = 0.001*CorTime[c];
-                if(CorType == DoubleBoxCar)
-                {
-                    double t2 = t1*correlation_c;               //начало второго испульса
-                    double dt = correlation_width/1000000.0;    //ширина импульсов в сек
-                    double buffer = 0.0;
-                    int counter = 0;
-                    for(double t = t1; t <= t1+dt; t += h)
-                    {
-                        buffer += f.at(t);
-                        counter++;
-                    }
-                    I += ( buffer / counter );
-                    counter = 0;
-                    buffer = 0.0;
-                    for(double t = t2; t <= t2+dt; t += h)
-                    {
-                        buffer += f.at(t);
-                        counter++;
-                    }
-                    I -= (buffer / counter);
+            double Tc = CorTc[c];
+            double Tg = Tc / correlation_c;
+            double I = Integral(Tg, Tc, w, f);
 
-                }
-                else
-                for(double x_i = a; x_i <= a+h*(n-1); x_i += h) //Метод трапеций
-                    if(w(x_i,t1) != 0.0)
-                        I += h*(f.at(x_i)*w(x_i,t1) + f.at(x_i+h)*w(x_i+h, t1))/2;
-                /* Добавляем по точке на каждой из осей */
-                VoltageToCapacity(&I);
-                I /= ( int_pre_amplifier[PRE_AMP_GAIN_SULA_index] * capacity );
-                yAxisDLTS[c].insert(yAxisDLTS[c].begin() + offset, I);
-            }
+            /* Добавляем по точке на каждой из осей */
+            VoltageToCapacity(&I);
+            I /= ( int_pre_amplifier[PRE_AMP_GAIN_SULA_index] * capacity );
+
+            yAxisDLTS[c].insert(yAxisDLTS[c].begin() + offset, I);
         }
-        else if(AprEnableDLTS == true)
+    }
+    else
+    {
+        double Tc_begin = 2;
+        double Tc_end   = correlation_c * measure_time_DAQ / (correlation_c + 1);
+        double Tc_delta = 0.5;
+
+        vector<double> vData;
+        for(double p = Tc_begin; p < Tc_end; p += Tc_delta)
         {
-            /* Аппроксимируем кривую */
-            double A = 0.0, B = 0.0, tau = 0.0;
-            vector<double> vSigma(TimeAxis.size(), 1); /* Веса пл умолчанию */
-            get_exponent_fitt(&TimeAxis, vRelaxation, &vSigma,
-                          &A, &tau, &B, NULL, NULL, NULL, NULL, NULL, ::AprIter, ::AprErr, 0, NULL);
-            for(size_t c = 0; c < CorTime.size(); c++)          //Пробегаемся по всем корреляторам
-            {
-                double t1 = 0.001*CorTime[c];
-                if(CorType == DoubleBoxCar)
-                {
-                    double t2 = t1*correlation_c;               //начало второго испульса
-                    double dt = correlation_width/1000000.0;    //ширина импульсов в сек
-                    double buffer = 0.0;
-                    int counter = 0;
-                    for(double t = t1; t <= t1+dt; t += h)
-                    {
-                        buffer += ( A * exp(- t / tau) + B );
-                        counter++;
-                    }
-                    I += ( buffer / counter );
-                    counter = 0;
-                    buffer = 0.0;
-                    for(double t = t2; t <= t2+dt; t += h)
-                    {
-                        buffer += ( A * exp(- t / tau) + B );
-                        counter++;
-                    }
-                    I -= (buffer / counter);
-                }
-                else
-                for(double x_i = a; x_i <= a+h*(n-1); x_i += h) //Метод трапеций
-                    if(w(x_i,t1) != 0.0)
-                    {
-                        double f_i = A * exp(- x_i / tau) + B;
-                        double f_i_h = A * exp(-(x_i + h) / tau) + B;
-                        I += h*(f_i*w(x_i,t1) + f_i_h*w(x_i+h, t1))/2;
-                    }
-                /* Добавляем по точке на каждой из осей */
-                VoltageToCapacity(&I);
-                I /= int_pre_amplifier[PRE_AMP_GAIN_SULA_index] * capacity;
-                yAxisDLTS[c].insert(yAxisDLTS[c].begin() + offset, I);
-            }
+            SendMessage(hProgress, PBM_SETPOS, 100.0*(p)/Tc_end, 0);
+
+            double Tg = p / correlation_c;
+            double I = Integral(Tg, p, w, f);
+
+            VoltageToCapacity(&I);
+            I /= ( int_pre_amplifier[PRE_AMP_GAIN_SULA_index] * capacity );
+            vData.push_back(I);
         }
-    }catch(std::exception &e){ MessageBox(0, e.what(), "AddPointDLTS", 0); }
+        yAxisITS.insert(yAxisITS.begin() + offset, vData);
+        SendMessage(hProgress, PBM_SETPOS, 0, 0);
+
+        /* Формируем ось времени */
+        if(xAxisITS.empty())
+        for(double p = Tc_begin; p < Tc_end; p += Tc_delta)
+        {
+            xAxisITS.push_back(p);
+        }
+    }
 }

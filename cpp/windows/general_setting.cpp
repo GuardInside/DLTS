@@ -38,10 +38,8 @@ BOOL SettingsWindow_OnInit(HWND hwnd, HWND, LPARAM)
     hComboBox_mode = CreateWindow(WC_COMBOBOX, TEXT(""), CBS_DROPDOWNLIST | WS_CHILD | WS_OVERLAPPED | WS_VISIBLE,
     555, 180, 100, 125, hwnd, (HMENU)(ID_COMBOBOX_MODE), hInst, NULL);
         ComboBox_AddString(hComboBox_mode, "DLTS");
-        ComboBox_AddString(hComboBox_mode, "AITS");
-        ComboBox_AddString(hComboBox_mode, "BITS");
-        ComboBox_AddString(hComboBox_mode, "PITS");
-        ComboBox_AddString(hComboBox_mode, "CV");
+        ComboBox_AddString(hComboBox_mode, "ITS");
+        //ComboBox_AddString(hComboBox_mode, "BITS");
         ComboBox_SetCurSel(hComboBox_mode, index_mode.load());
     /* Настройка SULA.CAPACITY_RANGE */
     hComboBox_RangeSula = CreateWindow(WC_COMBOBOX, TEXT(""), CBS_DROPDOWNLIST | WS_CHILD | WS_OVERLAPPED | WS_VISIBLE,
@@ -71,6 +69,7 @@ BOOL SettingsWindow_OnCommand(HWND hwnd, int ID, HWND, UINT codeNotify)
 {
     static mode index_mode = ::index_mode.load();
     static BOOL Generator_Agilent_is_active = Generator.is_active.load();
+    static HWND hCorSettingsWnd;
     switch(ID)
     {
         case WM_INITDLG:
@@ -136,7 +135,9 @@ BOOL SettingsWindow_OnCommand(HWND hwnd, int ID, HWND, UINT codeNotify)
             DialogBox(hInst, MAKEINTRESOURCE(ID_ADVANCED_SETTINGS_WINDOW), hwnd, (DLGPROC)asdlg_proc);
         return TRUE;
         case ID_BUTTON_CORRELATION_SETTINGS:
-            DialogBox(hInst, MAKEINTRESOURCE(ID_CORRELATION_SETTINGS_WINDOW), hwnd, (DLGPROC)csdlg_proc);
+            if(!IsWindow(hCorSettingsWnd))
+                hCorSettingsWnd = CreateDialog(hInst, MAKEINTRESOURCE(ID_CORRELATION_SETTINGS_WINDOW), hwnd, csdlg_proc);
+            //DialogBox(hInst, MAKEINTRESOURCE(ID_CORRELATION_SETTINGS_WINDOW), hwnd, (DLGPROC)csdlg_proc);
         return TRUE;
         case ID_BUTTON_CLOSE_SETTINGS:
             /* Возврат статических переменных */
@@ -178,7 +179,7 @@ BOOL SettingsWindow_OnCommand(HWND hwnd, int ID, HWND, UINT codeNotify)
                 //Применить настройки имени файла сохранений
                 FileSaveName = ApplySettingEditBoxString(hwnd, ID_EDITCONTROL_FILE_SAVE_NAME);
                 //Применить настройки режима работы программы
-                //::index_mode.store( static_cast<mode>(SendMessage(GetDlgItem(hwnd, ID_COMBOBOX_MODE), CB_GETCURSEL, 0, 0)) );
+                //index_mode = static_cast<mode>(SendMessage(GetDlgItem(hwnd, ID_COMBOBOX_MODE), CB_GETCURSEL, 0, 0));
                 /* Настройки LakeShore */
                 //Применить настройки шага стабилизации
                 Thermostat.TempStep = ApplySettingEditBox(hwnd, ID_EDITCONTROL_STEP, 2);
@@ -227,11 +228,16 @@ BOOL SettingsWindow_OnCommand(HWND hwnd, int ID, HWND, UINT codeNotify)
                 //Применить настройки к физическим устройствам и сохранить файл настроек при условии их корректности
                 if(alright == true)
                 {
-                    if(index_mode != ::index_mode.store)
-                        ClearMemmory();
                     Generator.is_active = Generator_Agilent_is_active;
-                    ::index_mode.store(index_mode);
                     ApplySettings();
+                    if(index_mode != ::index_mode.load())
+                    {
+                        ::index_mode.store(index_mode);
+                        RefreshDLTS();
+                    }
+                    else
+                        ::index_mode.store(index_mode);
+
                     write_settings();
                     SendMessage(hMainWindow, WM_COMMAND, WM_PAINT_DLTS, 0); /* При обновлении модели эксперимента это необходимо */
                 }

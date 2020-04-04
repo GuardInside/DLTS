@@ -13,7 +13,126 @@ using std::vector;  using std::atomic_bool;
 extern CRITICAL_SECTION csDataAcquisition;
 extern atomic_bool      bfDAQ0k;
 
+/* Основная для работы с DAQ */
+void Measuring(vector<double> *vResult, UINT AverNum, double time, UINT AIPort, size_t range_index, BOOL bfProgress = FALSE);
+ /* Быстрая, без проверок */
+inline void SingleMeasuring(vector<double> *vResult, double time, UINT port, size_t range_index);
 void CapacityMeasuring(UINT AIPort, double *capacity);
-BOOL Measuring(vector<double> *vResult, UINT AverNum, double time, UINT AIPort, BOOL bfProgress = FALSE);
-BOOL PulsesMeasuring(vector<double> *vData, double *dVoltBias, double *dVoltAmp);
+void PulsesMeasuring(vector<double> *vData, double *dVoltBias, double *dVoltAmp);
+
+namespace NIDAQmx
+{
+    namespace innards
+    {
+        #include <NIDAQmx.h>
+    }
+
+    class DAQException : public std::exception
+    {
+        const innards::int32 m_code;
+
+        DAQException& operator=(const DAQException&);
+    public:
+        DAQException(innards::int32 errorCode)
+            : exception("exception in NI-DAQmx library")
+            , m_code(errorCode)
+        {
+        }
+
+        int code() const { return m_code; }
+        std::string description() const
+        {
+            std::string buffer;
+            innards::int32 neededSize = innards::DAQmxGetErrorString(m_code, NULL, 0);
+            if (neededSize > 0) {
+                buffer.resize(neededSize);
+                innards::DAQmxGetErrorString(m_code, &buffer[0], neededSize);
+            }
+            return buffer;
+        }
+    };
+
+    class Task
+    {
+        typedef innards::TaskHandle TaskHandle;
+        const TaskHandle m_handle;
+
+        Task(TaskHandle handle)
+            : m_handle(handle)
+        {
+        }
+
+        TaskHandle CreateNamedTask(std::string name)
+        {
+            TaskHandle retval;
+            innards::int32 error = innards::DAQmxCreateTask(name.c_str(), &retval);
+            if (error < 0)
+                throw DAQException(error);
+
+            return retval;
+        }
+
+        Task& operator=(const Task&);   // not provided
+    public:
+        Task(std::string name)
+            : m_handle(CreateNamedTask(name))
+        {
+        }
+
+        ~Task()
+        {
+            innards::DAQmxClearTask(m_handle);
+        }
+
+        void AddChannel(std::string physicalName, int terminalConfig, double minVal, double maxVal, std::string customScale = std::string())
+        {
+            innards::int32 error = innards::DAQmxCreateAIVoltageChan(m_handle, physicalName.c_str(), NULL, terminalConfig, minVal, maxVal, customScale.empty()? DAQmx_Val_Volts: DAQmx_Val_Custom, customScale.empty()? NULL: customScale.c_str());
+            if (error < 0)
+                throw DAQException(error);
+        }
+
+        size_t GetChannelCount( void ) const
+        {
+            innards::uInt32 chanCount;
+            innards::int32 error = innards::DAQmxGetTaskNumChans(m_handle, &chanCount);
+            if (error < 0)
+                throw DAQException(error);
+            return chanCount;
+        }
+
+        void SetupContinuousAcquisition(double samplesPerSecond, unsigned int bufferSize)
+        {
+            innards::int32 error = innards::DAQmxCfgSampClkTiming(m_handle, NULL, samplesPerSecond, DAQmx_Val_Rising, DAQmx_Val_ContSamps, bufferSize);
+            if (error < 0)
+                throw DAQException(error);
+        }
+
+        void Start()
+        {
+            innards::int32 error = innards::DAQmxStartTask(m_handle);
+            if (error < 0)
+                throw DAQException(error);
+        }
+
+        void Stop()
+        {
+            innards::int32 error = innards::DAQmxStopTask(m_handle);
+            if (error < 0)
+                throw DAQException(error);
+        }
+
+        size_t TryRead(double buffer[], size_t bufferSize, innards::bool32 fillMode = DAQmx_Val_GroupByScanNumber)
+        {
+            innards::int32 truncatedBufferSize = (innards::int32)bufferSize;
+            if (truncatedBufferSize < 0 || bufferSize != (size_t)truncatedBufferSize)
+                throw "invalid bufferSize";
+            innards::int32 samplesRead;
+            innards::int32 error = innards::DAQmxReadAnalogF64(m_handle, DAQmx_Val_Auto, 0, fillMode, buffer, truncatedBufferSize, &samplesRead, NULL);
+            if (error < 0)
+                throw DAQException(error);
+            return samplesRead;
+        }
+    };
+}
+
 #endif // DAQ_H_INCLUDED

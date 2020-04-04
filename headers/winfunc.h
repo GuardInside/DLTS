@@ -22,7 +22,7 @@
 LRESULT CALLBACK mwwin_proc(HWND, UINT, WPARAM, LPARAM); //Main dialog window
 
 INT_PTR CALLBACK stwin_proc(HWND, UINT, WPARAM, LPARAM); //Оконная функция окна настроек
-INT_PTR CALLBACK anwin_proc(HWND, UINT, WPARAM, LPARAM);
+INT_PTR CALLBACK anwin_proc(HWND, UINT, WPARAM, LPARAM); //Оконная функция окна анализа
 
 BOOL    CALLBACK srwin_proc(HWND, UINT, WPARAM, LPARAM); //Оконная функция окна запроса старта
 BOOL    CALLBACK asdlg_proc(HWND, UINT, WPARAM, LPARAM); //Advanced Settings
@@ -39,7 +39,7 @@ extern CRITICAL_SECTION csDAQPaint;
 
 VOID plotDAQ(gwin::gVector *vData1, gwin::gVector *vData2);
 VOID PlotRelax(); // Вызывать только через SendMessage(hMainWindow, WM_COMMAND, WM_PAINT_RELAX, 0);
-VOID PlotDLTS();  // Вызывать только через SendMessage(hMainWindow, WM_COMMAND, WM_PAINT_DLTS, 0);
+VOID PlotDLTS(gwin::gVector &xAxis, gwin::gMulVector &yAxis);  // Вызывать только через SendMessage(hMainWindow, WM_COMMAND, WM_PAINT_DLTS, 0);
 
 /* ************************************** */
 /* Специальные Функции обрабоки сообщений */

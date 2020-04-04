@@ -47,13 +47,16 @@ VOID plotDAQ(gwin::gVector *vData1, gwin::gVector *vData2)
 
 VOID PlotRelax()
 {
+    EnterCriticalSection(&csSavedData);
     if(SavedRelaxations.empty())
+    {
+        LeaveCriticalSection(&csSavedData);
         return;
-    EnterCriticalSection(&csSavedRelaxation);
+    }
         int limit_index_relax = SavedRelaxations.size();
         gwin::gVector vData2{SavedRelaxations[index_relax.load()]};
-        double capacity = SavedCapacity[index_relax.load()];
-    LeaveCriticalSection(&csSavedRelaxation);
+        double capacity = (index_mode.load() == DLTS)? SavedCapacity[index_relax.load()] : 1.0;
+    LeaveCriticalSection(&csSavedData);
     gwin::gVector vData1;
     gwin::gMulVector vMulData;
     vMulData.push_back(vData2);
@@ -76,43 +79,32 @@ VOID PlotRelax()
         vMulData.push_back(vApproxRelaxation);
     /* Конец аппроксимации */
     }
-    if(index_mode.load() == DLTS && !xAxisDLTS.empty())
+    if(!xAxisDLTS.empty())
     {
         buffer << xAxisDLTS[index_relax.load()] << " [K]" << endl
                 << round(capacity, 3) << " [pF]";
     }
-    else if(index_mode.load() == AITS && !itsBiasVoltages.empty())
+    /*else if((index_mode.load() == AITS || index_mode.load() == BITS) && !itsBiasVoltages.empty())
         buffer << fixed << setprecision(2) << "T [K] = " << itsTemperature << endl
-                        << setprecision(3) << "Bias [V] = " << itsBiasVoltages[index_relax.load()] << endl << "Amp [V] =  " << itsAmpVoltages[index_relax.load()];
+                        << setprecision(3) << "Bias [V] = " << itsBiasVoltages[index_relax.load()] << endl << "Amp [V] =  " << itsAmpVoltages[index_relax.load()];*/
     std::string Title{"Selective recording "}, xSubscribe{"Time [ms]"}, ySubscribe{"Voltage [V]"};
+    gwin::gAdditionalInfo(hRelax, buffer.str());
     rewrite(buffer) << "[" << index_relax + 1 << "|" << limit_index_relax << "]";
     Title = Title + buffer.str();
     gwin::gTitle(hRelax, Title);
-    gwin::gAdditionalInfo(hRelax, buffer.str());
     gwin::gAxisInfo(hRelax, xSubscribe, ySubscribe);
     gwin::gMulData(hRelax, &vData1, &vMulData);
 }
 
-VOID PlotDLTS()
+VOID PlotDLTS(gwin::gVector &xAxis, gwin::gMulVector &yAxis)
 {
-    if(index_mode.load() == AITS)
-    {
-        gwin::gDefaultPlot(hGraph_DLTS, "In this mode the graph cannot be plot.\0");
-        return;
-    }
     if(xAxisDLTS.size() < 2)
     {
         if(xAxisDLTS.size() == 1)
             gwin::gDefaultPlot(hGraph_DLTS, "You should measure the second point\nfor plotting DLTS curves\0");
         return;
     }
-    /* Точность определения пика */
-    static const double eps = pow(10, -THERMO_PRECISION);
-    /* Поиск максимума методом золотого сечения */
-    gwin::gVector vMinData1, vMinData2;
-    double dLeftBorder = xAxisDLTS.at(0);
-    double dRightBorder = xAxisDLTS.at(xAxisDLTS.size()-1);
-    if(index_w4.load() == 2)
+    if(index_w4.load() == 2)    /* CV график */
     {
         std::string Title{"Capacity recording"}, xSubscribe{"Temperature [K]"}, ySubscribe{"Capacity [pF]"};
         gwin::gTitle(hGraph_DLTS, Title);
@@ -121,18 +113,24 @@ VOID PlotDLTS()
         gwin::gPrecision(hGraph_DLTS, THERMO_PRECISION, 3);
         gwin::gBand(hGraph_DLTS, 0, 0, 0.0, 0.0);
 
-        EnterCriticalSection(&csSavedRelaxation);
+        EnterCriticalSection(&csSavedData);
         gwin::gData(hGraph_DLTS, &xAxisDLTS, &SavedCapacity);
-        LeaveCriticalSection(&csSavedRelaxation);
+        LeaveCriticalSection(&csSavedData);
         return;
     }
-    for(size_t i = 0; i < CorTime.size(); i++)
+    /* Точность определения пика */
+    constexpr static double eps = pow(10, -THERMO_PRECISION);
+    /* Поиск максимума методом золотого сечения */
+    gwin::gVector vMinData1, vMinData2;
+    double dLeftBorder = xAxis.at(0);
+    double dRightBorder = xAxis.at(xAxis.size()-1);
+    for(size_t i = 0; i < yAxis.size(); i++)
     {
-        gwin::gVector vData2{yAxisDLTS[i]};
+        gwin::gVector &vData2 = yAxis[i];
         /* Определяем ориентацию пика */
         auto Pair = minmax_element(vData2.begin(), vData2.end());
         int sign = ( fabs(*Pair.first) >= fabs(*Pair.second) ) ? 1 : -1;
-        interp f(xAxisDLTS, vData2, xAxisDLTS.size(), gsl_interp_linear);
+        interp f(xAxis, vData2, xAxis.size(), gsl_interp_linear);
         double dMin = 0.0;
         if(auto_peak_search.load() == true)
             dMin = GoldSerch(dLeftBorder, dRightBorder, eps, f, sign);
@@ -160,8 +158,8 @@ VOID PlotDLTS()
         }
         /* Сохраняем значения */
         if(auto_peak_search.load() == true)
-            vPickData1 = vMinData1;
-        vPickData2 = vMinData2;
+            vPickData1 =  vMinData1;
+        vPickData2 =  vMinData2;
     }
     if(index_w4.load() == 0) /* DLTS кривые */
     {
@@ -170,7 +168,17 @@ VOID PlotDLTS()
         {
             stringstream buffer;
             buffer << fixed << setprecision(THERMO_PRECISION);
-            buffer << vPickData1.at(index) << " K" << endl;
+
+            if(index_mode.load() == DLTS)
+            {
+                buffer << "T: "  << vPickData1[index] << " [K]\n"
+                       << "Tc: " << CorTc[index] << " [ms]\n";
+            }
+            else
+            {
+                buffer << "tau: "  << vPickData1[index] << " [ms]\n"
+                       << "T: " << xAxisDLTS[index] << " [K]\n";
+            }
             gwin::gAdditionalInfo(hGraph_DLTS, buffer.str());
         }
         else
@@ -179,9 +187,9 @@ VOID PlotDLTS()
         }
         if(normaliz_dlts.load() == true)
         {
-            for(size_t i = 0; i < CorTime.size(); i++)
+            for(size_t i = 0; i < CorTc.size(); i++)
             {
-                gwin::gVector vData2{yAxisDLTS[i]};
+                gwin::gVector &vData2 = yAxis[i];
                 auto Pair = minmax_element(vData2.begin(), vData2.end());
                 double MaxValue = fabs(*Pair.first) >= fabs(*Pair.second) ? fabs(*Pair.first) : fabs(*Pair.second);
                 for(auto& e: vData2)
@@ -200,46 +208,54 @@ VOID PlotDLTS()
         }
         else
         {
-            for(size_t i = 0; i < CorTime.size(); i++)
-                vMulData.push_back(yAxisDLTS[i]);
             gwin::gBand(hGraph_DLTS, 0, 0, 0.0, 0.0);
             gwin::gPrecision(hGraph_DLTS, 2, 3);
         }
         std::string Title{"DLTS curves"}, xSubscribe{"Temperature [K]"}, ySubscribe{"S [Arb.]"};
+        if(index_mode.load() == ITS)
+        {
+            Title = "ITS curves";
+            xSubscribe = "Time [ms]";
+        }
+        Title = Title + " [" + names_wFunc[WeightType] + "]";
         gwin::gTitle(hGraph_DLTS, Title);
         gwin::gAxisInfo(hGraph_DLTS, xSubscribe, ySubscribe);
         gwin::gCross(hGraph_DLTS, &vMinData1, &vMinData2); /* Индикаторы пика */
-        gwin::gMulData(hGraph_DLTS, &xAxisDLTS, &vMulData);
+        stringstream buff;
+        buff << xAxis.size() << " " << yAxis.size();
+        MessageBox(0,"",buff.str().c_str(),"",0);
+        gwin::gMulData(hGraph_DLTS, &xAxis, &yAxis);
     }
     else if(index_w4.load() == 1) /* График Аррениуса */
     {
-        if(CorTime.size() < 2)
+        if(index_mode.load() == DLTS && CorTc.size() < 2)
         {
             gwin::gDefaultPlot(hGraph_DLTS, "You should create a second correlator\nfor plotting Arrhenius graph.\0");
             return;
         }
-        double B = sqrt(3.0)*pow(2.0, 2.5)*pow(::dFactorG,-1)*(::dEfMass*pow(BOLTZMANN,2)*pow(PLANCKS_CONSTANT_H,-3))*pow(PI, 1.5);
-        gwin::gVector vData1, vData2, vData3;
-        for(size_t i = 0; i < CorTime.size(); i++)
+        else if(index_mode.load() == ITS && yAxis.size() < 2)
         {
-            double T_max = vMinData1.at(i); /* Положение пика */
+            gwin::gDefaultPlot(hGraph_DLTS, "You should measure a second temperature point\nfor plotting Arrhenius graph.\0");
+            return;
+        }
+        double B = 2*sqrt(3.0)*pow(::dFactorG,-1)*(::dEfMass*pow(BOLTZMANN,2)*pow(PLANCKS_CONSTANT_H,-3))*pow(2*PI, 1.5);
+        gwin::gVector vData1, vData2, vData3;
+        for(size_t i = 0; i < yAxis.size(); i++)
+        {
             /** Определяем, какой коррелятор выбран **/
-            double t1 = CorTime[i]*0.001; // в секундах
-            double t2 = t1*correlation_c;
+            double Tc = CorTc[i]; // в ms
+            double Tg = Tc / correlation_c;
             double tau = 0.0;
-            switch(CorType)
+            double T_max = 0.0; /* Положение пика */
+            if(index_mode.load() == DLTS)
             {
-                case DoubleBoxCar:
-                    tau = (t2-t1)/log(correlation_c);
-                    break;
-                case SinW:
-                    tau = 0.4*(t2-t1); // Период синуса T_c = t2-t1
-                    break;
-                default:
-                    {
-                        gwin::gDefaultPlot(hGraph_DLTS, "The tau for the cor. isn't define.");
-                        return;
-                    }
+                tau = 0.001 * find_tau(Tg, Tc, WeightType); // в sec
+                T_max = vPickData1.at(i);
+            }
+            else
+            {
+                tau = 0.001 * vPickData1.at(i);
+                T_max = xAxisDLTS[i];
             }
             vData1.push_back(pow(T_max*BOLTZMANN,-1));
             vData2.push_back( -log( tau*pow(T_max, 2) ) );
@@ -292,7 +308,8 @@ VOID dlts_OnLButtonDown(HWND hWnd, BOOL fDoubleClick, INT x, INT y, UINT keyFlag
     RECT rt;
     /* Добавить проверку полноты вектора */
     try{
-        for(size_t i = 0; i < CorTime.size(); i++)
+        size_t n = (index_mode.load() == DLTS) ? yAxisDLTS.size() : yAxisITS.size();
+        for(size_t i = 0; i < n; i++)
         {
             gwin::gPoint pt = {vPickData1.at(i), vPickData2.at(i)}; // В ед. температуры и arb. соответственно
             gwin::gGpToLp(hWnd, &pt); // В лог. ед.
@@ -307,8 +324,8 @@ VOID dlts_OnLButtonDown(HWND hWnd, BOOL fDoubleClick, INT x, INT y, UINT keyFlag
                 SendMessage(hMainWindow, WM_COMMAND, WM_PAINT_DLTS, 0);
             }
         }
-    } catch(out_of_range  &e){ MessageBox(0, e.what(), "Exception in ReadITS", 0); }
-      catch(...){ MessageBox(0, "Some exception.", "Exception in ReadITS", 0); }
+    } catch(out_of_range  &e){ MessageBox(0, e.what(), "Exception in dlts_OnLButtonDown", 0); }
+      catch(...){ MessageBox(0, "Some exception.", "Exception in dlts_OnLButtonDown", 0); }
 }
 VOID dlts_OnLButtonUp(HWND hWnd, INT x, INT y, UINT keyFlags)
 {
@@ -329,7 +346,9 @@ VOID dlts_OnMouseMove(HWND hWnd, INT x, INT y, UINT keyFlags)
             gwin::gDvToLp(hWnd, &point);
             gwin::gLpToGp(hWnd, &point);
             /* Проверка границ окна */
-            if(point.x >= xAxisDLTS.at(0) && point.x <= xAxisDLTS.at(xAxisDLTS.size()-1))
+            if((index_mode.load() == DLTS && point.x >= xAxisDLTS.at(0) && point.x <= xAxisDLTS.at(xAxisDLTS.size()-1) )
+               ||
+               (index_mode.load() == ITS && point.x >= xAxisITS.at(0) && point.x <= xAxisITS.at(xAxisITS.size()-1)))
             {
                 vPickData1.at(index) = point.x;
                 SendMessage(hMainWindow, WM_COMMAND, WM_PAINT_DLTS, 0);
@@ -341,8 +360,8 @@ VOID dlts_OnMouseMove(HWND hWnd, INT x, INT y, UINT keyFlags)
                 SetCursorPos(CursorPosition.x, CursorPosition.y);
             }
         }
-    } catch(out_of_range  &e){ MessageBox(0, e.what(), "Exception in ReadITS", 0); }
-      catch(...){ MessageBox(0, "Some exception.", "Exception in ReadITS", 0); }
+    } catch(out_of_range  &e){ MessageBox(0, e.what(), "Exception in dlts_OnMouseMove", 0); }
+      catch(...){ MessageBox(0, "Some exception.", "Exception in dlts_OnMouseMove", 0); }
 }
 
 BOOL relax_mouse_message(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)

@@ -1,0 +1,14 @@
+[DAQ]
+Range [V]=±5
+Averaging [amount]=100
+Rate [Hz]=200000
+Time [ms]=120
+gate [µs]=50.0000
+[SULA]
+Capacity range [pF]=30
+Pre-amplifier=30
+[Generator]
+Period=150.0000
+Width=1.0000
+Amplitude=-1.000000
+Bias=6.000000

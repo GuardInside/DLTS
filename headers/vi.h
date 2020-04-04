@@ -53,6 +53,9 @@ class vi_generator: public vi
         void ErrorCheck(switcher);
         void Channel(switcher);
         void Pulses(switcher);
+        void DoublePulses(switcher);
+        void TTL();
+        void Impedance();
         void Amp(double);
         void Bias(double);
         void Apply();

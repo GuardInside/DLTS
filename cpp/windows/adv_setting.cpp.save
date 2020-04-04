@@ -20,7 +20,7 @@ BOOL CALLBACK asdlg_proc(HWND hAdvSetDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
                 rewrite(buff) << Generator.gpib;
                 SetDlgItemText(hAdvSetDlg, ID_EDITCONTROL_GENERATOR, buff.str().data());
                 //Вывести текущие настройки пора аналогового входа
-                rewrite(buff) << ai_port;
+                rewrite(buff) << ai_port_measurement;
                 SetDlgItemText(hAdvSetDlg, ID_EDITCONTROL_AI, buff.str().data());
                 //Вывести текущие настройки порта ТТЛ сигнала
                 rewrite(buff) << pfi_ttl_port;
@@ -56,7 +56,7 @@ BOOL CALLBACK asdlg_proc(HWND hAdvSetDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
                         //Применить настройки генератора
                         Generator.gpib = ApplySettingEditBox(hAdvSetDlg, ID_EDITCONTROL_GENERATOR);
                         //Применить настройки пора аналогового входа
-                        ai_port = ApplySettingEditBox(hAdvSetDlg, ID_EDITCONTROL_AI);
+                        ai_port_measurement = ApplySettingEditBox(hAdvSetDlg, ID_EDITCONTROL_AI);
                         //Применить настройки порта ТТЛ сигнала
                         pfi_ttl_port = ApplySettingEditBox(hAdvSetDlg, ID_EDITCONTROL_TTL);
                         //Применить настройки пора аналогового входа импульсов

@@ -36,6 +36,7 @@ BOOL BuildMenu(HWND hWnd)
         SetMenuItemBitmaps(hFileMenu, ID_MENU_SAVE_RELAXATIONS, MF_BYCOMMAND, hbmpNext, hbmpNext);
         SetMenuItemBitmaps(hFileMenu, ID_MENU_SAVE_DLTS, MF_BYCOMMAND, hbmpNext, hbmpNext);
         SetMenuItemBitmaps(hFileMenu, ID_MENU_SAVE_ARRHENIUS, MF_BYCOMMAND, hbmpNext, hbmpNext);
+        SetMenuItemBitmaps(hFileMenu, ID_MENU_SAVE_CT, MF_BYCOMMAND, hbmpNext, hbmpNext);
     SetMenuItemBitmaps(hFileMenu, ID_MENU_CLEAR_MEMORY, MF_BYCOMMAND, hbmpReply, hbmpReply);
     SetMenuItemBitmaps(hFileMenu, ID_BUTTON_EXIT, MF_BYCOMMAND, hbmpExit, hbmpExit);
     /* Analysis */

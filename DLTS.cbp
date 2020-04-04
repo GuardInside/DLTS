@@ -41,13 +41,14 @@
 			<Add library="gsl/lib/libgsl.a" />
 		</Linker>
 		<Unit filename="cpp/daq.cpp" />
-		<Unit filename="cpp/facility/inifile.cpp" />
+		<Unit filename="cpp/daqmx.cpp" />
 		<Unit filename="cpp/facility/load_save.cpp" />
 		<Unit filename="cpp/facility/plot.cpp" />
 		<Unit filename="cpp/facility/settings.cpp" />
 		<Unit filename="cpp/facility/utility.cpp" />
 		<Unit filename="cpp/facility/winhelp.cpp" />
 		<Unit filename="cpp/gwin.cpp" />
+		<Unit filename="cpp/inifile.cpp" />
 		<Unit filename="cpp/main.cpp" />
 		<Unit filename="cpp/math/commath.cpp" />
 		<Unit filename="cpp/math/expapprox.cpp" />
@@ -62,6 +63,7 @@
 		<Unit filename="cpp/windows/pid_setting.cpp" />
 		<Unit filename="cpp/windows/start_setting.cpp" />
 		<Unit filename="headers/daq.h" />
+		<Unit filename="headers/daqmx.h" />
 		<Unit filename="headers/dlts_math.h" />
 		<Unit filename="headers/facility.h" />
 		<Unit filename="headers/gwin.h" />

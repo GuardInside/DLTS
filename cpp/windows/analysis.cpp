@@ -27,7 +27,6 @@ BOOL Analysis_OnInit(HWND hWnd, HWND, LPARAM)
     SetDlgItemText(hWnd, ID_EDITCONTROL_ABS_ERROR, buff.str().data());
     //Вывести текущие настройки использования фиттинга
     CheckDlgButton(hWnd, ID_CHECKBOX_USE_FITTING_RELAX, AprEnableRelax);
-    CheckDlgButton(hWnd, ID_CHECKBOX_USE_FITTING_DLTS, AprEnableDLTS);
     return TRUE;
 }
 
@@ -38,7 +37,6 @@ BOOL Analysis_OnCommand(HWND hWnd, INT id, HWND, UINT)
         case ID_BUTTON_APPLY:
             {
                 bool prevEnableRelax = ::AprEnableRelax;
-                bool prevEnableDLTS = ::AprEnableDLTS;
                 /* Предельное число итераций */
                 AprIter = ApplySettingEditBox(hWnd, ID_EDITCONTROL_ITERATION);
                 /* Абсолютная погрешность */
@@ -48,7 +46,6 @@ BOOL Analysis_OnCommand(HWND hWnd, INT id, HWND, UINT)
                 AprErr = atof(buff.str().data());
                 /* Установка режима аппроксимации */
                 AprEnableRelax = SendMessage(GetDlgItem(hWnd, ID_CHECKBOX_USE_FITTING_RELAX), BM_GETCHECK, 0, 0);
-                AprEnableDLTS = SendMessage(GetDlgItem(hWnd, ID_CHECKBOX_USE_FITTING_DLTS), BM_GETCHECK, 0, 0);
 
                 write_settings();
                 /* Сообщение об успешном приминении настроек */
@@ -57,8 +54,6 @@ BOOL Analysis_OnCommand(HWND hWnd, INT id, HWND, UINT)
                 /* Пересчитываем и обновляем графики */
                 if(prevEnableRelax != AprEnableRelax)
                     SendMessage(hMainWindow, WM_COMMAND, WM_PAINT_RELAX, 0);
-                if(prevEnableDLTS != AprEnableDLTS)
-                    SendMessage(hMainWindow, WM_COMMAND, WM_PAINT_DLTS, 0);
             }
             return TRUE;
         case ID_BUTTON_CLOSE:

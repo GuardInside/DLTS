@@ -1,50 +1,239 @@
 #include <numeric>
-#include <exception>
+#include <functional>
+#include <gsl/gsl_fit.h>
+#include <gsl/gsl_integration.h>
 #include "interpolation.h"
 #include "dlts_math.h"
 
-#define tau 1.618
+bool UseAlphaBoxCar{false};
+
+weight_function get_weight_function(int type)
+{
+    static weight_function weight_functions[] =
+    {
+        double_boxcar, lock_in, exp_w, sin_w,
+        Hodgart_w, HiRes3_w, HiRes4_w, HiRes5_w,
+        HiRes6_w
+    };
+    return weight_functions[type];
+}
+
+/* **************************************** */
+/* Только для экспоненциального коррелятора */
+/* **************************************** */
+
+struct params_struct
+{
+    double Tg;
+    double (*weight_f) (double, double);
+};
+typedef struct params_struct params_t;
+
+double gsl_weight(double x, void *params)
+{
+    double Tg = ((params_t *) params)->Tg;
+    double (*w) (double, double) = ((params_t *) params)->weight_f;
+
+    return w(x, Tg);
+}
+
+double W_foo(double Tg, double Tc, double x0 /* "центральная" точка */, weight_function weight_f)
+{
+    constexpr static size_t alloc_intervals = 1000;
+    gsl_integration_workspace * w
+        = gsl_integration_workspace_alloc (alloc_intervals);
+
+    double result_1, result_2, abserror; /* error не используется */
+    params_t params = {Tg, weight_f};
+
+    gsl_function F;
+    F.function = &gsl_weight;
+    F.params = &params;
+
+    double a = Tg, b = Tg + Tc;
+    gsl_integration_qags (&F, a, x0, 0, 1e-6, alloc_intervals,
+                        w, &result_1, &abserror);
+    gsl_integration_qags (&F, x0, b, 0, 1e-6, alloc_intervals,
+                        w, &result_2, &abserror);
+
+    gsl_integration_workspace_free (w);
+    double S1 = result_1 - weight_f(x0, Tg)*(x0 - a);
+    double S2 = weight_f(x0, Tg)*(b - x0) - result_2;
+    return fabs( S1 - S2 );
+}
+
+/* Определение средней точки экспоненциального коррелятора */
+double find_middle_x0(double Tg, double Tc, int type)
+{
+
+    using namespace std::placeholders;
+    weight_function weight_f = get_weight_function(type);
+    auto W = bind(W_foo, Tg, Tc, _1, weight_f);
+
+    /*gwin::gVector vData1, vData2, vMark1, vMark2;
+    for(double t = Tg; t < Tg+Tc; t += 1)
+    {
+        vData1.push_back(t);
+        vData2.push_back(W(t));
+    }
+    double x0 = GoldSerch(Tg, Tg+Tc, 1e-9, W);
+    vMark1.push_back(x0);
+    vMark2.push_back(weight_f(x0, Tg));
+
+    gwin::gCross(hRelax, &vMark1, &vMark2);
+    gwin::gData(hRelax, &vData1, &vData2);*/
+
+    return GoldSerch(Tg, Tg + Tc, 1e-9, W, MINIMUM); /* Поиск минимума */
+}
+
+/* **************************************** */
+/* Только для экспоненциального коррелятора */
+/* **************************************** */
+
+double S_foo(double Tg, double Tc, double tau, weight_function weight_f)
+{
+    constexpr static int precision = 1e3;
+    using namespace std::placeholders;
+    using namespace std;
+
+    auto sub_fp = [&](double x, double tau) -> double
+    {
+        return exp( - x / tau ); /* Подинтегральная функция */
+    };
+    auto sub_f = bind(sub_fp, _1, tau); /* Фиксируем tau */
+
+    return Integral(Tg, Tc, weight_f, sub_f, precision);
+}
+
+double find_tau(double Tg, double Tc, int type)
+{
+    using namespace std::placeholders;
+    using namespace std;
+    weight_function weight_f = get_weight_function(type);
+
+    if(type == DoubleBoxCar && !UseAlphaBoxCar)
+        return (Tc - Tg ) / log(Tc / Tg);
+
+    auto S = bind(S_foo, Tg, Tc, _1, weight_f);
+    auto S_abs = [&](double tau)
+    {
+        return fabs(S(tau));
+    };
+    return GoldSerch(0, Tg + Tc, 1e-3, S_abs, MAXIMUM); /* Поиск экстремума с точностью до мкс */
+}
+
+/*double helper(double Tg, double Tc, int type)
+{
+    using namespace std::placeholders;
+    weight_function weight_f = get_weight_function(type);
+    auto S = std::bind(IntegralWithWeight, 0, Tg+Tc, _1, Tg, weight_f, e_fun);
+
+    gwin::gVector vData1, vData2, vMark1, vMark2;
+    for(double t = 0; t < Tc; t += (Tg+Tc)/100)
+    {
+        vData1.push_back(t);
+        vData2.push_back(S(t));
+    }
+    double tau0 = find_tau(Tg, Tc, WeightType);
+    double tau1 = lw(Tg, Tc, type);
+    vMark1.push_back(tau0);
+    vMark1.push_back(tau1);
+    vMark2.push_back(S(tau0));
+    vMark2.push_back(S(tau1));
+
+    gwin::gBand(hRelax, 0, 0, 0, 0 );
+    gwin::gCross(hRelax, &vMark1, &vMark2);
+    gwin::gData(hRelax, &vData1, &vData2);
+}*/
+
+double get_noize_level(double Tg, double Tc, int type)
+{
+    constexpr static int precision = 1e3;
+    weight_function weight_f = get_weight_function(type);
+
+    auto sub_f = [&](double x) -> double
+    {
+        return weight_f(x, Tg); /* Подинтегральная функция */
+    };
+
+    return sqrt( Integral(Tg, Tc, weight_f, sub_f, precision) );
+}
+
+double get_signal_level(double Tg, double Tc, int type)
+{
+    using namespace std::placeholders;
+    weight_function weight_f = get_weight_function(type);
+
+    auto S = bind(S_foo, Tg, Tc, _1, weight_f);
+
+    return S( find_tau(Tg, Tc, type) );
+}
+
+double SN(double Tg, double Tc, int type)
+{
+    return fabs (get_signal_level(Tg, Tc, type) / get_noize_level(Tg, Tc, type) );
+}
+
+double lw(double Tg, double Tc, int type)
+{
+    constexpr static int N = 100;   /* Регулировка шага по S */
+    constexpr static int G = 100;   /* Регулировка шага по tau */
+    using namespace std::placeholders;
+    weight_function weight_f = get_weight_function(type);
+    auto S = bind(S_foo, Tg, Tc, _1, weight_f);
+
+    /*auto S_abs = [&](double tau)
+    {
+        return fabs(S(tau));
+    };
+    gwin::gVector vData1, vData2, vMark1, vMark2;
+    for(double t = Tg; t < Tg+Tc; t += 1)
+    {
+        vData1.push_back(t);
+        vData2.push_back(S_abs(t));
+    }
+    //double x0 = GoldSerch(Tg, Tg+Tc, 1e-6, W);
+    //vMark1.push_back(x0);
+    //vMark2.push_back(weight_f(x0, Tg));
+
+    gwin::gCross(hRelax, &vMark1, &vMark2);
+    gwin::gData(hRelax, &vData1, &vData2);*/
+
+
+    double tau_max  = find_tau(Tg, Tc, type);
+    double S_max    = S(tau_max);
+    double S_mid    = S_max / 2;
+    double step     = tau_max / N;
+    double eps      = S_max / N;
+    double tau_min  = 0;
+    for(double tau = tau_min; tau < tau_max; tau += step)
+    {
+        double val = S(tau);
+        if(val > S_mid - eps)
+        {
+            tau_min = tau;
+            /*for(double tau = tau_min; tau < tau_max; tau += step)
+            {
+                if(val > S_mid + eps)
+                {
+                    tau_min = (tau_min + tau) / 2;
+                    break;
+                }
+            }*/
+            break;
+        }
+        /*if(val > S_mid + eps)
+        {
+            tau_min = (tau_min + tau) / 2;
+            break;
+        }*/
+    }
+
+    return tau_max / tau_min;
+}
 
 int sgn(double val) {
     return (0.0 < val) - (val < 0.0);
-}
-
-double GoldSerch(double a, double b, double eps, interp &Fun, int sign)
-{
-    //std::cout<<"\n\n\n\tМетод золотого сечения:\n";
-    double x1, x2, _x, xf1, xf2;
-    //int iter(0);
-    x1 = a + (b - a) / (tau * tau);
-    x2 = a + (b - a) / tau;
-    xf1 = sign*Fun.at(x1);
-    xf2 = sign*Fun.at(x2);
-  P:
-    //iter++;
-    if(xf1 >= xf2)
-    {
-        a = x1;
-        x1 = x2;
-        xf1 = sign*Fun.at(x2);
-        x2 = a + (b - a) / tau;
-        xf2 = sign*Fun.at(x2);
-    }
-    else
-    {
-        b = x2;
-        x2 = x1;
-        xf2 = xf1;
-        x1 = a + (b - a) / (tau * tau);
-        xf1 = Fun.at(x1);
-    }
-    if(fabs(b - a) < eps)
-    {
-        _x = (a + b) / 2;
-        //std::cout<<"Результат:\nx = "<<_x<<"\t\tF(x) = "<<Fun(_x)<<
-            //"\nКоличество итераций: "<<iter;
-        return _x;
-    }
-    else
-        goto P;
 }
 
 double round(double d, int n)
@@ -52,7 +241,7 @@ double round(double d, int n)
     return int(d*pow(10,n) + 0.5)/pow(10,n);
 }
 
-void GetParam(vector<double> const &X, vector<double> const &Y, double &a, double &b)
+void GetParam(std::vector<double> const &X, std::vector<double> const &Y, double &a, double &b)
 {
     if(X.size() != Y.size())
         return;

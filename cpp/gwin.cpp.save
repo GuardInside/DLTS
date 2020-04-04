@@ -627,7 +627,7 @@ BOOL gwin::gMulDrawPlot(HWND hWnd, HDC &hdc, const gVector *vData1, const gMulVe
         for(const auto &it: vInfo)
         {
             GetTextExtentPoint32(hdc, it.data(), it.length(), &szText);
-            TextOut(hdc, iPlotSize-szText.cx-iIndent, iPlotSize - szText.cy*(s++), it.data(), it.length());
+            TextOut(hdc, iPlotSize-szText.cx-iIndent, iPlotSize - iIndent - szText.cy*(s++), it.data(), it.length());
         }
     }
     /* Выводим масштабирующий множитель */
@@ -652,8 +652,8 @@ BOOL gwin::gMulDrawPlot(HWND hWnd, HDC &hdc, const gVector *vData1, const gMulVe
         std::string &ystr = _gMap.at(hWnd).yAxisInfo;
         GetTextExtentPoint32(hdc, xstr.data(), xstr.length(), &szText);
 
-        LONG xTitleShiftToY = -szText.cy;   /* Сдвиги подобраны */
-        LONG yTitleShiftToX = -GPLOT_LOGICAL_X_BEGIN + 0.75*szText.cy;
+        LONG xTitleShiftToY = -szText.cy;   /* Сдвиги подобраны эмпирически */
+        LONG yTitleShiftToX = -GPLOT_LOGICAL_X_BEGIN + szText.cy - iInd;
         RECT xrc{0, xTitleShiftToY, GPLOT_LOGICAL_SIZE, xTitleShiftToY-szText.cy}; /* left top right bottom */
 
         DrawText(hdc, xstr.c_str(), xstr.length(), &xrc, DT_CENTER | DT_SINGLELINE);

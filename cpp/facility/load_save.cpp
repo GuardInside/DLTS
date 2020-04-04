@@ -1,5 +1,6 @@
 #include <sstream>
 #include <string>
+#include <fstream>
 #include <exception>
 
 #include "facility.h"
@@ -14,16 +15,17 @@ UINT SaveSettings();
 UINT SaveRelax();
 UINT SaveDLTS();
 UINT SaveArrhenius();
+UINT SaveCT();
 
-static char LoadFileName[BUFF_SIZE];
-static char SaveFileName[BUFF_SIZE];
+char LoadFileName[BUFF_SIZE];
+char SaveFileName[BUFF_SIZE];
 
 VOID DownloadWindow()
 {
     OPENFILENAME file = {0};
         file.lStructSize = sizeof(OPENFILENAME);
         file.hwndOwner = NULL;
-        file.lpstrFilter = "All files(*.*)\0*.*\0DLTS file(*.dlts)\0*.dlts\0ITS file(*.aits)\0*.its\0\0";
+        file.lpstrFilter = "All files(*.*)\0*.*\0DLTS file(*.dlts)\0*.dlts\0ITS file(*.its)\0*.its\0\0";
         file.lpstrFile = LoadFileName;
         file.nMaxFile = BUFF_SIZE;
         file.lpstrInitialDir = ".\\save\\";
@@ -38,28 +40,20 @@ VOID DownloadWindow()
     for(WORD i = file.nFileOffset; i < (file.nFileExtension-1); i++)
         FileSaveName.push_back(LoadFileName[i]);
     string ext;
-    for(WORD i = file.nFileExtension; i < strlen(LoadFileName); i++)
+    for(WORD i = file.nFileExtension - 1; i < strlen(LoadFileName); i++)
         ext.push_back(LoadFileName[i]);
     /* Установка мода */
-    if(ext == "dlts")
-        index_mode.store(DLTS);
-    else if(ext == "aits")
-        index_mode.store(AITS);
-    else
+    if(ext != FileSaveExt)
     {
-        MessageBox(NULL, "You should chose file with .dlts or .aits extension.", "Warning", MB_ICONWARNING);
+        MessageBox(NULL, "You should chose file with .dlts", "Warning", MB_ICONWARNING);
         return;
     }
-    HANDLE thDownload = (HANDLE)_beginthreadex(NULL, 0, LoadFile, NULL, 0, NULL);
-    CloseHandle(thDownload);
+    CloseHandle((HANDLE)_beginthreadex(NULL, 0, LoadFile, NULL, 0, NULL));
 }
 
 UINT CALLBACK LoadFile(PVOID)
 {
-    string ext;
-    if(index_mode.load() == DLTS) ext = "dlts";
-    else if(index_mode.load() == AITS) ext = "aits";
-    string strName = FileSavePath + FileSaveName + '.' + ext;
+    string strName = FileSavePath + FileSaveName + FileSaveExt;
 
     ifstream file;
     file.open(strName);
@@ -69,9 +63,13 @@ UINT CALLBACK LoadFile(PVOID)
     ResetEvent(hDownloadEvent);
     double temp = 0.0, capacity = 1.0;
     /** Загружаем настройки **/
-    file >> measure_time_DAQ >> gate_DAQ >> rate_DAQ
-         >> Generator.bias >> Generator.amp;
-    if(ext == "its") file >> temp;
+    string placeholder;
+    file >> placeholder >> measure_time_DAQ >> placeholder
+         >> placeholder >> gate_DAQ >> placeholder
+         >> placeholder >> rate_DAQ >> placeholder
+         >> placeholder >> Generator.bias >> placeholder
+         >> placeholder >> Generator.amp >> placeholder
+         >> placeholder >> Generator.width >> placeholder;
     /** Оценка размера загружаемого файла **/
     UINT uSamples = rate_DAQ*measure_time_DAQ*0.001, uQuantity = 0;
     ifstream LoadFile2;
@@ -84,16 +82,9 @@ UINT CALLBACK LoadFile(PVOID)
     int i = 0;
     while(!file.eof())
     {
-        if(index_mode.load() == DLTS)
-            file >> temp >> capacity;
-        else if(index_mode.load() == AITS)
-        {
-            double bias = 0.0, amp = 0.0;
-            file >> bias >> amp;
-            itsBiasVoltages.push_back(bias);
-            itsAmpVoltages.push_back(amp);
-        }
-        if(index_mode.load() == DLTS && !xAxisDLTS.empty() && temp == xAxisDLTS.back())
+        file >> temp >> capacity;
+        /* Релаксация с такой температурой уже есть в памяти */
+        if(!xAxisDLTS.empty() && temp == xAxisDLTS.back())
             continue;
         vector <double> vRelaxation;
         UINT uSamples = rate_DAQ*measure_time_DAQ*0.001;
@@ -104,25 +95,15 @@ UINT CALLBACK LoadFile(PVOID)
             file >> buff;
             vRelaxation.push_back(buff);
         }
-        if(index_mode.load() == DLTS)
-        {
-            int offset = 0;
-            for(auto it = xAxisDLTS.begin(); it != xAxisDLTS.end(); it++)
-                if(temp > *it) offset++;
-            AddPointsDLTS(&vRelaxation, temp, capacity); //Передаем значение температуры
-            EnterCriticalSection(&csSavedRelaxation);
-                SavedRelaxations.insert(SavedRelaxations.begin()+offset, vRelaxation);
-                SavedCapacity.insert(SavedCapacity.begin()+offset, capacity);
-                index_relax.store(offset);
-            LeaveCriticalSection(&csSavedRelaxation);
-        }
-        if(index_mode.load() == AITS)
-        {
-            EnterCriticalSection(&csSavedRelaxation);
-                SavedRelaxations.push_back(vRelaxation);
-                index_relax.store(SavedRelaxations.size() - 1); //без единицы, потому что индекс
-            LeaveCriticalSection(&csSavedRelaxation);
-        }
+        int offset = 0;
+        for(auto it = xAxisDLTS.begin(); it != xAxisDLTS.end(); it++)
+            if(temp > *it) offset++;
+        AddPointsDLTS(&vRelaxation, temp, capacity); //Передаем значение температуры
+        EnterCriticalSection(&csSavedData);
+            SavedRelaxations.insert(SavedRelaxations.begin()+offset, vRelaxation);
+            SavedCapacity.insert(SavedCapacity.begin()+offset, capacity);
+            index_relax.store(offset);
+        LeaveCriticalSection(&csSavedData);
         SendMessage(hProgress, PBM_SETPOS, 100.0*i/uQuantity, 0);
         i++;
     }
@@ -152,6 +133,9 @@ VOID SaveWindow(SAVE_MODE _mode)
             break;
         case SAVE_ARRHENIUS:
             strTitle = "Save Arrhenius plot";
+            break;
+        case SAVE_CT:
+            strTitle = "Save CT plot";
             break;
     }
     strcpy(SaveFileName, FileSaveName.data()); /* Имя файла по умолчанию */
@@ -189,6 +173,8 @@ UINT CALLBACK SaveFile(PVOID _mode)
             return SaveDLTS();
         case SAVE_ARRHENIUS:
             return SaveArrhenius();
+        case SAVE_CT:
+            return SaveCT();
         default:
             MessageBox(NULL, "SaveFile thread", "Error", MB_ICONERROR);
             return -1;
@@ -214,26 +200,23 @@ UINT SaveSettings()
         iniFile.WriteDoubleFix("Generator", "Width", Generator.width, TIME_PRECISION);
     }
     /* Сохраняем настройки блока ITS */
-    switch(index_mode.load())
+    /*switch(index_mode.load())
     {
-        case DLTS:
+        case DLTS:*/
             iniFile.WriteDoubleFix("Generator", "Amplitude", Generator.amp, VOLTAGE_PRECISION);
             iniFile.WriteDoubleFix("Generator", "Bias", Generator.bias, VOLTAGE_PRECISION);
-            break;
+            /*break;
         case AITS:
             iniFile.WriteDoubleFix("Generator", "Step voltage", Generator.step_amp, VOLTAGE_PRECISION);
             iniFile.WriteDoubleFix("Generator", "Begin amplitude", Generator.begin_amp, VOLTAGE_PRECISION);
             iniFile.WriteDoubleFix("Generator", "End amplitude", Generator.end_amp, VOLTAGE_PRECISION);
             break;
-        case CV:
         case BITS:
             iniFile.WriteDoubleFix("Generator", "Step voltage", Generator.step_bias, VOLTAGE_PRECISION);
             iniFile.WriteDoubleFix("Generator", "Begin bias", Generator.begin_bias, VOLTAGE_PRECISION);
             iniFile.WriteDoubleFix("Generator", "End bias", Generator.end_bias, VOLTAGE_PRECISION);
             break;
-        case PITS:
-            break;
-    }
+    }*/
     return 0;
 }
 
@@ -276,7 +259,7 @@ UINT SaveRelax()
     /* Шапка таблицы */
     file << fixed << setprecision(THERMO_PRECISION);
     file << "[ms]";
-    EnterCriticalSection(&csSavedRelaxation);
+    EnterCriticalSection(&csSavedData);
         size_t uSample = SavedRelaxations[0].size();
         file << "\t" << xAxisDLTS[0];
         for(size_t j = 1; j < SavedRelaxations.size(); j++)
@@ -294,7 +277,7 @@ UINT SaveRelax()
             progress = 99*i/(uSample);
             SendMessage(hProgress, PBM_SETPOS, progress, 0);
         }
-    LeaveCriticalSection(&csSavedRelaxation);
+    LeaveCriticalSection(&csSavedData);
     SendMessage(hProgress, PBM_SETPOS, 0, 0);
     file.close();
     return 0;
@@ -310,13 +293,30 @@ UINT SaveDLTS()
     for(size_t i = 0; i < uSample; i++)
     {
         file << setprecision(THERMO_PRECISION) << xAxisDLTS.at(i) << setprecision(10);
-        for(size_t j = 0; j < CorTime.size(); j++)
+        for(size_t j = 0; j < CorTc.size(); j++)
         {
             file << '\t' << yAxisDLTS[j][i];
         }
         file << endl;
         progress = 99*i/(uSample);
         SendMessage(hProgress, PBM_SETPOS, progress, 0);
+    }
+    SendMessage(hProgress, PBM_SETPOS, 0, 0);
+    file.close();
+    return 0;
+}
+
+UINT SaveCT()
+{
+    ofstream file;
+    file.open(SaveFileName, ios_base::trunc);
+    size_t uSample = SavedCapacity.size();
+    file << fixed << "T [K]\tCapacity [pF]";
+    for(size_t i = 0; i < uSample; i++)
+    {
+        file << setprecision(THERMO_PRECISION) << xAxisDLTS[i] << setprecision(3)
+            << '\t' << SavedCapacity[i] << endl;
+        SendMessage(hProgress, PBM_SETPOS, 100*(i+1)/(uSample), 0);
     }
     SendMessage(hProgress, PBM_SETPOS, 0, 0);
     file.close();

@@ -3,38 +3,38 @@
 BOOL StartWnd_DLTS_OnInit(HWND, HWND, LPARAM);
 BOOL StartWnd_DLTS_OnCommand(HWND, int, HWND, UINT);
 
-BOOL StartWnd_ITS_OnInit(HWND, HWND, LPARAM);
-BOOL StartWnd_ITS_OnCommand(HWND, int, HWND, UINT);
+BOOL StartWnd_AITS_OnInit(HWND, HWND, LPARAM);
+BOOL StartWnd_AITS_OnCommand(HWND, int, HWND, UINT);
 
-BOOL StartWnd_CV_OnInit(HWND, HWND, LPARAM);
-BOOL StartWnd_CV_OnCommand(HWND, int, HWND, UINT);
+BOOL StartWnd_BITS_OnInit(HWND, HWND, LPARAM);
+BOOL StartWnd_BITS_OnCommand(HWND, int, HWND, UINT);;
 
 INT_PTR CALLBACK srwin_proc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    switch (index_mode.load())
+    /*switch (index_mode.load())
     {
         case DLTS:
             switch(message)
-            {
+            {*/
                 HANDLE_MSG(hWnd, WM_INITDIALOG, StartWnd_DLTS_OnInit);
                 HANDLE_MSG(hWnd, WM_COMMAND, StartWnd_DLTS_OnCommand);
-            }
+            /*}
             break;
         case AITS:
             switch(message)
             {
-                HANDLE_MSG(hWnd, WM_INITDIALOG, StartWnd_ITS_OnInit);
-                HANDLE_MSG(hWnd, WM_COMMAND, StartWnd_ITS_OnCommand);
+                HANDLE_MSG(hWnd, WM_INITDIALOG, StartWnd_AITS_OnInit);
+                HANDLE_MSG(hWnd, WM_COMMAND, StartWnd_AITS_OnCommand);
             }
             break;
-        case CV:
+        case BITS:
             switch(message)
             {
-                HANDLE_MSG(hWnd, WM_INITDIALOG, StartWnd_CV_OnInit);
-                HANDLE_MSG(hWnd, WM_COMMAND, StartWnd_CV_OnCommand);
+                HANDLE_MSG(hWnd, WM_INITDIALOG, StartWnd_BITS_OnInit);
+                HANDLE_MSG(hWnd, WM_COMMAND, StartWnd_BITS_OnCommand);
             }
             break;
-    }
+    }*/
     return FALSE;
 }
 
@@ -65,7 +65,7 @@ BOOL StartWnd_DLTS_OnCommand(HWND hWnd, int id, HWND, UINT)
     return FALSE;
 }
 
-BOOL StartWnd_ITS_OnInit(HWND hWnd, HWND, LPARAM)
+BOOL StartWnd_AITS_OnInit(HWND hWnd, HWND, LPARAM)
 {
     if(Generator.is_active.load() == false)
     {
@@ -91,9 +91,9 @@ BOOL StartWnd_ITS_OnInit(HWND hWnd, HWND, LPARAM)
     SetDlgItemText(hWnd, ID_EDITCONTROL_BIAS, buff.str().data());
     return TRUE;
 }
-BOOL StartWnd_ITS_OnCommand(HWND hWnd, int id, HWND, UINT)
+BOOL StartWnd_AITS_OnCommand(HWND hWnd, int id, HWND, UINT)
 {
-    static bool alright = true;
+    bool alright = true;
     switch(id)
     {
         case ID_BUTTON_CONTINUE:
@@ -128,7 +128,7 @@ BOOL StartWnd_ITS_OnCommand(HWND hWnd, int id, HWND, UINT)
     return FALSE;
 }
 
-BOOL StartWnd_CV_OnInit(HWND hWnd, HWND, LPARAM)
+BOOL StartWnd_BITS_OnInit(HWND hWnd, HWND, LPARAM)
 {
     if(Generator.is_active.load() == false)
     {
@@ -143,17 +143,20 @@ BOOL StartWnd_CV_OnInit(HWND hWnd, HWND, LPARAM)
     buff << setprecision(3) << fixed;
     rewrite(buff) << Generator.step_bias;
     SetDlgItemText(hWnd, ID_EDITCONTROL_STEP_BIAS, buff.str().data());
-    //Вывести текущие настройки старта ITS в вольтах
+    //Вывести текущие настройки старта CV в вольтах
     rewrite(buff) << Generator.begin_bias;
     SetDlgItemText(hWnd, ID_EDITCONTROL_BEGIN_BIAS, buff.str().data());
-    //Вывести текущие настройки конца ITS в вольтах
+    //Вывести текущие настройки конца CV в вольтах
     rewrite(buff) << Generator.end_bias;
     SetDlgItemText(hWnd, ID_EDITCONTROL_END_BIAS, buff.str().data());
+    //Вывести текущие настройки амплитуды в вольтах
+    rewrite(buff) << Generator.amp;
+    SetDlgItemText(hWnd, ID_EDITCONTROL_AMPLITUDE, buff.str().data());
     return TRUE;
 }
-BOOL StartWnd_CV_OnCommand(HWND hWnd, int id, HWND, UINT)
+BOOL StartWnd_BITS_OnCommand(HWND hWnd, int id, HWND, UINT)
 {
-    static bool alright = true;
+    bool alright = true;
     switch(id)
     {
         case ID_BUTTON_CONTINUE:
@@ -163,13 +166,17 @@ BOOL StartWnd_CV_OnCommand(HWND hWnd, int id, HWND, UINT)
             Generator.begin_bias = ApplySettingEditBox(hWnd, ID_EDITCONTROL_BEGIN_BIAS, 3);
             //Применить настройки конца ITS в вольтах
             Generator.end_bias = ApplySettingEditBox(hWnd, ID_EDITCONTROL_END_BIAS, 3);
+            //Применить настройки конца ITS в вольтах
+            Generator.amp = ApplySettingEditBox(hWnd, ID_EDITCONTROL_AMPLITUDE, 3);
             //Проверка корректности введенных значений
             if(Generator.begin_bias < MIN_VOLTAGE_PULSE || Generator.begin_bias > MAX_VOLTAGE_PULSE) alright = false;
+            else if(Generator.amp < MIN_VOLTAGE_PULSE || Generator.amp > MAX_VOLTAGE_PULSE) alright = false;
             else if(Generator.end_bias < MIN_VOLTAGE_PULSE || Generator.end_bias > MAX_VOLTAGE_PULSE) alright = false;
             else if(Generator.end_bias < Generator.begin_bias && Generator.step_bias > 0.0) alright = false;
             else if(Generator.end_bias > Generator.begin_bias && Generator.step_bias < 0.0) alright = false;
             if(alright)
             {
+                Generator.Amp(Generator.amp);
                 bfNewfile.store(true);
                 FileSaveName = ApplySettingEditBoxString(hWnd, ID_EDITCONTROL_SAVE_FILE_NAME);
                 StartButPush();
@@ -184,7 +191,6 @@ BOOL StartWnd_CV_OnCommand(HWND hWnd, int id, HWND, UINT)
     }
     return FALSE;
 }
-
 
 void StartButPush()
 {

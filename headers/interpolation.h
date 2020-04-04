@@ -2,7 +2,6 @@
 #define INTERPOLATION_H_INCLUDED
 #include <gsl/gsl_interp.h>
 #include <vector>
-using namespace std;
 
 /* Минимальное число точек для построения интерполянта-кубического сплайна */
 #define MIN_SIZE_INTERP     3
@@ -13,11 +12,12 @@ class interp
         gsl_interp_accel *acc;  //Ускоритель доступа
         gsl_interp *inter_poly; //Указатель на интерполянт
         size_t size;            //Размер сетки
-        double *x;              //Указатели на миссивы сетки
+        double *x;              //Указатели на массивы сетки
         double *y;
     public:
-        interp(const vector<double> &xAxis, const vector<double> &yAxis, size_t s, const gsl_interp_type *type);
+        interp(const std::vector<double> &xAxis, const std::vector<double> &yAxis, size_t s, const gsl_interp_type *type);
         double at(double x_0);
+        double operator()(double x_0);
         ~interp();
 };
 

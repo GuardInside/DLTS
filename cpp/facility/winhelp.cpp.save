@@ -32,10 +32,11 @@ BOOL BuildMenu(HWND hWnd)
 
     SetMenuItemBitmaps(hFileMenu, ID_MENU_OPEN, MF_BYCOMMAND, hbmpOpen, hbmpOpen);
     SetMenuItemBitmaps(hFileMenu, 1, MF_BYPOSITION, hbmpSave, hbmpSave);
-        SetMenuItemBitmaps(hFileMenu, ID_MENU_SAVE_RELAXATIONS, MF_BYCOMMAND, hbmpNext, hbmpNext);
+        SetMenuItemBitmaps(hFileMenu, ID_MENU_SAVE_SETTINGS, MF_BYCOMMAND, hbmpNext, hbmpNext);
         SetMenuItemBitmaps(hFileMenu, ID_MENU_SAVE_RELAXATIONS, MF_BYCOMMAND, hbmpNext, hbmpNext);
         SetMenuItemBitmaps(hFileMenu, ID_MENU_SAVE_DLTS, MF_BYCOMMAND, hbmpNext, hbmpNext);
         SetMenuItemBitmaps(hFileMenu, ID_MENU_SAVE_ARRHENIUS, MF_BYCOMMAND, hbmpNext, hbmpNext);
+        SetMenuItemBitmaps(hFileMenu, ID_MENU_SAVE_SE, MF_BYCOMMAND, hbmpNext, hbmpNext);
     SetMenuItemBitmaps(hFileMenu, ID_MENU_CLEAR_MEMORY, MF_BYCOMMAND, hbmpReply, hbmpReply);
     SetMenuItemBitmaps(hFileMenu, ID_BUTTON_EXIT, MF_BYCOMMAND, hbmpExit, hbmpExit);
     /* Analysis */

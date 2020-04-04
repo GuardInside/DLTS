@@ -2,49 +2,14 @@
 <CodeBlocks_layout_file>
 	<FileVersion major="1" minor="0" />
 	<ActiveTarget name="Release" />
-	<File name="cpp\variable.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="cpp\math\commath.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="1582" topLine="12" />
+			<Cursor1 position="4734" topLine="138" />
 		</Cursor>
 	</File>
-	<File name="cpp\windows\cor_setting.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="headers\dlts_math.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="5730" topLine="117" />
-		</Cursor>
-	</File>
-	<File name="cpp\gwin.cpp" open="1" top="0" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="18865" topLine="510" />
-		</Cursor>
-	</File>
-	<File name="headers\gwin.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="1278" topLine="21" />
-		</Cursor>
-	</File>
-	<File name="cpp\facility\utility.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="4769" topLine="108" />
-		</Cursor>
-	</File>
-	<File name="cpp\windows\general_setting.cpp" open="1" top="1" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="14264" topLine="219" />
-		</Cursor>
-	</File>
-	<File name="headers\variable.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="4679" topLine="72" />
-		</Cursor>
-	</File>
-	<File name="cpp\facility\plot.cpp" open="1" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="3690" topLine="74" />
-		</Cursor>
-	</File>
-	<File name="cpp\main.cpp" open="1" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="8230" topLine="211" />
+			<Cursor1 position="4835" topLine="122" />
 		</Cursor>
 	</File>
 </CodeBlocks_layout_file>

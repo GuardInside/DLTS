@@ -1,100 +1,62 @@
 #include <algorithm>
-
 #include "daq.h"
 #include "vi.h"
 #include "variable.h"
-
-using std::stringstream;
+#include "daqmx.h"
+#include <functional>
 
 #define PBM_SETPOS (WM_USER+2)
-
-#define DAQmxErrChk(functionCall) { if( DAQmxFailed(error=(functionCall)) ) { goto Error; } }
 
 atomic_bool         bfDAQ0k{true};
 CRITICAL_SECTION    csDataAcquisition;
 
-INT ReadAnalogSignal(UINT uDev, UINT uAIPort, INT iTrigPort, float64 dRate, float64 dGate, INT iTrigEdge, UINT uRange, float64 uMesureTime, vector<double> *vData)
+INT ReadAnalogSignal(int dev, int ai_port_measurement, int trigger_port, double rate, double gate /*мкс*/, int trigger_edge, int uRange, double measure_time /* мс */, vector<double> *vData)
 {
-    static const float64 fTimeout = 10.0; //Seconds//
-    if(bfDAQ0k.load() == false)
-        return -1;
-    /** Подготовка */
-    TaskHandle hTask = 0;
-    int32 error = 0;
-    UINT32 uSamples = dRate*uMesureTime;
-    float64* Data = new float64[uSamples];
-    int32 iRead = 0;
-    stringstream buff;
-    buff << "/Dev" << uDev << "/ai" << uAIPort;
-    float64 dVoltRange = 10.0;
-    DAQmxErrChk(DAQmxCreateTask("DAQmxTask", &hTask));
-    switch(uRange)
+    if(!bfDAQ0k.load()) return -1;
+    double extra_gate = 0.0;
+    if(Generator.is_active.load())
+        extra_gate = Generator.width * 1000;
+    else
+        trigger_edge = DAQmx_Val_Falling;
+    try
     {
-        case 0: dVoltRange = 10.0;    break;
-        case 1: dVoltRange = 5.0;     break;
-        case 2: dVoltRange = 0.5;   break;
-        case 3: dVoltRange = 0.05;  break;
+        NIDAQmx::Task Device("Temporal Task");
+        Device.AddChannel(dev, ai_port_measurement, uRange);
+        Device.SetupFiniteAcquisition(rate, measure_time);
+        Device.SetupTrigger(trigger_port, trigger_edge, gate + extra_gate);
+        Device.Start();
+        Device.TryRead(vData);
+        Device.Stop();
     }
-    DAQmxErrChk(DAQmxCreateAIVoltageChan(hTask, buff.str().data(), "DAQmxAIVoltageChan", DAQmx_Val_RSE, -dVoltRange, dVoltRange, DAQmx_Val_Volts, NULL));
-    DAQmxErrChk(DAQmxCfgSampClkTiming(hTask, "", dRate, DAQmx_Val_Rising, DAQmx_Val_FiniteSamps, uSamples));
-    if(iTrigPort > -1)
+    catch(NIDAQmx::DAQException const &e)
     {
-        /** Параметры триггера **/
-        buff.str("");
-        buff << "/Dev" << uDev << "/PFI" << iTrigPort;
-        DAQmxErrChk(DAQmxSetStartTrigDelayUnits(hTask, DAQmx_Val_Seconds));
-        if(Generator.bfvi0k.load() == false)
-        {
-            iTrigEdge = DAQmx_Val_Falling;
-            DAQmxErrChk(DAQmxSetStartTrigDelay(hTask, dGate));
-        }
-        else
-        {
-            iTrigEdge = DAQmx_Val_Rising;
-            DAQmxErrChk(DAQmxSetStartTrigDelay(hTask, dGate + Generator.width*0.001));
-        }
-        DAQmxErrChk(DAQmxCfgDigEdgeStartTrig(hTask, buff.str().data(), iTrigEdge));
-    }
-    DAQmxErrChk(DAQmxStartTask(hTask));
-    DAQmxErrChk(DAQmxReadAnalogF64(hTask, DAQmx_Val_Auto, fTimeout, DAQmx_Val_GroupByChannel , Data, uSamples, &iRead, NULL));
-    Error:
-    if(hTask != 0)
-    {
-       DAQmxStopTask (hTask);
-       DAQmxClearTask (hTask);
-    }
-    if(DAQmxFailed(error))
-    {
-        /** Что-то пошло не по плану **/
         bfDAQ0k.store(false);
-        INT32 iBufferSize = DAQmxGetExtendedErrorInfo(NULL, 0);
-        char *cstrBuffer = new char[iBufferSize];
-        DAQmxGetExtendedErrorInfo(cstrBuffer, iBufferSize);
         #ifndef TEST_MODE
-        MessageBox(0, cstrBuffer, "DAQmx", 0);
+        MessageBox(HWND_DESKTOP, e.description().c_str(), "Warning", MB_ICONWARNING);
         #endif // TEST_MODE
-        delete[] cstrBuffer;
-        delete[] Data;
-        return -1;
     }
-    /** Все идет по плану **/
-    vData->clear();
-    vData->reserve( static_cast<size_t>(iRead) );
-    for(int32 i = 0; i < iRead; i++)
-        vData->push_back(Data[i]);
-    delete[] Data;
+    catch(std::runtime_error const &e)
+    {
+        bfDAQ0k.store(false);
+        MessageBox(HWND_DESKTOP, e.what(), "Warning", MB_ICONWARNING);
+    }
     return 0;
 }
 
 void CapacityMeasuring(UINT AIPort, double *capacity)
 {
+    if(!Generator.is_active.load())
+    {
+        *capacity = 1;
+        return;
+    }
     vector<double> vResult;
     vResult.reserve(rate_DAQ*(Generator.period - Generator.width)*0.001);
     EnterCriticalSection(&csDataAcquisition);
     Generator.Pulses(vi::switcher::off);
     Sleep(10 * measure_time_DAQ);
     ReadAnalogSignal(id_DAQ, AIPort, pfi_ttl_port,
-                rate_DAQ, gate_DAQ*0.000001, DAQmx_Val_Rising, index_range.load(), (Generator.period - Generator.width)*0.001,
+                rate_DAQ, gate_DAQ, DAQmx_Val_Rising, index_range.load(), (Generator.period - Generator.width),
                 &vResult);
     Generator.Pulses(vi::switcher::on);
     LeaveCriticalSection(&csDataAcquisition);
@@ -102,31 +64,34 @@ void CapacityMeasuring(UINT AIPort, double *capacity)
     *capacity /= vResult.size();
 }
 
-void Measuring(vector<double> *vResult, UINT AverNum, double time, UINT AIPort,  size_t range_index, BOOL bfProgress)
+void Measuring(vector<double> *vResult, UINT AverNum, double time /* мс */, UINT AIPort,  size_t range_index, BOOL bfProgress)
 {
     if(vResult == NULL || AverNum < 1) return;
     vector<double> vData;
-    vData.reserve(rate_DAQ*time);
+    vData.reserve(rate_DAQ*0.001*time);
     vResult->clear();
-    vData.reserve(rate_DAQ*time);
+    vResult->reserve(rate_DAQ*0.001*time);
     for(UINT i = 0; i < AverNum; i++)
     {
         EnterCriticalSection(&csDataAcquisition);
         ReadAnalogSignal(id_DAQ, AIPort, pfi_ttl_port,
-                    rate_DAQ, gate_DAQ*0.000001, DAQmx_Val_Rising, range_index, time,
+                    rate_DAQ, gate_DAQ, DAQmx_Val_Rising, range_index, time,
                     &vData);
         LeaveCriticalSection(&csDataAcquisition);
         if(i == 0)
-            std::copy(vData.cbegin(), vData.cend(), vResult->begin());//for(const auto &it: vData) vResult->push_back(it);
+        {
+            *vResult = std::move(vData);
+            if(AverNum > 1)
+                vData.reserve(rate_DAQ*0.001*time);
+        }
         else
             std::transform(vData.cbegin(), vData.cend(), vResult->begin(), vResult->begin(), std::plus<double>());
-        //for(size_t i = 0; i < vData.size(); i++)
-                //vResult[i] += vData[i];
         if(bfProgress) SendMessage(hProgress, PBM_SETPOS, 100.0*i/AverNum, 0);
         vData.clear();
     }
-    for(auto &it: *vResult)
-        it = it/AverNum;
+    if(AverNum > 1)
+        for(auto &it: *vResult)
+            it = it/AverNum;
     if(bfProgress) SendMessage(hProgress, PBM_SETPOS, 0, 0);
 }
 
@@ -137,11 +102,11 @@ void PulsesMeasuring(vector<double> *vData, double *dVoltBias, double *dVoltAmp)
     *dVoltAmp = 0.0;
     UINT uiCount1 = 0, uiCount2 = 0;
     double dMeasTime = 0.0;
-    if(Generator.bfvi0k.load()) dMeasTime = Generator.period*T_NUM*0.001;
-    else dMeasTime = measure_time_DAQ*T_NUM*0.001;
+    if(Generator.bfvi0k.load()) dMeasTime = Generator.period*T_NUM;
+    else dMeasTime = measure_time_DAQ*T_NUM;
     size_t range_index = 0;
     vector<double> vData2;
-    vData2.reserve(rate_DAQ*dMeasTime);
+    vData2.reserve(rate_DAQ*0.001*dMeasTime);
     Measuring(&vData2, A_NUM, dMeasTime, ai_port_pulse, range_index);
     /* Допустимое отклонение напряжения в Вольтах*/
     double dV = 0.05;
@@ -150,10 +115,7 @@ void PulsesMeasuring(vector<double> *vData, double *dVoltBias, double *dVoltAmp)
     if(Generator.bfvi0k.load())
     {
         PredBias = Generator.bias;
-        if(index_mode.load() == DLTS)
-            PredAmp = Generator.amp;
-        else if(index_mode.load() == AITS)
-            PredAmp = Generator.begin_amp;
+        PredAmp = Generator.amp;
     }
     else
     {
@@ -188,3 +150,5 @@ void PulsesMeasuring(vector<double> *vData, double *dVoltBias, double *dVoltAmp)
         *dVoltAmp = PredAmp;
     if(vData != NULL) *vData = vData2;
 }
+
+

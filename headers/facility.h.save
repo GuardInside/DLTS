@@ -15,7 +15,7 @@
 #include "variable.h"
 using namespace std;
 
-enum SAVE_MODE {SAVE_SETTINGS, SAVE_RELAXATIONS, SAVE_DLTS, SAVE_ARRHENIUS};
+enum SAVE_MODE {SAVE_SETTINGS, SAVE_RELAXATIONS, SAVE_DLTS, SAVE_ARRHENIUS, SAVE_CT};
 
 stringstream&   rewrite(stringstream& buff);
 UINT            GetDlgItemTextMod(HWND hwnd, int nIDItem, stringstream& str_buf);
@@ -30,7 +30,7 @@ double MeanOfTemp(std::vector<double>::const_iterator b,
                   std::vector<double>::const_iterator e);
 
 //Запись/Чтение настроек
-void write_settings(string name = "");
+void write_settings();
 void read_settings();
 //Инициализация сборщика данных, термостата и зон для PID регулировки
 void ApplySettings();
@@ -41,16 +41,36 @@ UINT CALLBACK LoadFile(PVOID);
 VOID SaveWindow(SAVE_MODE);
 UINT CALLBACK SaveFile(PVOID);
 //Очистка векторов осей DLTS-кривых
-void ClearMemmoryDLTS();
+//void ClearMemmoryDLTS();
 void ClearMemmory();
 void OrderRelaxation();
 //Обновление DLTS-кривых
 void RefreshDLTS();
-void SaveRelaxSignal(double MeanTemp, const vector<double> *vData, double dBias, double dAmp, double capacity);
+void SaveRelaxSignalToFile(double MeanTemp, const vector<double> *vData, double dBias, double dAmp, double capacity);
 void AddPointsDLTS(const vector<double> *vRelaxation, const double temp, const double capacity);
 /* Возвращает расширение открытого файла */
 string GetExtensionFile(string str);
 /* Преобразует значение напряжения в емкость */
 void VoltageToCapacity(double *value);
+
+template <typename T>
+int GetOffset(const T& map_, double key)
+{
+    int offset = 0;
+    for(const auto &p: map_)
+    {
+        if(p.first == key)
+            break;
+        offset++;
+    }
+    return offset;
+}
+template <typename T>
+int GetKey(const T& map_, int offset)
+{
+    auto it = map_.begin();
+    std::advance(it, offset);
+    return if->first;
+}
 
 #endif // FACILITY_H_INCLUDED

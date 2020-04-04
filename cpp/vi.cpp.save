@@ -3,6 +3,9 @@
 #include <cmath>
 #include <stdexcept>
 #include <windows.h>
+#include <string>
+#include <sstream>
+#include <
 
 vi_generator  Generator;
 vi_thermostat Thermostat;
@@ -68,19 +71,35 @@ void vi::ReadDigit(int& digit)
 /* ********************* */
 /* Виртуальный генератор */
 /* ********************* */
-vi_generator::vi_generator(): vi{}, is_active{true}, curr_channel{0}, amp{0.0}, bias{0.0} { Reset(); }
+vi_generator::vi_generator(): vi{}, is_active{true}, curr_channel{0}, amp{0.0}, bias{0.0} {}
 void vi_generator::Reset()
 {
     ViName = "Agilent";
-    stringstream Buff;
     Write("*RST");
+    Impedance();
+    DoublePulses(switcher::off);
+    TTL();
+}
+void vi_generator::Impedance()
+{
+    stringstream Buff;
     Buff << ":OUTP" << curr_channel << ":IMP 50OHM";
         Write(Buff);
     Buff << ":OUTP" << curr_channel << ":IMP:EXT 1000000OHM";
         Write(Buff);
-    Buff << ":PULS:DOUB" << curr_channel << " OFF";
-        Write(Buff);
+}
+void vi_generator::TTL()
+{
     Write(":PULS:TRIG1:VOLT TTL");
+}
+void vi_generator::DoublePulses(switcher state)
+{
+    stringstream Buff;
+    if(state == off)
+        Buff << ":PULS:DOUB" << curr_channel << " OFF";
+    else
+        Buff << ":PULS:DOUB" << curr_channel << " ON";
+    Write(Buff);
 }
 void vi_generator::ErrorCheck(switcher state)
 {
@@ -131,12 +150,14 @@ void vi_generator::Width(double width)
 }
 void vi_generator::Amp(double _amp)
 {
+    amp = _amp;
     stringstream Buff;
     Buff << ":VOLT" << curr_channel << ":HIGH " << -1.0*round((_amp)/(K), 3) << "V";
     Write(Buff);
 }
 void vi_generator::Bias(double _bias)
 {
+    bias = _bias;
     stringstream Buff;
     Buff << ":VOLT" << curr_channel << ":LOW " << -1.0*(_bias)/(K) << "V";
     Write(Buff);
@@ -144,9 +165,7 @@ void vi_generator::Bias(double _bias)
 void vi_generator::Apply()
 {
     if(bfvi0k == false || is_active == false) return;
-    Reset();
     ErrorCheck(vi::switcher::off);
-    Channel(vi::switcher::off);
         Pulses(vi::switcher::on);
         Period(period);
         Width(width);

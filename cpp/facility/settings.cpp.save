@@ -23,14 +23,9 @@ UINT CALLBACK dlg_success(PVOID)
     return DialogBox(hInst, MAKEINTRESOURCE(ID_SUCCESS_WINDOW), HWND_DESKTOP, SuccessWndProc);
 }
 
-void write_settings(string name)
+void write_settings()
 {
     ini::File iniFile{"settings.ini"};
-    if(!name.empty())
-    {
-        iniFile.Rename(name);
-        iniFile.Redir(::FileSavePath);
-    }
         /* Пользовательские настройки */
     /* Сохраняем настройки блока Термостата */
     iniFile.WriteDoubleFix("Thermostat", "step", Thermostat.TempStep, THERMO_PRECISION);
@@ -50,22 +45,13 @@ void write_settings(string name)
     iniFile.WriteDoubleFix("Generator", "amplitude", Generator.amp, VOLTAGE_PRECISION);
     iniFile.WriteDoubleFix("Generator", "bias", Generator.bias, VOLTAGE_PRECISION);
     iniFile.WriteBool("Generator", "isActive", Generator.is_active.load());
-    /* Сохраняем настройки блока ITS */
-    iniFile.WriteDoubleFix("Generator", "step_voltage", Generator.step_amp, VOLTAGE_PRECISION);
-    iniFile.WriteDoubleFix("Generator", "begin_amplitude", Generator.begin_amp, VOLTAGE_PRECISION);
-    iniFile.WriteDoubleFix("Generator", "end_amplitude", Generator.end_amp, VOLTAGE_PRECISION);
     /* Сохраняем настройки блока общее */
     iniFile.WriteString("General", "save_path", FileSavePath);
     iniFile.WriteString("General", "file", FileSaveName);
-    iniFile.WriteInt("General", "mode", index_mode.load());
+    iniFile.WriteInt("General", "mode", (int)index_mode.load());
     /* Сохраняем настройки блока математической модели */
     iniFile.WriteDoubleSc("Model", "mass", dEfMass, 3);
     iniFile.WriteInt("Model", "g", (int)dFactorG);
-    if(!name.empty())
-    {
-        CloseHandle((HANDLE)_beginthreadex(NULL, 0, dlg_success, NULL, 0, NULL));
-        return;
-    }
         /* Расширенне настройки */
     /* Расширенные настройки термостата */
     iniFile.WriteInt("Thermostat", "GPIB", Thermostat.gpib);
@@ -75,27 +61,27 @@ void write_settings(string name)
     /* Расширенные настройки DAQ */
     iniFile.WriteInt("DAQ", "Dev", id_DAQ);
     iniFile.WriteInt("DAQ", "trigger", pfi_ttl_port);
-    iniFile.WriteInt("DAQ", "ai_relax", ai_port);
+    iniFile.WriteInt("DAQ", "ai_relax", ai_port_measurement);
     iniFile.WriteInt("DAQ", "ai_pulse", ai_port_pulse);
     iniFile.WriteInt("DAQ", "ai_capacity", ai_port_capacity);
         /* Настройки корреляторов */
     /* Параметры корреляторов */
     iniFile.WriteDoubleFix("Сorrelator", "width", correlation_width, TIME_PRECISION);
     iniFile.WriteDoubleFix("Сorrelator", "c", correlation_c, 2);
-    iniFile.WriteInt("Сorrelator", "type", CorType);
+    iniFile.WriteDoubleFix("Сorrelator", "alpha", correlation_alpha, 2);
+    iniFile.WriteInt("Сorrelator", "type", WeightType);
     /* Количество корреляторов */
-    iniFile.WriteInt("Сorrelator", "amount", CorTime.size());
+    iniFile.WriteInt("Сorrelator", "amount", CorTc.size());
     stringstream buff;
-    for(size_t i = 0; i < CorTime.size(); i++)
+    for(size_t i = 0; i < CorTc.size(); i++)
     {
         rewrite(buff) << "_" << i;
-        iniFile.WriteDoubleFix("Сorrelator", buff.str(), CorTime[i], TIME_PRECISION);
+        iniFile.WriteDoubleFix("Сorrelator", buff.str(), CorTc[i], TIME_PRECISION);
     }
         /* Настройки аппроксимации */
     iniFile.WriteDoubleSc("Fitting", "abs_error", AprErr, 0);
     iniFile.WriteInt("Fitting", "max_iter", AprIter);
     iniFile.WriteBool("Fitting", "use_for_relax", AprEnableRelax);
-    iniFile.WriteBool("Fitting", "use_for_dlts", AprEnableDLTS);
         /* Настройки PID таблицы */
     iniFile.Rename("pid.ini");
     for(int i = 0; i < QUANTITY_ZONE; i++)
@@ -136,10 +122,6 @@ void read_settings()
     iniFile.ReadDouble("Generator", "bias", &Generator.bias);
     iniFile.ReadBool("Generator", "isActive", &flag);
     Generator.is_active.store(flag);
-    /* Загружаем настройки блока ITS */
-    iniFile.ReadDouble("Generator", "step_voltage", &Generator.step_amp);
-    iniFile.ReadDouble("Generator", "begin_amplitude", &Generator.begin_amp);
-    iniFile.ReadDouble("Generator", "end_amplitude", &Generator.end_amp);
     /* Загружаем настройки блока общее */
     iniFile.ReadString("General", "save_path", &FileSavePath);
     iniFile.ReadString("General", "file", &FileSaveName);
@@ -157,29 +139,29 @@ void read_settings()
     /* Расширенные настройки DAQ */
     iniFile.ReadInt("DAQ", "Dev", (int*)&id_DAQ);
     iniFile.ReadInt("DAQ", "trigger", (int*)&pfi_ttl_port);
-    iniFile.ReadInt("DAQ", "ai_relax", (int*)&ai_port);
+    iniFile.ReadInt("DAQ", "ai_relax", (int*)&ai_port_measurement);
     iniFile.ReadInt("DAQ", "ai_pulse", (int*)&ai_port_pulse);
     iniFile.ReadInt("DAQ", "ai_capacity", (int*)&ai_port_capacity);
         /* Настройки корреляторов */
     /* Параметры корреляторов */
     iniFile.ReadDouble("Сorrelator", "width", &correlation_width);
     iniFile.ReadDouble("Сorrelator", "c", &correlation_c);
-    iniFile.ReadInt("Сorrelator", "type", (int*)&CorType);
+    iniFile.ReadDouble("Сorrelator", "alpha", &correlation_alpha);
+    iniFile.ReadInt("Сorrelator", "type", (int*)&WeightType);
     /* Количество корреляторов */
     int amount = 0;
     double value = 0.0;
     iniFile.ReadInt("Сorrelator", "amount", &amount);
     stringstream buff;
-    CorTime.clear();
+    CorTc.clear();
     for(size_t i = 0; i < (size_t)amount; i++)
     {
         rewrite(buff) << "_" << i;
         iniFile.ReadDouble("Сorrelator", buff.str(), &value);
-        CorTime.push_back(value);
+        CorTc.push_back(value);
     }
-    if(yAxisDLTS != nullptr)
-        delete []yAxisDLTS;
-    yAxisDLTS = new vector<double>[CorTime.size()]; /* Число осей совпадает с числом корреляторов */
+    yAxisDLTS.clear();  /* Число осей совпадает с числом корреляторов */
+    yAxisDLTS.resize(CorTc.size());
         /* Настройки аппроксимации */
     iniFile.ReadDouble("Fitting", "abs_error", &AprErr);
     iniFile.ReadInt("Fitting", "max_iter", &AprIter);
@@ -206,8 +188,9 @@ void ApplySettings()
     Generator.Apply();
     Thermostat.ApplyZones();
     bfDAQ0k.store(true);
+
     /* Проверка корреляторов */
-    for(const auto &t: CorTime)
-        if(t*correlation_c > measure_time_DAQ) /* Все в мс */
+    for(const auto &Tc: CorTc)
+        if(Tc*(1 + pow(correlation_c, -1)) > measure_time_DAQ) /* Все в мс */
             MessageBox(NULL, "You must change correlation settings.", "Note", MB_ICONINFORMATION);
 }

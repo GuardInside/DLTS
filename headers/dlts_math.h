@@ -1,12 +1,17 @@
 #ifndef DLTS_MATH_H_INCLUDED
 #define DLTS_MATH_H_INCLUDED
-#include <fstream>
 #include <cmath>
 #include <vector>
-#include <gsl/gsl_fit.h>
-#include <gsl/gsl_integration.h>
-#include "variable.h"
+#include <string>
+#include <map>
+#include <exception>
+#include <functional>
 #include "interpolation.h"
+//Delete this//
+#include <windows.h>
+#include <sstream>
+#include "gwin.h"
+#include "variable.h"
 
 int sgn(double val);
 
@@ -23,13 +28,11 @@ class math_exception: public std::exception
 };
 
 /* Экспоненцианальная аппроксимация */
-int get_exponent_fitt(const vector<double> *x, const vector<double> *y, const vector<double> *sigma,
+int get_exponent_fitt(const std::vector<double> *x, const std::vector<double> *y, const std::vector<double> *sigma,
                       double *A, double *tau, double *b, double *dA, double *dtau, double *db, double *ReducedChiSqr,
                       size_t *iter, size_t max_iter,
                       double epsabs, double epsrel,
-                      string *strStatusMSG);
-/* Поиск минимума (sign == 1) или максимума (sign == -1) */
-double GoldSerch(double a, double b, double eps, interp &Fun, int sign = 1);
+                      std::string *strStatusMSG);
 /* Округлить до n значащих цифр после запятой */
 double round(double d, int n);
 /* Получить параметры линейной регрессии Y = a + b*X */
@@ -42,8 +45,102 @@ double MeanSquareError(std::vector<double>::const_iterator b,
                        std::vector<double>::const_iterator e);
 double MeanSquareErrorOfTemp(std::vector<double>::const_iterator b,
                              std::vector<double>::const_iterator e);
-double double_boxcar(double x, double t1);
-double lock_in(double x, double t1);
-double sin_w(double x, double t1);
-double exp_w(double x, double t1);
+
+typedef enum {DoubleBoxCar, LockIn, ExpW, SinW, Hodgart, HiRes3, HiRes4, HiRes5, HiRes6} weight_t;
+typedef double(*weight_function)(double, double);
+/* x и t1 должны измеряться в одинаковых единицах */
+extern bool UseAlphaBoxCar;    //Ts = alpha * Tc
+double double_boxcar_width(double &Tg);
+double double_boxcar(double x, double Tg);
+
+double lock_in(double x, double Tg);
+double sin_w(double x, double Tg);
+
+extern std::map<double, double> exp_shift;
+double exp_w(double x, double Tg);
+
+double Hodgart_w(double x, double Tg);
+double HiRes3_w(double x, double Tg);
+double HiRes4_w(double x, double Tg);
+double HiRes5_w(double x, double Tg);
+double HiRes6_w(double x, double Tg);
+
+double get_noize_level(double Tg, double Tc, int type);
+double get_signal_level(double Tg, double Tc, int type);
+double SN(double Tg, double Tc, int type);
+double lw(double Tg, double Tc, int type);
+weight_function get_weight_function(int type);
+
+double helper(double Tg, double Tc, int type);
+
+/* Поиск постоянной времени релаксации в точке DLTS-максимума */
+double find_tau(double Tg /* measure time, ms*/, double Tc /* ms */, int type /* тип коррелятора */);
+
+/* Поиск средней точки x0: если x0 поместить на ось абсцисс, то получим весовую функцию */
+double find_middle_x0(double Tg, double Tc, int type);
+
+/* Поиск минимума (sign == 1) или максимума (sign == -1) */
+#define MAXIMUM     -1
+#define MINIMUM      1
+#define tau         1.618
+template <typename func_t>
+double GoldSerch(double a, double b, double eps, func_t &Fun, int sign = 1)
+{
+    double x1, x2, _x, xf1, xf2;
+    //int iter(0);
+    x1 = a + (b - a) / (tau * tau);
+    x2 = a + (b - a) / tau;
+    xf1 = sign*Fun(x1);
+    xf2 = sign*Fun(x2);
+  P:
+    //iter++;
+    if(xf1 >= xf2)
+    {
+        a = x1;
+        x1 = x2;
+        xf1 = sign*Fun(x2);
+        x2 = a + (b - a) / tau;
+        xf2 = sign*Fun(x2);
+    }
+    else
+    {
+        b = x2;
+        x2 = x1;
+        xf2 = xf1;
+        x1 = a + (b - a) / (tau * tau);
+        xf1 = sign*Fun(x1);
+    }
+    if(fabs(b - a) < eps)
+    {
+        _x = (a + b) / 2;
+        return _x;
+    }
+    else
+        goto P;
+}
+#undef tau
+
+template <typename F>
+double Integral(double Tg, double Tc,
+                double(*w)(double,double), F &f,
+                const int precision =  1e5,
+                std::vector<double> *pts = nullptr)
+{
+    const int &n    = precision;
+    double h        = Tc / n;
+    double &a       = Tg;
+    double b        = a + Tc;
+    double result   = 0.5 * (f(a)*w(a,Tg) + f(b)*w(b,Tc));
+
+    for(int i = 1; i < n; ++i) //Метод трапеций
+    {
+        double weight = w(a + i*h, Tg);
+        if( weight != 0.0)
+            {
+                result += f(a + i*h)*weight;
+            }
+    }
+    return h*result;
+}
+
 #endif // DLTS_MATH_H_INCLUDED

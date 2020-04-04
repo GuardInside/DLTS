@@ -1,4 +1,5 @@
-#include <facility.h>
+#include "facility.h"
+#include <fstream>
 
 #include "graph.h"
 #include "ini.h"
@@ -86,8 +87,6 @@ void ClearMemmory()
     auto_peak_search.store(true);
     SendMessage(hMainWindow, WM_COMMAND, WM_REFRESH_MENU, 0);
     ClearMemmoryDLTS();
-    itsBiasVoltages.clear();
-    itsAmpVoltages.clear();
     SavedCapacity.clear();
     SavedRelaxations.clear();
     gwin::gDefaultPlot(hRelax, "\0");
@@ -96,10 +95,12 @@ void ClearMemmory()
 
 void ClearMemmoryDLTS()
 {
-    if(yAxisDLTS != nullptr)
-            delete []yAxisDLTS;
-    yAxisDLTS = new vector<double>[CorTime.size()]; ///Число осей совпадает с числом корреляторов
+    yAxisDLTS.clear();
+    yAxisDLTS.resize(CorTc.size());
     xAxisDLTS.clear();
+
+    yAxisITS.clear();
+    xAxisITS.clear();
 }
 
 void RefreshDLTS()
@@ -122,12 +123,9 @@ void RefreshDLTS()
     SendMessage(hMainWindow, WM_COMMAND, WM_PAINT_DLTS, 0);
 }
 
-void SaveRelaxSignal(double MeanTemp, const vector<double> *vData, double dBias, double dAmp, double capacity)
+void SaveRelaxSignalToFile(double MeanTemp, const vector<double> *vData, double dBias, double dAmp, double capacity)
 {
-    string ext;
-    if(index_mode.load() == DLTS) ext = ".dlts";
-    else if(index_mode.load() == AITS) ext = ".its";
-    string FullPath = FileSavePath + FileSaveName + ext;
+    string FullPath = FileSavePath + FileSaveName + FileSaveExt;
     ofstream file;
 
     ifstream ifile(FullPath.data());
@@ -138,12 +136,13 @@ void SaveRelaxSignal(double MeanTemp, const vector<double> *vData, double dBias,
         FileOpeningTest(file);
         /* Сохраняем настройки, если файл открыт впервые */
         file << fixed << setprecision(0)
-             << measure_time_DAQ << " "
-             << gate_DAQ << " "
-             << rate_DAQ << setprecision(VOLTAGE_PRECISION) << endl
-             << Generator.bias << " "
-             << Generator.amp << endl;
-        if(index_mode.load() == AITS) file << setprecision(THERMO_PRECISION) << MeanTemp << endl;
+             << "Time: " << measure_time_DAQ << " [ms]\n"
+             << "Gate: " << gate_DAQ << " [mcs]\n"
+             << "Rate: " << rate_DAQ << " [Hz]\n"
+             << setprecision(VOLTAGE_PRECISION)
+             << "Bias: " << Generator.bias << " [V]\n"
+             << "Amp: " << Generator.amp << " [V]\n"
+             << "Width: " << Generator.width << " [ms]" << endl;
     }
     else
     {
@@ -151,17 +150,18 @@ void SaveRelaxSignal(double MeanTemp, const vector<double> *vData, double dBias,
         FileOpeningTest(file);
         file << fixed << setprecision(0) << endl;
     }
-    if(index_mode.load() == DLTS) file << setprecision(THERMO_PRECISION) << MeanTemp << " "
-                                << setprecision(VOLTAGE_PRECISION) << capacity << endl;
-    else if(index_mode.load() == AITS) /* Должен записывать истинное, а не установленное значение */
-        file << setprecision(VOLTAGE_PRECISION) << dBias << " " << dAmp << endl;
-    file << setprecision(VOLTAGE_PRECISION);
+
+    file << setprecision(THERMO_PRECISION)
+         << MeanTemp
+         << setprecision(VOLTAGE_PRECISION)
+         << capacity << endl;
     UINT32 uSamples = rate_DAQ*measure_time_DAQ*0.001;
     for(uInt32 i = 0; i < uSamples; i++)
     {
-        file << vData->at(i);
+        file << (*vData)[i];
         if(i != uSamples-1) file << endl;
     }
+
     ifile.close();
     file.close();
 }
