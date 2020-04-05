@@ -86,6 +86,8 @@ double find_middle_x0(double Tg, double Tc, int type);
 template <typename func_t>
 double GoldSerch(double a, double b, double eps, func_t &Fun, int sign = 1)
 {
+    if(a > b)
+        std::swap(a, b);
     double x1, x2, _x, xf1, xf2;
     //int iter(0);
     x1 = a + (b - a) / (tau * tau);
@@ -127,9 +129,9 @@ double Integral(double Tg, double Tc,
                 std::vector<double> *pts = nullptr)
 {
     const int &n    = precision;
-    double h        = Tc / n;
     double &a       = Tg;
     double b        = a + Tc;
+    double h        = (b - a) / n;
     double result   = 0.5 * (f(a)*w(a,Tg) + f(b)*w(b,Tc));
 
     for(int i = 1; i < n; ++i) //Метод трапеций
@@ -141,6 +143,19 @@ double Integral(double Tg, double Tc,
             }
     }
     return h*result;
+}
+
+template <typename func_t>
+double dichotomy(double infinum, double supremum, double eps, func_t &Fun) {
+   double x;
+   while (supremum - infinum > eps) {
+      x = (infinum + supremum) / 2;
+      if (Fun(supremum) * Fun(x) < 0)
+         infinum = x;
+      else
+         supremum = x;
+   }
+   return (infinum + supremum) / 2;
 }
 
 #endif // DLTS_MATH_H_INCLUDED

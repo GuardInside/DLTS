@@ -59,7 +59,7 @@ double W_foo(double Tg, double Tc, double x0 /* "центральная" точка */, weight_f
     gsl_integration_workspace_free (w);
     double S1 = result_1 - weight_f(x0, Tg)*(x0 - a);
     double S2 = weight_f(x0, Tg)*(b - x0) - result_2;
-    return S1 - S2;
+    return fabs( S1 - S2 );
 }
 
 /* Определение средней точки экспоненциального коррелятора */
@@ -70,7 +70,7 @@ double find_middle_x0(double Tg, double Tc, int type)
     weight_function weight_f = get_weight_function(type);
     auto W = bind(W_foo, Tg, Tc, _1, weight_f);
 
-    return dichotomy(Tg, Tg+Tc, 1e-9, W);//GoldSerch(Tg, Tg + Tc, 1e-9, W, MINIMUM); /* Поиск минимума */
+    return GoldSerch(Tg, Tg + Tc, 1e-9, W, MINIMUM); /* Поиск минимума */
 }
 
 /* **************************************** */
@@ -98,7 +98,7 @@ double find_tau(double Tg, double Tc, int type)
     using namespace std;
     weight_function weight_f = get_weight_function(type);
 
-    if(type == DoubleBoxCar && !UseAlphaBoxCar && Tg != Tc)
+    if(type == DoubleBoxCar && !UseAlphaBoxCar)
         return (Tc - Tg ) / log(Tc / Tg);
 
     auto S = bind(S_foo, Tg, Tc, _1, weight_f);
@@ -164,52 +164,67 @@ double SN(double Tg, double Tc, int type)
 
 double lw(double Tg, double Tc, int type)
 {
-    constexpr static double eps         = 1e-6;
-    constexpr static double tau_limit   = 1e3;
+    constexpr static double delta_tau   = 1e-2;     /* Регулировка шага по tau, ms */
+    constexpr static double tau_limit   = 1e6;      /* Предельное значение tau, ms */
 
     using namespace std::placeholders;
     using namespace std;
 
     weight_function weight_f = get_weight_function(type);
-    auto S              = bind(S_foo, Tg, Tc, _1, weight_f);
+    auto S      = bind(S_foo, Tg, Tc, _1, weight_f);
 
-    double tau0         = find_tau(Tg, Tc, type);
-    double S_max        = S(tau0);
-    double S_mid        = S_max / 2.;
+    double tau0     = find_tau(Tg, Tc, type);
+    double S_max    = fabs( S(tau0) );
+    double S_mid    = S_max / 2;
 
-    auto shift_S = [&](double val){ return S(val) - S_mid;};
-
-    double tau_min      = dichotomy(0.0, tau0, eps, shift_S);
-    double tau_max      = dichotomy(tau0, tau_limit, eps, shift_S);
-    /* Проверка  правого края */
-    /for(double tau = tau0; tau < tau_max; tau += 1)
+    /* Спуск с пика влево */
+    double tau_min  = 0;
+    int min_i = 0;
+    int max_i = tau0 / delta_tau;
+    for(int i = max_i; i > min_i; --i)  //Поиск tau_min
     {
-        if(shift_S(tau)*S_max < 0 && tau < tau_max - eps)
+        double val = fabs( S(i*delta_tau) );
+        if(val <= S_mid)
         {
-            tau_max = dichotomy(tau0, tau, eps, shift_S);
+            tau_min = i*delta_tau;
+
+            /*for(int j = i + 1; j < max_i; j++)
+            {
+                double val = fabs( S(j*delta_tau) );
+                if(val > S_mid + eps)
+                {
+                    tau_min = (tau_min + j*delta_tau) / 2;
+                    break;
+                }
+            }*/
+            break;
+        }
+    }
+    /* Спуск с пика вправо */
+    double tau_max = 0;
+    min_i = max_i;
+    max_i = tau_limit / (delta_tau * Tc ); /* Для быстрого обхода длинного хвостадобавлен множитель Tc */
+    for(int i = min_i; i < max_i; ++i)
+    {
+        double val = fabs( S(i*delta_tau) );
+        if(val <= S_mid )
+        {
+            tau_max = i*delta_tau;
+
+            /*for(int j = i + 1; j < max_i; j++)
+            {
+                double val = fabs( S(j*delta_tau) );
+                if(val < S_mid - eps)
+                {
+                    tau_max = (tau_max + j*delta_tau) / 2;
+                    break;
+                }
+            }*/
             break;
         }
     }
 
-    gwin::gVector vData1, vData2, vMark1, vMark2;
-    double delta = 1e-2;
-    for(int i = 0; i < 1000; ++i)
-    {
-        vData1.push_back(i*delta);
-        vData2.push_back(shift_S(i*delta));
-    }
-    vMark1.push_back(tau0);
-    vMark1.push_back(tau_min);
-    vMark1.push_back(tau_max);
-    vMark2.push_back(shift_S(tau0));
-    vMark2.push_back(shift_S(tau_min));
-    vMark2.push_back(shift_S(tau_max));
-
-    gwin::gCross(hRelax, &vMark1, &vMark2);
-    gwin::gBand(hRelax, 0, 0, 0, 0 );
-    gwin::gData(hRelax, &vData1, &vData2);
-
-    return  tau_max / tau_min;
+    return  tau_max;// / tau_min;
 }
 
 int sgn(double val) {

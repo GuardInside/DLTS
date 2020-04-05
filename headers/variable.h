@@ -57,6 +57,15 @@ using namespace NIDAQmx::innards;
 
 enum mode{DLTS, ITS};
 
+typedef struct
+{
+    double tau0;
+    double SN;
+    double lw;
+} corinfo;
+/* Key1 - тип коррелятора, Key2 - Tc */
+extern map<int, map<double,corinfo>> CorInfo;
+
 extern vector<double>               xAxisDLTS;
 extern vector<vector<double>>       yAxisDLTS;
 extern vector<double>               xAxisITS;

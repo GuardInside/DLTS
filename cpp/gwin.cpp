@@ -37,6 +37,7 @@ namespace gwin
             hTextFont{CreateFont(DEFAULT_HEIGHT_FONT, DEFAULT_WIDTH_FONT, 0, 0, FW_HEAVY, 0, 0, 0,
                                  DEFAULT_CHARSET, OUT_STROKE_PRECIS, CLIP_EMBEDDED,
                                  PROOF_QUALITY, FIXED_PITCH | FF_MODERN, "Courier New")},
+            sType{NORMAL},
             bfEnableGrid{true}, bfEnableAdInfo{true}, bfEnableScale{true}, bfEnableAxis{true},
             bfEnableScCor{true}, bfEnableCross{false}, bfEnableFixedXBand{false}, bfEnableFixedYBand{false},
             bfEnableTitles{true}, bfEnableMainTitle{true},
@@ -48,6 +49,7 @@ namespace gwin
         HPEN hAxisPen, hPlotPen, hGridPen;
         COLORREF crAxisSubscribeColor, crAdInfoColor;
         HFONT hTextFont;
+        SCALETYPE sType;
         BOOL bfEnableGrid, bfEnableAdInfo, bfEnableScale, bfEnableAxis,
             bfEnableScCor, bfEnableCross, bfEnableFixedXBand, bfEnableFixedYBand,
             bfEnableTitles, bfEnableMainTitle;
@@ -131,6 +133,12 @@ namespace gwin
 /* ********************** */
 /*  Интерфейс библиотеки  */
 /* ********************** */
+
+BOOL gwin::gScale(HWND hWnd, SCALETYPE type)
+{
+    _gMap.at(hWnd).sType = type;
+}
+
 BOOL gwin::gTitle(HWND hWnd, std::string str)
 {
     _gMap.at(hWnd).MainTitle = str;
@@ -385,6 +393,7 @@ VOID gwin::gTransformPlot(HWND hWnd, HDC &hdc)
 BOOL gwin::gMulDrawPlot(HWND hWnd, HDC &hdc, const gVector *vData1, const gMulVector *vMulData2)
 {
     static CONST LONG iPlotSize = GPLOT_LOGICAL_SIZE; /* Размер графика в логических единицах */
+
     HPEN hAxisPen = _gMap.at(hWnd).hAxisPen,
          hPlotPen = _gMap.at(hWnd).hPlotPen,
          hGridPen = _gMap.at(hWnd).hGridPen,
@@ -400,6 +409,7 @@ BOOL gwin::gMulDrawPlot(HWND hWnd, HDC &hdc, const gVector *vData1, const gMulVe
     HFONT hOldFont;
     gBuffer buff;
     SIZE szText;
+
     double  z = 0.0, hx = 0.0, hy = 0.0,
             max_y = vMulData2->at(0).at(0), min_y = vMulData2->at(0).at(0),
             max_x = vData1->at(0), min_x = vData1->at(0);

@@ -6,6 +6,13 @@
 #include "variable.h"
 #include "dlts_math.h"
 
+corinfo get_corinfo(int type, double Tc)
+{
+
+}
+
+void clear_correlators();
+
 int GetResPidTable(int i, string const &str)
 {
     if(str == "UPPER_BOUNDARY")
@@ -96,7 +103,9 @@ void ClearMemmory()
 void ClearMemmoryDLTS()
 {
     yAxisDLTS.clear();
+    yAxisDLTS.resize(CorTc.size());
     xAxisDLTS.clear();
+
     yAxisITS.clear();
     xAxisITS.clear();
 }
@@ -123,9 +132,6 @@ void RefreshDLTS()
 
 void SaveRelaxSignalToFile(double MeanTemp, const vector<double> *vData, double dBias, double dAmp, double capacity)
 {
-    /*string ext;
-    if(index_mode.load() == DLTS) ext = ".dlts";
-    else if(index_mode.load() == AITS || index_mode.load() == BITS) ext = ".its";*/
     string FullPath = FileSavePath + FileSaveName + FileSaveExt;
     ofstream file;
 
@@ -139,11 +145,11 @@ void SaveRelaxSignalToFile(double MeanTemp, const vector<double> *vData, double 
         file << fixed << setprecision(0)
              << "Time: " << measure_time_DAQ << " [ms]\n"
              << "Gate: " << gate_DAQ << " [mcs]\n"
-             << "Rate: " << rate_DAQ << " [Hz]" << endl;
+             << "Rate: " << rate_DAQ << " [Hz]\n"
              << setprecision(VOLTAGE_PRECISION)
              << "Bias: " << Generator.bias << " [V]\n"
              << "Amp: " << Generator.amp << " [V]\n"
-             << "Width: " << Generator.width << " [ms]\n" << endl;
+             << "Width: " << Generator.width << " [ms]" << endl;
     }
     else
     {

@@ -186,17 +186,23 @@ void AddPointsDLTS(const vector<double> *vRelaxation, const double temp, const d
     }
     else
     {
-        double Tc_begin = 2;
+        constexpr static double Tc_delta = 0.1; /* ms */
+
+        double Tc_begin = 0.001 * gate_DAQ * correlation_c;
         double Tc_end   = correlation_c * measure_time_DAQ / (correlation_c + 1);
-        double Tc_delta = 0.5;
+
+        int min_i = Tc_begin / Tc_delta;
+        int max_i = Tc_end / Tc_delta;
 
         vector<double> vData;
-        for(double p = Tc_begin; p < Tc_end; p += Tc_delta)
+        vData.reserve(max_i - min_i);
+        for(int i = max_i, j = 0; i > min_i; --i)
         {
-            SendMessage(hProgress, PBM_SETPOS, 100.0*(p)/Tc_end, 0);
+            SendMessage(hProgress, PBM_SETPOS, 100.0*(++j)/max_i, 0);
 
-            double Tg = p / correlation_c;
-            double I = Integral(Tg, p, w, f);
+            double Tc = i*Tc_delta;
+            double Tg = Tc / correlation_c;
+            double I = Integral(Tg, Tc, w, f);
 
             VoltageToCapacity(&I);
             I /= ( int_pre_amplifier[PRE_AMP_GAIN_SULA_index] * capacity );
@@ -207,9 +213,12 @@ void AddPointsDLTS(const vector<double> *vRelaxation, const double temp, const d
 
         /* Формируем ось времени */
         if(xAxisITS.empty())
-        for(double p = Tc_begin; p < Tc_end; p += Tc_delta)
         {
-            xAxisITS.push_back(p);
+            xAxisITS.reserve(max_i-min_i);
+            for(int i = max_i; i > min_i; --i)
+            {
+                xAxisITS.push_back( log10(1.0 /(i*Tc_delta)) );
+            }
         }
     }
 }

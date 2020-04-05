@@ -41,7 +41,7 @@ UINT CALLBACK LoadFile(PVOID);
 VOID SaveWindow(SAVE_MODE);
 UINT CALLBACK SaveFile(PVOID);
 //Очистка векторов осей DLTS-кривых
-//void ClearMemmoryDLTS();
+void ClearMemmoryDLTS();
 void ClearMemmory();
 void OrderRelaxation();
 //Обновление DLTS-кривых
@@ -52,25 +52,7 @@ void AddPointsDLTS(const vector<double> *vRelaxation, const double temp, const d
 string GetExtensionFile(string str);
 /* Преобразует значение напряжения в емкость */
 void VoltageToCapacity(double *value);
-
-template <typename T>
-int GetOffset(const T& map_, double key)
-{
-    int offset = 0;
-    for(const auto &p: map_)
-    {
-        if(p.first == key)
-            break;
-        offset++;
-    }
-    return offset;
-}
-template <typename T>
-int GetKey(const T& map_, int offset)
-{
-    auto it = map_.begin();
-    std::advance(it, offset);
-    return if->first;
-}
+/* Информация о корреляторах */
+corinfo get_corinfo(int type, double Tc);
 
 #endif // FACILITY_H_INCLUDED

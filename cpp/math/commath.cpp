@@ -59,7 +59,7 @@ double W_foo(double Tg, double Tc, double x0 /* "центральная" точка */, weight_f
     gsl_integration_workspace_free (w);
     double S1 = result_1 - weight_f(x0, Tg)*(x0 - a);
     double S2 = weight_f(x0, Tg)*(b - x0) - result_2;
-    return fabs( S1 - S2 );
+    return S1 - S2;
 }
 
 /* Определение средней точки экспоненциального коррелятора */
@@ -70,20 +70,7 @@ double find_middle_x0(double Tg, double Tc, int type)
     weight_function weight_f = get_weight_function(type);
     auto W = bind(W_foo, Tg, Tc, _1, weight_f);
 
-    /*gwin::gVector vData1, vData2, vMark1, vMark2;
-    for(double t = Tg; t < Tg+Tc; t += 1)
-    {
-        vData1.push_back(t);
-        vData2.push_back(W(t));
-    }
-    double x0 = GoldSerch(Tg, Tg+Tc, 1e-9, W);
-    vMark1.push_back(x0);
-    vMark2.push_back(weight_f(x0, Tg));
-
-    gwin::gCross(hRelax, &vMark1, &vMark2);
-    gwin::gData(hRelax, &vData1, &vData2);*/
-
-    return GoldSerch(Tg, Tg + Tc, 1e-9, W, MINIMUM); /* Поиск минимума */
+    return dichotomy(Tg, Tg+Tc, 1e-9, W);//GoldSerch(Tg, Tg + Tc, 1e-9, W, MINIMUM); /* Поиск минимума */
 }
 
 /* **************************************** */
@@ -111,7 +98,7 @@ double find_tau(double Tg, double Tc, int type)
     using namespace std;
     weight_function weight_f = get_weight_function(type);
 
-    if(type == DoubleBoxCar && !UseAlphaBoxCar)
+    if(type == DoubleBoxCar && !UseAlphaBoxCar && Tg != Tc)
         return (Tc - Tg ) / log(Tc / Tg);
 
     auto S = bind(S_foo, Tg, Tc, _1, weight_f);
@@ -122,29 +109,30 @@ double find_tau(double Tg, double Tc, int type)
     return GoldSerch(0, Tg + Tc, 1e-3, S_abs, MAXIMUM); /* Поиск экстремума с точностью до мкс */
 }
 
-/*double helper(double Tg, double Tc, int type)
+double helper(double Tg, double Tc, int type) /* Для отладки */
 {
     using namespace std::placeholders;
     weight_function weight_f = get_weight_function(type);
-    auto S = std::bind(IntegralWithWeight, 0, Tg+Tc, _1, Tg, weight_f, e_fun);
+    auto S = bind(S_foo, Tg, Tc, _1, weight_f);
 
     gwin::gVector vData1, vData2, vMark1, vMark2;
-    for(double t = 0; t < Tc; t += (Tg+Tc)/100)
+    double delta = 1;
+    for(int i = 0; i < 200; ++i)
     {
-        vData1.push_back(t);
-        vData2.push_back(S(t));
+        vData1.push_back(i*delta);
+        vData2.push_back(S(i*delta));
     }
-    double tau0 = find_tau(Tg, Tc, WeightType);
+    double tau0 = find_tau(Tg, Tc, type);
     double tau1 = lw(Tg, Tc, type);
     vMark1.push_back(tau0);
     vMark1.push_back(tau1);
     vMark2.push_back(S(tau0));
     vMark2.push_back(S(tau1));
 
-    gwin::gBand(hRelax, 0, 0, 0, 0 );
     gwin::gCross(hRelax, &vMark1, &vMark2);
+    gwin::gBand(hRelax, 0, 0, 0, 0 );
     gwin::gData(hRelax, &vData1, &vData2);
-}*/
+}
 
 double get_noize_level(double Tg, double Tc, int type)
 {
@@ -156,7 +144,7 @@ double get_noize_level(double Tg, double Tc, int type)
         return weight_f(x, Tg); /* Подинтегральная функция */
     };
 
-    return sqrt( Integral(Tg, Tc, weight_f, sub_f, precision) );
+    return sqrt(Integral(Tg, Tc, weight_f, sub_f, precision));
 }
 
 double get_signal_level(double Tg, double Tc, int type)
@@ -176,60 +164,52 @@ double SN(double Tg, double Tc, int type)
 
 double lw(double Tg, double Tc, int type)
 {
-    constexpr static int N = 100;   /* Регулировка шага по S */
-    constexpr static int G = 100;   /* Регулировка шага по tau */
+    constexpr static double eps         = 1e-6;
+    constexpr static double tau_limit   = 1e3;
+
     using namespace std::placeholders;
+    using namespace std;
+
     weight_function weight_f = get_weight_function(type);
-    auto S = bind(S_foo, Tg, Tc, _1, weight_f);
+    auto S              = bind(S_foo, Tg, Tc, _1, weight_f);
 
-    /*auto S_abs = [&](double tau)
+    double tau0         = find_tau(Tg, Tc, type);
+    double S_max        = S(tau0);
+    double S_mid        = S_max / 2.;
+
+    auto shift_S = [&](double val){ return S(val) - S_mid;};
+
+    double tau_min      = dichotomy(0.0, tau0, eps, shift_S);
+    double tau_max      = dichotomy(tau0, tau_limit, eps, shift_S);
+    /* Проверка  правого края */
+    for(double tau = tau0; tau < tau_max; tau += 1)
     {
-        return fabs(S(tau));
-    };
-    gwin::gVector vData1, vData2, vMark1, vMark2;
-    for(double t = Tg; t < Tg+Tc; t += 1)
-    {
-        vData1.push_back(t);
-        vData2.push_back(S_abs(t));
-    }
-    //double x0 = GoldSerch(Tg, Tg+Tc, 1e-6, W);
-    //vMark1.push_back(x0);
-    //vMark2.push_back(weight_f(x0, Tg));
-
-    gwin::gCross(hRelax, &vMark1, &vMark2);
-    gwin::gData(hRelax, &vData1, &vData2);*/
-
-
-    double tau_max  = find_tau(Tg, Tc, type);
-    double S_max    = S(tau_max);
-    double S_mid    = S_max / 2;
-    double step     = tau_max / N;
-    double eps      = S_max / N;
-    double tau_min  = 0;
-    for(double tau = tau_min; tau < tau_max; tau += step)
-    {
-        double val = S(tau);
-        if(val > S_mid - eps)
+        if(shift_S(tau)*S_max < 0 && tau < tau_max - eps)
         {
-            tau_min = tau;
-            /*for(double tau = tau_min; tau < tau_max; tau += step)
-            {
-                if(val > S_mid + eps)
-                {
-                    tau_min = (tau_min + tau) / 2;
-                    break;
-                }
-            }*/
+            tau_max = dichotomy(tau0, tau, eps, shift_S);
             break;
         }
-        /*if(val > S_mid + eps)
-        {
-            tau_min = (tau_min + tau) / 2;
-            break;
-        }*/
     }
 
-    return tau_max / tau_min;
+    /*gwin::gVector vData1, vData2, vMark1, vMark2;
+    double delta = 1e-2;
+    for(int i = 0; i < 10000; ++i)
+    {
+        vData1.push_back(i*delta);
+        vData2.push_back(shift_S(i*delta));
+    }
+    vMark1.push_back(tau0);
+    vMark1.push_back(tau_min);
+    vMark1.push_back(tau_max);
+    vMark2.push_back(shift_S(tau0));
+    vMark2.push_back(shift_S(tau_min));
+    vMark2.push_back(shift_S(tau_max));
+
+    gwin::gCross(hRelax, &vMark1, &vMark2);
+    gwin::gBand(hRelax, 0, 0, 0, 0 );
+    gwin::gData(hRelax, &vData1, &vData2);*/
+
+    return  tau_max / tau_min;
 }
 
 int sgn(double val) {

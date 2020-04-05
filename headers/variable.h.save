@@ -57,6 +57,15 @@ using namespace NIDAQmx::innards;
 
 enum mode{DLTS, ITS};
 
+typedef struct
+{
+    double tau0;
+    double SN;
+    double lw;
+} corinfo;
+/* Key1 - 
+extern map<int, map<double,corinfo>> CorInfo;
+
 extern vector<double>               xAxisDLTS;
 extern vector<vector<double>>       yAxisDLTS;
 extern vector<double>               xAxisITS;
@@ -78,6 +87,8 @@ extern atomic<int32> index_w2;      //Смещение номера порта ai_port при отображе
 
 /* Диапазоны измерений напряжения DAQ */
 extern const string range[];
+/* Имена корреляторов */
+extern const string names_wFunc[];
 extern const int    int_range_sula[];
 extern const int    int_pre_amplifier[];
 /* Диапазон уровней нагрева */

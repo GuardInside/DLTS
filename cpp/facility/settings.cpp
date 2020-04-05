@@ -69,6 +69,7 @@ void write_settings()
     iniFile.WriteDoubleFix("Ñorrelator", "width", correlation_width, TIME_PRECISION);
     iniFile.WriteDoubleFix("Ñorrelator", "c", correlation_c, 2);
     iniFile.WriteDoubleFix("Ñorrelator", "alpha", correlation_alpha, 2);
+    iniFile.WriteBool("Ñorrelator", "Use_alpha", UseAlphaBoxCar);
     iniFile.WriteInt("Ñorrelator", "type", WeightType);
     /* Êîëè÷åñòâî êîððåëÿòîðîâ */
     iniFile.WriteInt("Ñorrelator", "amount", CorTc.size());
@@ -147,6 +148,7 @@ void read_settings()
     iniFile.ReadDouble("Ñorrelator", "width", &correlation_width);
     iniFile.ReadDouble("Ñorrelator", "c", &correlation_c);
     iniFile.ReadDouble("Ñorrelator", "alpha", &correlation_alpha);
+    iniFile.ReadBool("Ñorrelator", "Use_alpha", &UseAlphaBoxCar);
     iniFile.ReadInt("Ñorrelator", "type", (int*)&WeightType);
     /* Êîëè÷åñòâî êîððåëÿòîðîâ */
     int amount = 0;
@@ -190,6 +192,18 @@ void ApplySettings()
 
     /* Ïðîâåðêà êîððåëÿòîðîâ */
     for(const auto &Tc: CorTc)
-        if(Tc*(1 + pow(correlation_c, -1)) > measure_time_DAQ) /* Âñå â ìñ */
-            MessageBox(NULL, "You must change correlation settings.", "Note", MB_ICONINFORMATION);
+    {
+        double val = Tc*(1 + pow(correlation_c, -1) );
+        double Tg = Tc / correlation_c;
+        if(0.001*gate_DAQ > Tg)
+        {
+            MessageBox(NULL, ("You must change correlation settings\n"
+                       "Gate > Tg\nChange the Tc = " + to_string(val) + " [ms]").c_str(), "Note", MB_ICONINFORMATION);
+        }
+        if( val > measure_time_DAQ) /* Âñå â ìñ */
+        {
+            MessageBox(NULL, ("You must change correlation settings\n"
+                       "Tc+Tg > measure time\nChange the Tc = " + to_string(val) + " [ms]").c_str(), "Note", MB_ICONINFORMATION);
+        }
+    }
 }

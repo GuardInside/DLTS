@@ -66,7 +66,7 @@ UINT CALLBACK LoadFile(PVOID)
     string placeholder;
     file >> placeholder >> measure_time_DAQ >> placeholder
          >> placeholder >> gate_DAQ >> placeholder
-         >> placeholder >> rate_DAQ >> placeholder;
+         >> placeholder >> rate_DAQ >> placeholder
          >> placeholder >> Generator.bias >> placeholder
          >> placeholder >> Generator.amp >> placeholder
          >> placeholder >> Generator.width >> placeholder;

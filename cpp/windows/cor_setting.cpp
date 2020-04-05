@@ -47,6 +47,9 @@ BOOL CorWindow_OnInit(HWND hWnd, HWND, WPARAM)
     //Вывести текущие настройки константы отношения Tc/Tg
     rewrite(buff) << correlation_c;
     SetDlgItemText(hWnd, ID_EDITCONTROL_C, buff.str().data());
+    //Вывести текущие настройки использования альфа-коэффициента boxcar dt = alpha Tc
+    CheckDlgButton(hWnd, ID_CHECKBOX_USE_ALPHA, UseAlphaBoxCar);
+    PostMessage(hWnd, WM_COMMAND, ID_CHECKBOX_USE_ALPHA, 0);
     //Вывести текущие настройки времен корреляторов
     for (size_t i = 0; i < CorTc.size(); i++)
     {
@@ -68,7 +71,7 @@ BOOL CorWindow_OnInit(HWND hWnd, HWND, WPARAM)
     rewrite(buff) << names_wFunc[::WeightType];
     SetDlgItemText(hWnd, ID_STR_WEIGHT_FUNCTION_NAME, buff.str().data());
     SendMessage(hWeightList, LB_SETCURSEL, 0, 0);
-    SendMessage(hWnd, WM_COMMAND, WM_REPAINT, 0);
+    //SendMessage(hWnd, WM_COMMAND, WM_REPAINT, 0);
     return TRUE;
 }
 
@@ -170,54 +173,64 @@ BOOL CorWindow_OnCommand(HWND hWnd, INT id, HWND, UINT what)
             }
             return TRUE;
         case ID_LIST_CORRELATION:
+            if(what == LBN_SELCHANGE)
+                SendMessage(hWnd, WM_COMMAND, WM_REPAINT, 0);
+            return TRUE;
             /* without break */
         case WM_REPAINT:
             {
                 bool tmp = UseAlphaBoxCar;
                 UseAlphaBoxCar = UseAlpha;
-                char cstrBuff[BUFF_SIZE];
-                gwin::gVector xAxis, yAxis;
+
+
                 int pos = SendMessage(hWeightList, LB_GETCURSEL, 0, 0);
+                SendMessage(hWeightList, LB_SETCURSEL, pos, 0);
                 if(pos < 0)
                 {
                     gwin::gDefaultPlot(hWeightGraph, "Set value in \"Tc edit box\" and\n click on \"Add\" button for\nadding a correlator.");
                     return TRUE;
                 }
+                char cstrBuff[BUFF_SIZE];
                 SendMessage(hWeightList, LB_GETTEXT, (WPARAM)pos, (LPARAM)cstrBuff);
+
                 double Tc = atof(cstrBuff);
                 double Tg =  Tc / correlation_c;
                 double dt = 1000.0 * pow(rate_DAQ, -1);
-                size_t points = 0.001 * measure_time_DAQ * rate_DAQ;
+                const size_t points = (measure_time_DAQ + 0.001*gate_DAQ) * 1e-3 * rate_DAQ;
 
+                gwin::gVector xAxis, yAxis;
                 xAxis.reserve( points );
                 yAxis.reserve( points );
 
                 if(WeightType == DoubleBoxCar && correlation_width < 1000*10*dt)
                 {
-                    for(double time = 0.0; time < measure_time_DAQ; time += dt)
-                        xAxis.push_back(time);
+                    for(int i = 0; i < points; ++i)
+                        xAxis.push_back(i*dt);
                     yAxis.assign(points, 0.0);
                     yAxis[size_t(Tg / dt)] = 1.0;
-                    yAxis[size_t(Tg*correlation_c / dt)] = -1.0;
+                    yAxis[size_t( (Tg+Tc) / dt)] = -1.0;
                 }
                 else
                 {
                     double (*w) (double, double) = get_weight_function(WeightType);
-                    for(double time = 0.0; time < measure_time_DAQ; time += dt)
+                    for(int i = 0; i < points; ++i)
                     {
-                        xAxis.push_back(time);
-                        yAxis.push_back(w(time, Tg));
+                        xAxis.push_back(i*dt);
+                        yAxis.push_back(w(i*dt, Tg));
                     }
                 }
 
                 std::stringstream info;
-                //helper(measure_time_DAQ, Tg, Tc, WeightType);
+                //helper(Tg, Tc, WeightType);
+
+                corinfo cinfo = get_corinfo(WeightType, Tc);
                 info << std::fixed << std::setprecision(3)
-                     << "peak-tau: " << find_tau(Tg, Tc, WeightType)
-                     << " [ms]"
+                //<< "Tc: " << Tc << endl << "Tg:" << Tg << endl << "type:" << WeightType << endl
+                     << "peak-tau: " << cinfo.tau0 << " [ms]"
                      //<< "\nA0: " << get_signal_level(Tg, Tc, WeightType)
                      //<< "\nN: " << get_noize_level(Tg, Tc, WeightType)
-                     << "\nSN: " << SN(Tg, Tc, WeightType) << std::endl;
+                     << "\nSN: " << cinfo.SN
+                     << "\nlw: " << lw(Tg, Tc, WeightType) << std::endl;
 
                 gwin::gAdditionalInfo(hWeightGraph, info.str());
                 gwin::gAxisInfo(hWeightGraph, "Time [ms]", "W [Arb]");
@@ -237,15 +250,24 @@ BOOL CorWindow_OnCommand(HWND hWnd, INT id, HWND, UINT what)
                 return TRUE;
             }
             {
-                UseAlphaBoxCar = UseAlpha;
-                ::WeightType = WeightType;
+
                 //Применить настройки ширины импульсов
                 correlation_width = ApplySettingEditBox(hWnd, ID_EDITCONTROL_WIDTH, 2);
                 //Применить настройки константы отношения
                 correlation_c = ApplySettingEditBox(hWnd, ID_EDITCONTROL_C, 2);
+                /*if(correlation_c == 1 && WeightType == DoubleBoxCar)
+                {
+                    MessageBox(hWnd, "You cant set the fraction [Tc/Tg] = 1\n"
+                               "for Double box-car\n"
+                               "(", "Warning", MB_ICONWARNING);
+                    return TRUE;
+                }*/
                 correlation_alpha = ApplySettingEditBox(hWnd, ID_EDITCONTROL_ALPHA, 2);
                 //Применить настройки времен корреляторов
+                UseAlphaBoxCar = UseAlpha;
+                ::WeightType = WeightType;
                 CorTc.clear();
+                CorInfo.clear();
                 char cstrBuff[BUFF_SIZE];
                 for (int i = 0; i < SendMessage(hWeightList, LB_GETCOUNT, 0, 0); i++)
                 {

@@ -98,12 +98,13 @@ VOID PlotRelax()
 
 VOID PlotDLTS(gwin::gVector &xAxis, gwin::gMulVector &yAxis)
 {
-    if(xAxisDLTS.size() < 2)
+
+    if(xAxisDLTS.size() < 2 && index_mode.load() == DLTS)
     {
-        if(xAxisDLTS.size() == 1)
-            gwin::gDefaultPlot(hGraph_DLTS, "You should measure the second point\nfor plotting DLTS curves\0");
+        gwin::gDefaultPlot(hGraph_DLTS, "You should measure the second point\nfor plotting DLTS curves\0");
         return;
     }
+
     if(index_w4.load() == 2)    /* CV график */
     {
         std::string Title{"Capacity recording"}, xSubscribe{"Temperature [K]"}, ySubscribe{"Capacity [pF]"};
@@ -119,7 +120,9 @@ VOID PlotDLTS(gwin::gVector &xAxis, gwin::gMulVector &yAxis)
         return;
     }
     /* Точность определения пика */
-    constexpr static double eps = pow(10, -THERMO_PRECISION);
+    double eps = pow(10, -THERMO_PRECISION);
+    if(index_mode.load() == ITS)
+        eps = 1e-9;
     /* Поиск максимума методом золотого сечения */
     gwin::gVector vMinData1, vMinData2;
     double dLeftBorder = xAxis.at(0);
@@ -129,17 +132,17 @@ VOID PlotDLTS(gwin::gVector &xAxis, gwin::gMulVector &yAxis)
         gwin::gVector &vData2 = yAxis[i];
         /* Определяем ориентацию пика */
         auto Pair = minmax_element(vData2.begin(), vData2.end());
-        int sign = ( fabs(*Pair.first) >= fabs(*Pair.second) ) ? 1 : -1;
+        int extr_type = ( fabs(*Pair.first) >= fabs(*Pair.second) ) ? MINIMUM : MAXIMUM;
         interp f(xAxis, vData2, xAxis.size(), gsl_interp_linear);
         double dMin = 0.0;
         if(auto_peak_search.load() == true)
-            dMin = GoldSerch(dLeftBorder, dRightBorder, eps, f, sign);
+            dMin = GoldSerch(dLeftBorder, dRightBorder, eps, f, extr_type);
         else
         {
             if(vPickData1.size() < i + 1)
             {
                 /* Попадаем сюда, если добавляем новый коррелятор с отключенным автопоиском пика */
-                dMin = GoldSerch(dLeftBorder, dRightBorder, eps, f, sign);
+                dMin = GoldSerch(dLeftBorder, dRightBorder, eps, f, extr_type);
                 vPickData1.push_back(dMin);
             }
             else dMin = vPickData1[i];
@@ -176,7 +179,7 @@ VOID PlotDLTS(gwin::gVector &xAxis, gwin::gMulVector &yAxis)
             }
             else
             {
-                buffer << "tau: "  << vPickData1[index] << " [ms]\n"
+                buffer << "tau: "  << pow(10, -vPickData1[index]) << " [ms]\n"
                        << "T: " << xAxisDLTS[index] << " [K]\n";
             }
             gwin::gAdditionalInfo(hGraph_DLTS, buffer.str());
@@ -215,12 +218,16 @@ VOID PlotDLTS(gwin::gVector &xAxis, gwin::gMulVector &yAxis)
         if(index_mode.load() == ITS)
         {
             Title = "ITS curves";
-            xSubscribe = "Time [ms]";
+            xSubscribe = "Log of emission rate [1/ms]";
         }
         Title = Title + " [" + names_wFunc[WeightType] + "]";
         gwin::gTitle(hGraph_DLTS, Title);
         gwin::gAxisInfo(hGraph_DLTS, xSubscribe, ySubscribe);
         gwin::gCross(hGraph_DLTS, &vMinData1, &vMinData2); /* Индикаторы пика */
+        if(index_mode.load() == ITS)
+        {
+            gwin::gBand(hGraph_DLTS, floor(dLeftBorder) , ceil(dRightBorder) , 0, 0);
+        }
         gwin::gMulData(hGraph_DLTS, &xAxis, &yAxis);
     }
     else if(index_w4.load() == 1) /* График Аррениуса */
@@ -249,9 +256,9 @@ VOID PlotDLTS(gwin::gVector &xAxis, gwin::gMulVector &yAxis)
                 tau = 0.001 * find_tau(Tg, Tc, WeightType); // в sec
                 T_max = vPickData1.at(i);
             }
-            else
+            else if(index_mode.load() == ITS)
             {
-                tau = 0.001 * vPickData1.at(i);
+                tau = 0.001 * pow(10, -vPickData1.at(i));
                 T_max = xAxisDLTS[i];
             }
             vData1.push_back(pow(T_max*BOLTZMANN,-1));

@@ -19,6 +19,8 @@ typedef std::vector<std::vector<double>> gMulVector;
 typedef std::vector<std::string> gInfoVector;
 struct gPoint{double x; double y;};
 
+enum SCALETYPE {NORMAL, EXP, LOG10};
+
 HWND gCreateWindow(HINSTANCE hInst, HWND hWndParent, DWORD style);
 BOOL gClose(HWND hWnd);
 BOOL gMulData(HWND hWnd, gVector const *vData1, gMulVector const *vMulData);
@@ -34,6 +36,7 @@ BOOL gDefaultPlot(HWND hWnd, std::string message);
 BOOL gCross(HWND hWnd, gVector const *vData1, gVector const *vData2);
 BOOL gAxisInfo(HWND hWnd, std::string, std::string);
 BOOL gTitle(HWND hWnd, std::string);
+BOOL gScale(HWND hWnd, SCALETYPE type);
 
 BOOL gBandGet(HWND hWnd, double* dMinX, double* dMaxX, double* dMinY, double* dMaxY);
 

@@ -55,7 +55,6 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE, LPSTR, int)
         hDownloadEvent = CreateEvent(NULL, TRUE, TRUE, NULL);
         InitCommonControls();
         hMainWindow = CreateDialog(hInstance, MAKEINTRESOURCE(ID_MAIN_WINDOW), HWND_DESKTOP, NULL);
-
         while (GetMessage(&messages, NULL, 0, 0))
         {
             if(!IsDialogMessage(hSettinWnd, &messages) && !IsDialogMessage(hAnalysisWnd, &messages))

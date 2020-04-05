@@ -14,7 +14,7 @@
 	<sstream>
 	<vector>
 
-1585944579 c:\users\Виктор\documents\github\dlts\headers\variable.h
+1586085589 c:\users\Виктор\documents\github\dlts\headers\variable.h
 	<atomic>
 	<string>
 	<vector>
@@ -26,7 +26,7 @@
 	"vi.h"
 	"daqmx.h"
 
-1584114126 c:\users\Виктор\documents\github\dlts\headers\gwin.h
+1586089775 c:\users\Виктор\documents\github\dlts\headers\gwin.h
 	<windows.h>
 	<windowsx.h>
 	<string>
@@ -43,7 +43,7 @@
 	<string>
 	<sstream>
 
-1585935176 c:\users\Виктор\documents\github\dlts\headers\facility.h
+1586084699 c:\users\Виктор\documents\github\dlts\headers\facility.h
 	<string>
 	<sstream>
 	<cmath>
@@ -58,7 +58,7 @@
 	"gwin.h"
 	"variable.h"
 
-1586020849 c:\users\Виктор\documents\github\dlts\headers\dlts_math.h
+1586113342 c:\users\Виктор\documents\github\dlts\headers\dlts_math.h
 	<cmath>
 	<vector>
 	<string>
@@ -117,7 +117,7 @@
 
 1585944101 c:\users\Виктор\documents\github\dlts\headers\resource.h
 
-1585948198 source:c:\users\Виктор\documents\github\dlts\cpp\facility\load_save.cpp
+1586084698 source:c:\users\Виктор\documents\github\dlts\cpp\facility\load_save.cpp
 	<sstream>
 	<string>
 	<fstream>
@@ -132,7 +132,7 @@
 	<windows.h>
 	"gwin.h"
 
-1585949047 source:c:\users\Виктор\documents\github\dlts\cpp\facility\plot.cpp
+1586094180 source:c:\users\Виктор\documents\github\dlts\cpp\facility\plot.cpp
 	<algorithm>
 	"graph.h"
 	"variable.h"
@@ -142,13 +142,13 @@
 	"interpolation.h"
 	"ini.h"
 
-1585944776 source:c:\users\Виктор\documents\github\dlts\cpp\facility\settings.cpp
+1586117722 source:c:\users\Виктор\documents\github\dlts\cpp\facility\settings.cpp
 	<facility.h>
 	"ini.h"
 	"vi.h"
 	"daq.h"
 
-1585949129 source:c:\users\Виктор\documents\github\dlts\cpp\facility\utility.cpp
+1586099039 source:c:\users\Виктор\documents\github\dlts\cpp\facility\utility.cpp
 	"facility.h"
 	<fstream>
 	"graph.h"
@@ -176,14 +176,14 @@
 	<dlts_math.h>
 	"gwin.h"
 
-1585949105 source:c:\users\Виктор\documents\github\dlts\cpp\math\weighfunc.cpp
+1586093626 source:c:\users\Виктор\documents\github\dlts\cpp\math\weighfunc.cpp
 	<dlts_math.h>
 	<algorithm>
 	"facility.h"
 	"gwin.h"
 	"ini.h"
 
-1585944755 source:c:\users\Виктор\documents\github\dlts\cpp\variable.cpp
+1586098018 source:c:\users\Виктор\documents\github\dlts\cpp\variable.cpp
 	"variable.h"
 	"dlts_math.h"
 
@@ -200,7 +200,7 @@
 1584458902 source:c:\users\Виктор\documents\github\dlts\cpp\windows\adv_setting.cpp
 	<winfunc.h>
 
-1586008246 source:c:\users\Виктор\documents\github\dlts\cpp\windows\cor_setting.cpp
+1586117602 source:c:\users\Виктор\documents\github\dlts\cpp\windows\cor_setting.cpp
 	"winfunc.h"
 	"variable.h"
 	"dlts_math.h"
@@ -220,13 +220,13 @@
 	<richedit.h>
 	"..\headers\resource.h"
 
-1585752641 source:c:\users\Виктор\documents\github\dlts\cpp\gwin.cpp
+1586090502 source:c:\users\Виктор\documents\github\dlts\cpp\gwin.cpp
 	<algorithm>
 	<cctype>
 	<cmath>
 	"gwin.h"
 
-1586008385 source:c:\users\Виктор\documents\github\dlts\cpp\math\commath.cpp
+1586117851 source:c:\users\Виктор\documents\github\dlts\cpp\math\commath.cpp
 	<numeric>
 	<functional>
 	<gsl/gsl_fit.h>
@@ -237,7 +237,7 @@
 1585914489 source:c:\users\Виктор\documents\github\dlts\cpp\math\interpolation.cpp
 	<interpolation.h>
 
-1585948612 source:c:\users\Виктор\documents\github\dlts\cpp\main.cpp
+1586075938 source:c:\users\Виктор\documents\github\dlts\cpp\main.cpp
 	<windows.h>
 	<windowsx.h>
 	<commctrl.h>

@@ -52,5 +52,7 @@ void AddPointsDLTS(const vector<double> *vRelaxation, const double temp, const d
 string GetExtensionFile(string str);
 /* Преобразует значение напряжения в емкость */
 void VoltageToCapacity(double *value);
+/* Информация о корреляторах */
+corinfo get_corinfo(int type, double Tc);
 
 #endif // FACILITY_H_INCLUDED

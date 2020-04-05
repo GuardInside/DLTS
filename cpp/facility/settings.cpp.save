@@ -69,6 +69,8 @@ void write_settings()
     iniFile.WriteDoubleFix("Сorrelator", "width", correlation_width, TIME_PRECISION);
     iniFile.WriteDoubleFix("Сorrelator", "c", correlation_c, 2);
     iniFile.WriteDoubleFix("Сorrelator", "alpha", correlation_alpha, 2);
+    iniFile.WriteBool("Сorrelator", "Use_alpha", Generator.is_active.load());
+    iniFile.WriteDoubleFix("Сorrelator", "Use_alpha", correlation_alpha, 2);
     iniFile.WriteInt("Сorrelator", "type", WeightType);
     /* Количество корреляторов */
     iniFile.WriteInt("Сorrelator", "amount", CorTc.size());
@@ -166,7 +168,6 @@ void read_settings()
     iniFile.ReadDouble("Fitting", "abs_error", &AprErr);
     iniFile.ReadInt("Fitting", "max_iter", &AprIter);
     iniFile.ReadBool("Fitting", "use_for_relax", &AprEnableRelax);
-    iniFile.ReadBool("Fitting", "use_for_dlts", &AprEnableDLTS);
         /* Настройки PID таблицы */
     iniFile.Rename("pid.ini");
     for(int i = 0; i < QUANTITY_ZONE; i++)
@@ -191,6 +192,18 @@ void ApplySettings()
 
     /* Проверка корреляторов */
     for(const auto &Tc: CorTc)
-        if(Tc*(1 + pow(correlation_c, -1)) > measure_time_DAQ) /* Все в мс */
-            MessageBox(NULL, "You must change correlation settings.", "Note", MB_ICONINFORMATION);
+    {
+        double val = Tc*(1 + pow(correlation_c, -1) );
+        double Tg = Tc / correlation_c;
+        if(0.001*gate_DAQ > Tg)
+        {
+            MessageBox(NULL, ("You must change correlation settings\n"
+                       "Gate > Tg\nChange the Tc = " + to_string(val) + " [ms]").c_str(), "Note", MB_ICONINFORMATION);
+        }
+        if( val > measure_time_DAQ) /* Все в мс */
+        {
+            MessageBox(NULL, ("You must change correlation settings\n"
+                       "Tc+Tg > measure time\nChange the Tc = " + to_string(val) + " [ms]").c_str(), "Note", MB_ICONINFORMATION);
+        }
+    }
 }

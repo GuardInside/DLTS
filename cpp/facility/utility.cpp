@@ -6,6 +6,20 @@
 #include "variable.h"
 #include "dlts_math.h"
 
+map<int, map<double,corinfo>> CorInfo;
+corinfo get_corinfo(int type, double Tc)
+{
+    if(CorInfo[type].find(Tc) == CorInfo[type].end())
+    {
+        double Tg = Tc / correlation_c;
+        CorInfo[type][Tc].tau0 = find_tau(Tg, Tc, type);
+        CorInfo[type][Tc].SN   = SN(Tg, Tc, type);
+        CorInfo[type][Tc].lw   = lw(Tg, Tc, type);
+    }
+
+    return CorInfo[type][Tc];
+}
+
 int GetResPidTable(int i, string const &str)
 {
     if(str == "UPPER_BOUNDARY")
@@ -89,6 +103,7 @@ void ClearMemmory()
     ClearMemmoryDLTS();
     SavedCapacity.clear();
     SavedRelaxations.clear();
+    CorInfo.clear();
     gwin::gDefaultPlot(hRelax, "\0");
     gwin::gDefaultPlot(hGraph_DLTS, "\0");
 }
