@@ -6,7 +6,6 @@
 #include "facility.h"
 #include "variable.h"
 #include "gwin.h"
-#include "graph.h"
 #include "ini.h"
 
 using namespace std;
@@ -14,6 +13,7 @@ using namespace std;
 UINT SaveSettings();
 UINT SaveRelax();
 UINT SaveDLTS();
+UINT SaveITS();
 UINT SaveArrhenius();
 UINT SaveCT();
 
@@ -67,7 +67,10 @@ UINT CALLBACK LoadFile(PVOID)
     file >> placeholder >> measure_time_DAQ >> placeholder
          >> placeholder >> gate_DAQ >> placeholder
          >> placeholder >> rate_DAQ >> placeholder
-         >> placeholder >> Generator.bias >> placeholder
+         >> placeholder >> RANGE_SULA_index >> placeholder
+         >> placeholder >> PRE_AMP_GAIN_SULA_index >> placeholder;
+    ApplySettings();
+    file >> placeholder >> Generator.bias >> placeholder
          >> placeholder >> Generator.amp >> placeholder
          >> placeholder >> Generator.width >> placeholder;
     /** Оценка размера загружаемого файла **/
@@ -98,7 +101,7 @@ UINT CALLBACK LoadFile(PVOID)
         int offset = 0;
         for(auto it = xAxisDLTS.begin(); it != xAxisDLTS.end(); it++)
             if(temp > *it) offset++;
-        AddPointsDLTS(&vRelaxation, temp, capacity); //Передаем значение температуры
+        AddPointToDLTS(&vRelaxation, temp, capacity); //Передаем значение температуры
         EnterCriticalSection(&csSavedData);
             SavedRelaxations.insert(SavedRelaxations.begin()+offset, vRelaxation);
             SavedCapacity.insert(SavedCapacity.begin()+offset, capacity);
@@ -114,6 +117,51 @@ UINT CALLBACK LoadFile(PVOID)
     /** Устанавливаем флаг окончания загрузки **/
     SetEvent(hDownloadEvent);
     return TRUE;
+}
+
+void SaveRelaxSignalToFile(double MeanTemp, const vector<double> *vData, double dBias, double dAmp, double capacity)
+{
+    string FullPath = FileSavePath + FileSaveName + FileSaveExt;
+    ofstream file;
+
+    ifstream ifile(FullPath.data());
+    if(bfNewfile.load() == true || ifile.peek() == EOF)
+    {
+        file.open(FullPath.data());
+        bfNewfile.store(false);
+        FileOpeningTest(file);
+        /* Сохраняем настройки, если файл открыт впервые */
+        file << fixed << setprecision(0)
+             << "Time: " << measure_time_DAQ << " [ms]\n"
+             << "Gate: " << gate_DAQ << " [mcs]\n"
+             << "Rate: " << rate_DAQ << " [Hz]\n"
+             << "Capa: " << RANGE_SULA_index << "[0|10 pF, 1|30 pF, 2|100 pF, 3|300 pF, 4|1 nF]"
+             << "Pre-amp: " << RANGE_SULA_index << "[0|1, 1|3, 2|10, 3|30, 4|100]"
+             << setprecision(VOLTAGE_PRECISION)
+             << "Bias: " << Generator.bias << " [V]\n"
+             << "Amp: " << Generator.amp << " [V]\n"
+             << "Width: " << Generator.width << " [ms]" << endl;
+    }
+    else
+    {
+        file.open(FullPath.data(), std::ofstream::app);
+        FileOpeningTest(file);
+        file << fixed << setprecision(0) << endl;
+    }
+
+    file << setprecision(THERMO_PRECISION)
+         << MeanTemp
+         << setprecision(VOLTAGE_PRECISION)
+         << capacity << endl;
+    UINT32 uSamples = rate_DAQ*measure_time_DAQ*0.001;
+    for(uInt32 i = 0; i < uSamples; i++)
+    {
+        file << (*vData)[i];
+        if(i != uSamples-1) file << endl;
+    }
+
+    ifile.close();
+    file.close();
 }
 
 VOID SaveWindow(SAVE_MODE _mode)
@@ -162,7 +210,7 @@ UINT CALLBACK SaveFile(PVOID _mode)
     SAVE_MODE mode =  *(SAVE_MODE*)_mode;
     if(SavedRelaxations.empty() && mode != SAVE_SETTINGS)
         return -1;
-    MessageBox(0,to_string(*(SAVE_MODE*)_mode).c_str(),"",0);
+    //MessageBox(0,to_string(*(SAVE_MODE*)_mode).c_str(),"",0);
     switch(mode)
     {
         case SAVE_SETTINGS:
@@ -170,7 +218,10 @@ UINT CALLBACK SaveFile(PVOID _mode)
         case SAVE_RELAXATIONS:
             return SaveRelax();
         case SAVE_DLTS:
-            return SaveDLTS();
+            if(index_mode.load() == DLTS)
+                return SaveDLTS();
+            else
+                return SaveITS();
         case SAVE_ARRHENIUS:
             return SaveArrhenius();
         case SAVE_CT:
@@ -300,6 +351,35 @@ UINT SaveDLTS()
         file << endl;
         progress = 99*i/(uSample);
         SendMessage(hProgress, PBM_SETPOS, progress, 0);
+    }
+    SendMessage(hProgress, PBM_SETPOS, 0, 0);
+    file.close();
+    return 0;
+}
+
+UINT SaveITS()
+{
+    if(xAxisITS.empty() || yAxisITS.empty() || xAxisDLTS.empty())
+        return -1;
+    ofstream file;
+    file.open(SaveFileName, ios_base::trunc);
+    size_t  nCurves     = xAxisDLTS.size();
+    size_t  n           = yAxisITS[0].size();
+    file << fixed << setprecision(THERMO_PRECISION) << "log[ms^-1]\t";
+    for(size_t i = 0; i < nCurves; i++)
+    {
+        file << xAxisDLTS[i] << "\n";
+    }
+    file << setprecision(10);
+    for(size_t i = 0; i < n; i++)
+    {
+        file << xAxisITS[i] << "\t";
+        for(size_t j = 0; j < nCurves; j++)
+        {
+            file << yAxisITS[j][i] << "\t";
+        }
+        file << endl;
+        SendMessage(hProgress, PBM_SETPOS, 100*i/n, 0);
     }
     SendMessage(hProgress, PBM_SETPOS, 0, 0);
     file.close();

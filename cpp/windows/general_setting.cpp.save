@@ -233,13 +233,15 @@ BOOL SettingsWindow_OnCommand(HWND hwnd, int ID, HWND, UINT codeNotify)
                     if(index_mode != ::index_mode.load())
                     {
                         ::index_mode.store(index_mode);
-                        RefreshDLTS();
+                        //RefreshDLTS();
+                        SendMessage(hMainWindow, WM_COMMAND, WM_REFRESH_DLTS, 0);
                     }
                     else
+                    {
                         ::index_mode.store(index_mode);
-                        
+                        SendMessage(hMainWindow, WM_COMMAND, WM_PAINT_DLTS, 0);
+                    }
                     write_settings();
-                    SendMessage(hMainWindow, WM_COMMAND, WM_PAINT_DLTS, 0); /* При обновлении модели эксперимента это необходимо */
                 }
                 else
                     MessageBox(hwnd, "Incorrect settings.\nYou should be more careful.", "Warning", MB_ICONWARNING);

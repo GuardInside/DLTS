@@ -1,17 +1,32 @@
 #include "facility.h"
 #include <fstream>
 
-#include "graph.h"
 #include "ini.h"
 #include "variable.h"
 #include "dlts_math.h"
 
-corinfo get_corinfo(int type, double Tc)
+void FileOpeningTest(const ofstream& file)
 {
-
+    if(!file.is_open())
+    {
+        MessageBox(NULL, "Save file isn't being found.", "Error", MB_ICONERROR);
+        return;
+    }
 }
 
-void clear_correlators();
+map<int, map<double,corinfo>> CorInfo;
+corinfo get_corinfo(int type, double Tc)
+{
+    if(CorInfo[type].find(Tc) == CorInfo[type].end())
+    {
+        double Tg = Tc / correlation_c;
+        CorInfo[type][Tc].tau0 = find_tau(Tg, Tc, type);
+        CorInfo[type][Tc].SN   = SN(Tg, Tc, type);
+        CorInfo[type][Tc].lw   = lw(Tg, Tc, type);
+    }
+
+    return CorInfo[type][Tc];
+}
 
 int GetResPidTable(int i, string const &str)
 {
@@ -73,15 +88,6 @@ double MeanOfTemp(std::vector<double>::const_iterator b,
     return Mean(e - diff, e);
 }
 
-void FileOpeningTest(ofstream& file)
-{
-    if(!file.is_open())
-    {
-        MessageBox(NULL, "Save file isn't being found.", "Error", MB_ICONERROR);
-        return;
-    }
-}
-
 void VoltageToCapacity(double *value)
 {
     static const double _SULA_CONST = 0.2;
@@ -94,83 +100,67 @@ void ClearMemmory()
     auto_peak_search.store(true);
     SendMessage(hMainWindow, WM_COMMAND, WM_REFRESH_MENU, 0);
     ClearMemmoryDLTS();
+
+    EnterCriticalSection(&csSavedData);
     SavedCapacity.clear();
     SavedRelaxations.clear();
+    CorInfo.clear();
+    LeaveCriticalSection(&csSavedData);
+
     gwin::gDefaultPlot(hRelax, "\0");
     gwin::gDefaultPlot(hGraph_DLTS, "\0");
 }
 
 void ClearMemmoryDLTS()
 {
+    EnterCriticalSection(&csSavedData);
     yAxisDLTS.clear();
     yAxisDLTS.resize(CorTc.size());
     xAxisDLTS.clear();
 
     yAxisITS.clear();
     xAxisITS.clear();
+
+    std::vector<double>.swap(vPickData1);
+    vPickData2.clear();
+    LeaveCriticalSection(&csSavedData);
 }
 
-void RefreshDLTS()
+atomic_bool StopRefreshDLTS{false};
+
+UINT CALLBACK RefreshDLTS(PVOID)
 {
-    int progress = 0;
     if(xAxisDLTS.empty())
-        return;
-    gwin::gVector xAxis = xAxisDLTS;
+        return 1;
+
+    EnterCriticalSection(&csSavedData);
+    gwin::gVector xAxisBuffer = std::move(xAxisDLTS);
+
     ClearMemmoryDLTS();
-    for(size_t i = 0; i < xAxis.size(); i++)
+
+    size_t n = xAxisBuffer.size();;
+
+    for(size_t i = 0; i < n; i++)
     {
-        AddPointsDLTS(&SavedRelaxations[i], xAxis[i], SavedCapacity[i]);
+        if(StopRefreshDLTS.load() == true)
+        {
+            xAxisDLTS = std::move(xAxisBuffer);
+            LeaveCriticalSection(&csSavedData);
+            PostMessage(hProgress, PBM_SETPOS, 0, 0);
+            return 0;
+        }
+        AddPointToDLTS(&SavedRelaxations[i], xAxisBuffer[i], SavedCapacity[i]);
         /* Обновление информации о ходе записи */
-        progress = 99 * i/(xAxis.size());
-        SendMessage(hProgress, PBM_SETPOS, progress, 0);
+        PostMessage(hProgress, PBM_SETPOS, 100*i/n, 0);
     }
-    SendMessage(hProgress, PBM_SETPOS, 0, 0);
+
+    LeaveCriticalSection(&csSavedData);
+
+    PostMessage(hProgress, PBM_SETPOS, 0, 0);
     auto_peak_search.store(true);
     SendMessage(hMainWindow, WM_COMMAND, WM_REFRESH_MENU, 0);
     SendMessage(hMainWindow, WM_COMMAND, WM_PAINT_DLTS, 0);
-}
-
-void SaveRelaxSignalToFile(double MeanTemp, const vector<double> *vData, double dBias, double dAmp, double capacity)
-{
-    string FullPath = FileSavePath + FileSaveName + FileSaveExt;
-    ofstream file;
-
-    ifstream ifile(FullPath.data());
-    if(bfNewfile.load() == true || ifile.peek() == EOF)
-    {
-        file.open(FullPath.data());
-        bfNewfile.store(false);
-        FileOpeningTest(file);
-        /* Сохраняем настройки, если файл открыт впервые */
-        file << fixed << setprecision(0)
-             << "Time: " << measure_time_DAQ << " [ms]\n"
-             << "Gate: " << gate_DAQ << " [mcs]\n"
-             << "Rate: " << rate_DAQ << " [Hz]\n"
-             << setprecision(VOLTAGE_PRECISION)
-             << "Bias: " << Generator.bias << " [V]\n"
-             << "Amp: " << Generator.amp << " [V]\n"
-             << "Width: " << Generator.width << " [ms]" << endl;
-    }
-    else
-    {
-        file.open(FullPath.data(), std::ofstream::app);
-        FileOpeningTest(file);
-        file << fixed << setprecision(0) << endl;
-    }
-
-    file << setprecision(THERMO_PRECISION)
-         << MeanTemp
-         << setprecision(VOLTAGE_PRECISION)
-         << capacity << endl;
-    UINT32 uSamples = rate_DAQ*measure_time_DAQ*0.001;
-    for(uInt32 i = 0; i < uSamples; i++)
-    {
-        file << (*vData)[i];
-        if(i != uSamples-1) file << endl;
-    }
-
-    ifile.close();
-    file.close();
+    return 0;
 }
 
 /* Возвращает расширение открытого файла */

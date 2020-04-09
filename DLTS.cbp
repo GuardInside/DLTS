@@ -50,10 +50,13 @@
 		<Unit filename="cpp/gwin.cpp" />
 		<Unit filename="cpp/inifile.cpp" />
 		<Unit filename="cpp/main.cpp" />
-		<Unit filename="cpp/math/commath.cpp" />
-		<Unit filename="cpp/math/expapprox.cpp" />
-		<Unit filename="cpp/math/interpolation.cpp" />
-		<Unit filename="cpp/math/weighfunc.cpp" />
+		<Unit filename="cpp/math/appro.cpp" />
+		<Unit filename="cpp/math/gsl_math/bspline.cpp" />
+		<Unit filename="cpp/math/gsl_math/greville.cpp" />
+		<Unit filename="cpp/math/gsl_math/gsl_bspline.h" />
+		<Unit filename="cpp/math/interp.cpp" />
+		<Unit filename="cpp/math/math.cpp" />
+		<Unit filename="cpp/math/weight.cpp" />
 		<Unit filename="cpp/variable.cpp" />
 		<Unit filename="cpp/vi.cpp" />
 		<Unit filename="cpp/windows/adv_setting.cpp" />
@@ -68,7 +71,6 @@
 		<Unit filename="headers/facility.h" />
 		<Unit filename="headers/gwin.h" />
 		<Unit filename="headers/ini.h" />
-		<Unit filename="headers/interpolation.h" />
 		<Unit filename="headers/resource.h" />
 		<Unit filename="headers/variable.h" />
 		<Unit filename="headers/vi.h" />

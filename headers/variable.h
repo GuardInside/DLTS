@@ -20,6 +20,7 @@ using namespace NIDAQmx::innards;
 #define WM_PAINT_RELAX  WM_USER
 #define WM_PAINT_DLTS   WM_USER+1
 #define WM_REFRESH_MENU WM_USER+2
+#define WM_REFRESH_DLTS WM_USER+3
 
 /* Идентификаторы */
 #define WM_NEW_CORTIME              200 //Сообщение win_weight_func для обновления графика
@@ -73,6 +74,9 @@ extern vector<vector<double>>       yAxisITS;
 extern vector<double>               xAxisAr;
 extern vector<vector<double>>       yAxisAr;
 extern vector<double>               CorTc;
+extern vector<double>               TimeAxis;
+extern vector<double>               vPickData1; /* Вектор со значениями температур, соответствующих пикам */
+extern vector<double>               vPickData2;
 
 /* SavedRelaxations и SavedCapacity вызываются только в кр. секции csSavedRelaxation */
 extern vector<vector<double> >      SavedRelaxations; //Хранит все сохраненные или загруженные релаксации
@@ -116,16 +120,21 @@ extern float64 gate_DAQ;
 extern int RANGE_SULA_index;
 extern int PRE_AMP_GAIN_SULA_index;
 /* Настройки аппроксимации */
-extern bool AprEnableRelax;
-extern int  AprIter;
-extern double AprErr;
+namespace bspline
+{
+    extern bool     enable;
+    extern bool     enable2;
+    extern size_t   order;
+    extern size_t   ncoeffs;
+}
+
 /* Флаги */
 extern atomic_bool start;               //Нажата кнопка старт
 extern atomic_bool stability;           //Температура стабилизировалась вблизи сетпоинта
 extern atomic_bool bfNewfile;           //Создавать ли новый файл при старте эксперимента?
 extern atomic_bool fix_temp;            //Фиксация температуры
 extern atomic_bool auto_peak_search;    //Автоопределение пика методом золотого сечения
-extern atomic_bool normaliz_dlts;
+//extern atomic_bool normaliz_dlts;
 /* Параметры коррелятора */
 extern int WeightType;
 extern double correlation_alpha;

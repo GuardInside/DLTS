@@ -80,9 +80,9 @@ void write_settings()
         iniFile.WriteDoubleFix("Сorrelator", buff.str(), CorTc[i], TIME_PRECISION);
     }
         /* Настройки аппроксимации */
-    iniFile.WriteDoubleSc("Fitting", "abs_error", AprErr, 0);
-    iniFile.WriteInt("Fitting", "max_iter", AprIter);
-    iniFile.WriteBool("Fitting", "use_for_relax", AprEnableRelax);
+    iniFile.WriteInt("Fitting", "ncoeffs", bspline::ncoeffs);
+    iniFile.WriteInt("Fitting", "order", bspline::order);
+    //iniFile.WriteBool("Fitting", "use_for_relax", bspline::enable);
         /* Настройки PID таблицы */
     iniFile.Rename("pid.ini");
     for(int i = 0; i < QUANTITY_ZONE; i++)
@@ -165,9 +165,9 @@ void read_settings()
     yAxisDLTS.clear();  /* Число осей совпадает с числом корреляторов */
     yAxisDLTS.resize(CorTc.size());
         /* Настройки аппроксимации */
-    iniFile.ReadDouble("Fitting", "abs_error", &AprErr);
-    iniFile.ReadInt("Fitting", "max_iter", &AprIter);
-    iniFile.ReadBool("Fitting", "use_for_relax", &AprEnableRelax);
+    iniFile.ReadInt("Fitting", "ncoeffs", (int*)&bspline::ncoeffs);
+    iniFile.ReadInt("Fitting", "order", (int*)&bspline::order);
+    //iniFile.ReadBool("Fitting", "use_for_relax", &bspline::enable);
         /* Настройки PID таблицы */
     iniFile.Rename("pid.ini");
     for(int i = 0; i < QUANTITY_ZONE; i++)
@@ -193,17 +193,23 @@ void ApplySettings()
     /* Проверка корреляторов */
     for(const auto &Tc: CorTc)
     {
-        double val = Tc*(1 + pow(correlation_c, -1) );
         double Tg = Tc / correlation_c;
         if(0.001*gate_DAQ > Tg)
         {
             MessageBox(NULL, ("You must change correlation settings\n"
-                       "Gate > Tg\nChange the Tc = " + to_string(val) + " [ms]").c_str(), "Note", MB_ICONINFORMATION);
+                       "Gate > Tg\nChange the Tc = " + to_string(Tc) + " [ms]").c_str(), "Note", MB_ICONINFORMATION);
         }
-        if( val > measure_time_DAQ) /* Все в мс */
+        if( Tc + Tg > measure_time_DAQ) /* Все в мс */
         {
             MessageBox(NULL, ("You must change correlation settings\n"
-                       "Tc+Tg > measure time\nChange the Tc = " + to_string(val) + " [ms]").c_str(), "Note", MB_ICONINFORMATION);
+                       "Tc+Tg > measure time\nChange the Tc = " + to_string(Tc) + " [ms]").c_str(), "Note", MB_ICONINFORMATION);
         }
     }
+    /* Формирем ось времени */
+    size_t  n       = 0.001 * measure_time_DAQ * rate_DAQ; // Все в мс
+    double  gate    = 0.001 * gate_DAQ;
+    double  delta   = 1000.0 / rate_DAQ;
+    TimeAxis.clear();
+    for(size_t i = 0; i < n; i++)
+        TimeAxis.push_back(gate + i*delta);
 }

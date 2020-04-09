@@ -55,7 +55,6 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE, LPSTR, int)
         hDownloadEvent = CreateEvent(NULL, TRUE, TRUE, NULL);
         InitCommonControls();
         hMainWindow = CreateDialog(hInstance, MAKEINTRESOURCE(ID_MAIN_WINDOW), HWND_DESKTOP, NULL);
-
         while (GetMessage(&messages, NULL, 0, 0))
         {
             if(!IsDialogMessage(hSettinWnd, &messages) && !IsDialogMessage(hAnalysisWnd, &messages))
@@ -142,8 +141,20 @@ BOOL MainWindow_OnCreate(HWND hwnd, LPCREATESTRUCT)
 
 void MainWindow_OnCommand(HWND hwnd, int id, HWND, UINT)
 {
+    static HANDLE thCalculationDLTS = 0;
     switch(id)
     {
+        case WM_REFRESH_DLTS:
+            if(WaitForSingleObject(thCalculationDLTS, 0) == WAIT_TIMEOUT)
+            {
+                StopRefreshDLTS.store(true);
+                WaitForSingleObject(thCalculationDLTS, INFINITE);
+            }
+
+            CloseHandle(thCalculationDLTS);
+            thCalculationDLTS = (HANDLE)_beginthreadex(NULL, 0, RefreshDLTS, 0, 0, NULL);
+            StopRefreshDLTS.store(false);
+            break;
         case WM_PAINT_RELAX:
             PlotRelax();
             break;
@@ -245,7 +256,7 @@ void MainWindow_OnCommand(HWND hwnd, int id, HWND, UINT)
             DownloadWindow();
             break;
         /* Настройки */
-        case ID_MENU_FITTING_EXPONENTIAL:
+        case ID_MENU_FITTING_BSPLINE:
             if(!IsWindow(hAnalysisWnd))
                 hAnalysisWnd = CreateDialog(hInst, MAKEINTRESOURCE(ID_ANALYSIS_WINDOW), HWND_DESKTOP, anwin_proc);
             break;
@@ -291,18 +302,7 @@ void MainWindow_OnCommand(HWND hwnd, int id, HWND, UINT)
             }
             if(start.load() == false)
             {
-                /*switch(index_mode.load())
-                {
-                    case mode::DLTS:*/
-                        DialogBox(hInst,  MAKEINTRESOURCE(ID_START_WINDOW_DLTS), hwnd, srwin_proc);
-                        /*break;
-                    case mode::AITS:
-                        DialogBox(hInst,  MAKEINTRESOURCE(ID_START_WINDOW_AITS), hwnd, srwin_proc);
-                        break;
-                    case mode::BITS:
-                        DialogBox(hInst,  MAKEINTRESOURCE(ID_START_WINDOW_BITS), hwnd, srwin_proc);
-                        break;
-                }*/
+                DialogBox(hInst,  MAKEINTRESOURCE(ID_START_WINDOW_DLTS), hwnd, srwin_proc);
             }
             else if(start.load() == true)
                 StartButPush();
@@ -402,7 +402,7 @@ UINT CALLBACK ReadRelaxAndDraw(void*)
     CapacityMeasuring(ai_port_capacity, &capacity);
     VoltageToCapacity(&capacity);
 
-    gwin::gVector vData1, vData2;
+    gwin::gVector vData2;
     Measuring(&vData2, 1, measure_time_DAQ, ai_port_measurement, index_range.load());
 
     stringstream buff;
@@ -410,15 +410,15 @@ UINT CALLBACK ReadRelaxAndDraw(void*)
          << "Cap. [pF] = " << fixed << setprecision(3) << capacity;
     gAdditionalInfo(hGraph_DAQ, buff.str());
 
-    for(size_t i = 0; i < vData2.size(); i++)
-        vData1.push_back(0.001*gate_DAQ + i*(1.0/rate_DAQ)*1000.0);
-    plotDAQ(&vData1, &vData2);
+    //for(size_t i = 0; i < vData2.size(); i++)
+        //vData1.push_back(0.001*gate_DAQ + i*(1.0/rate_DAQ)*1000.0);
+    plotDAQ(&TimeAxis, &vData2);
     bfRefreshW2.store(true);
     return 0;
 }
 UINT CALLBACK ReadPulsesAndDraw(void*)
 {
-    gwin::gVector vData1, vData2;
+    gwin::gVector vData2;
     double dBias = 0.0, dAmp = 0.0;
     PulsesMeasuring(&vData2, &dBias, &dAmp);
 
@@ -427,9 +427,7 @@ UINT CALLBACK ReadPulsesAndDraw(void*)
          << setprecision(3) << "Bias [V] =  " << dBias << endl << "Amp [V] = " << dAmp;
     gAdditionalInfo(hGraph_DAQ, buff.str());
 
-    for(size_t i = 0; i < vData2.size(); i++)
-        vData1.push_back(0.001*gate_DAQ + i*(1.0/rate_DAQ)*1000.0);
-    plotDAQ(&vData1, &vData2);
+    //plotDAQ(&TimeAxis, &vData2);
 
     bfRefreshW2.store(true);
     return 0;
@@ -604,7 +602,7 @@ UINT CALLBACK ReadDLTS(void* ptrMeanTemp)
                 SavedRelaxations.insert(SavedRelaxations.begin()+offset, Relaxation);
                 SavedCapacity.insert(SavedCapacity.begin()+offset, capacity);
             LeaveCriticalSection(&csSavedData);
-            AddPointsDLTS(&Relaxation, MeanTemp, capacity);
+            AddPointToDLTS(&Relaxation, MeanTemp, capacity);
             SaveRelaxSignalToFile(MeanTemp, &Relaxation, 0.0, 0.0, capacity);
             index_relax.store(offset);
             SendMessage(hMainWindow, WM_COMMAND, WM_PAINT_RELAX, 0);

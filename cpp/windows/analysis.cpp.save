@@ -19,15 +19,14 @@ BOOL Analysis_OnInit(HWND hWnd, HWND, LPARAM)
     stringstream buff;
     buff << setprecision(0);
     /* Вывод информации при инициализации */
-    buff << AprIter;
-    SetDlgItemText(hWnd, ID_EDITCONTROL_ITERATION, buff.str().data());
+    buff << bspline::order;
+    SetDlgItemText(hWnd, ID_EDITCONTROL_BSPLINE_ORDER, buff.str().data());
     //Вывести текущие настройки абсолютной ошибки
     rewrite(buff) << scientific;
-    rewrite(buff) << AprErr;
-    SetDlgItemText(hWnd, ID_EDITCONTROL_ABS_ERROR, buff.str().data());
+    rewrite(buff) << bspline::ncoeffs;
+    SetDlgItemText(hWnd, ID_EDITCONTROL_BSPLINE_NCOEFFS, buff.str().data());
     //Вывести текущие настройки использования фиттинга
-    CheckDlgButton(hWnd, ID_CHECKBOX_USE_FITTING_RELAX, AprEnableRelax);
-    CheckDlgButton(hWnd, ID_CHECKBOX_USE_FITTING_DLTS, AprEnableDLTS);
+    CheckDlgButton(hWnd, ID_CHECKBOX_USE_FITTING_RELAX, bspline::enable);
     return TRUE;
 }
 
@@ -37,26 +36,40 @@ BOOL Analysis_OnCommand(HWND hWnd, INT id, HWND, UINT)
     {
         case ID_BUTTON_APPLY:
             {
-                bool prevEnableRelax = ::AprEnableRelax;
-                /* Предельное число итераций */
-                AprIter = ApplySettingEditBox(hWnd, ID_EDITCONTROL_ITERATION);
-                /* Абсолютная погрешность */
-                stringstream buff;
-                buff << setprecision(0) << scientific;
-                GetDlgItemTextMod(hWnd, ID_EDITCONTROL_ABS_ERROR, buff);
-                AprErr = atof(buff.str().data());
+                bool oldEnable2 = bspline::enable2;
                 /* Установка режима аппроксимации */
-                AprEnableRelax = SendMessage(GetDlgItem(hWnd, ID_CHECKBOX_USE_FITTING_RELAX), BM_GETCHECK, 0, 0);
+                bool enable     = SendMessage(GetDlgItem(hWnd, ID_CHECKBOX_USE_FITTING_RELAX), BM_GETCHECK, 0, 0);
+                bool enable2    = SendMessage(GetDlgItem(hWnd, ID_CHECKBOX_USE_BSPLINE_DLTS), BM_GETCHECK, 0, 0);
+                /* Порядок сплайна */
+                int order = ApplySettingEditBox(hWnd, ID_EDITCONTROL_BSPLINE_ORDER);
+                /* Число коэффициентов */
+                int ncoeffs = ApplySettingEditBox(hWnd, ID_EDITCONTROL_BSPLINE_NCOEFFS);
 
+                if(enable || enable2)
+                {
+                    /* breakpoint = ncoeffs + 2 - spline order, */
+                    if((ncoeffs + 2 - order) < 2)
+                    {
+                        MessageBox(hWnd, "Breakpoint = [ncoeffs + 2 - spline order]\nshould be more than one.", "Warning", MB_ICONWARNING);
+                        return TRUE; /* Не сохраняем настройки */
+                    }
+                }
+                /* Сохраняем настройки */
+                bspline::order      = order;
+                bspline::ncoeffs    = ncoeffs;
+                bspline::enable     = enable;
+                bspline::enable2    = enable2;
+                /* Сохраняем настройки в файл */
                 write_settings();
                 /* Сообщение об успешном приминении настроек */
-                HANDLE hThreadSuccess = (HANDLE)_beginthreadex(NULL, 0, dlg_success, NULL, 0, NULL);
-                CloseHandle(hThreadSuccess);
+                CloseHandle((HANDLE)_beginthreadex(NULL, 0, dlg_success, NULL, 0, NULL));
                 /* Пересчитываем и обновляем графики */
-                if(prevEnableRelax != AprEnableRelax)
-                    SendMessage(hMainWindow, WM_COMMAND, WM_PAINT_RELAX, 0);
-                if(prevEnableDLTS != AprEnableDLTS)
-                    SendMessage(hMainWindow, WM_COMMAND, WM_PAINT_DLTS, 0);
+                SendMessage(hMainWindow, WM_COMMAND, WM_PAINT_RELAX, 0);
+                if(bspline::enable2 && oldEnable2 != bspline::enable2)
+                { /* Обновляем лишь в случае изменения чекбокса */
+                    //RefreshDLTS();
+                    SendMessage(hMainWindow, WM_COMMAND, WM_REFRESH_DLTS, 0);
+                }
             }
             return TRUE;
         case ID_BUTTON_CLOSE:

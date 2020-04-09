@@ -23,6 +23,7 @@ double          ApplySettingEditBox(HWND hwnd, int nIDEditBox, int prec = 0);
 string          ApplySettingEditBoxString(HWND hwnd, int nIDEditBox);
 bool            EmptyEditBox(HWND hwnd, int nIDEditBox);
 int             GetResPidTable(int, string const&);
+void            FileOpeningTest(const ofstream& file);
 
 double MeanSquareErrorOfTemp(std::vector<double>::const_iterator b,
                              std::vector<double>::const_iterator e);
@@ -41,13 +42,14 @@ UINT CALLBACK LoadFile(PVOID);
 VOID SaveWindow(SAVE_MODE);
 UINT CALLBACK SaveFile(PVOID);
 //Очистка векторов осей DLTS-кривых
-void ClearMemmoryDLTS();
+void ClearMemmoryDLTS(); // Потокобезопасна
 void ClearMemmory();
 void OrderRelaxation();
 //Обновление DLTS-кривых
-void RefreshDLTS();
+extern atomic_bool StopRefreshDLTS;
+UINT CALLBACK RefreshDLTS(PVOID);
 void SaveRelaxSignalToFile(double MeanTemp, const vector<double> *vData, double dBias, double dAmp, double capacity);
-void AddPointsDLTS(const vector<double> *vRelaxation, const double temp, const double capacity);
+void AddPointToDLTS(const vector<double> *vRelaxation, const double temp, const double capacity);
 /* Возвращает расширение открытого файла */
 string GetExtensionFile(string str);
 /* Преобразует значение напряжения в емкость */

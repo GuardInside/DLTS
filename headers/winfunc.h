@@ -11,7 +11,6 @@
 #include "vi.h"
 #include <daq.h>
 #include "resource.h"
-#include <graph.h>
 #include <dlts_math.h>
 #include "gwin.h"
 
@@ -39,7 +38,7 @@ extern CRITICAL_SECTION csDAQPaint;
 
 VOID plotDAQ(gwin::gVector *vData1, gwin::gVector *vData2);
 VOID PlotRelax(); // Вызывать только через SendMessage(hMainWindow, WM_COMMAND, WM_PAINT_RELAX, 0);
-VOID PlotDLTS(gwin::gVector &xAxis, gwin::gMulVector &yAxis);  // Вызывать только через SendMessage(hMainWindow, WM_COMMAND, WM_PAINT_DLTS, 0);
+VOID PlotDLTS(const gwin::gVector &xAxis, const gwin::gMulVector &yAxis);  // Вызывать только через SendMessage(hMainWindow, WM_COMMAND, WM_PAINT_DLTS, 0);
 
 /* ************************************** */
 /* Специальные Функции обрабоки сообщений */

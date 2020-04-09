@@ -45,10 +45,10 @@ BOOL BuildMenu(HWND hWnd)
     HBITMAP hbmpDLTS = (HBITMAP)LoadImage(hInst, MAKEINTRESOURCE(ID_BITMAP_PLOT_DLTS), IMAGE_BITMAP, width, height, LR_SHARED);
 
     SetMenuItemBitmaps(hAnalysisMenu, 0, MF_BYPOSITION, hbmpFitting, hbmpFitting);
-        SetMenuItemBitmaps(hAnalysisMenu, ID_MENU_FITTING_EXPONENTIAL, MF_BYCOMMAND, hbmpExp, hbmpExp);
+        SetMenuItemBitmaps(hAnalysisMenu, ID_MENU_FITTING_BSPLINE, MF_BYCOMMAND, hbmpExp, hbmpExp);
     SetMenuItemBitmaps(hAnalysisMenu, 1, MF_BYPOSITION, hbmpDLTS, hbmpDLTS);
     CheckMenuItem(hAnalysisMenu, ID_MENU_AUTO_PEAK_DETECTING, auto_peak_search.load() ? MF_CHECKED : MF_UNCHECKED);
-    CheckMenuItem(hAnalysisMenu, ID_MENU_NORMALIZE_TO_ONE, normaliz_dlts.load() ? MF_CHECKED : MF_UNCHECKED);
+    //CheckMenuItem(hAnalysisMenu, ID_MENU_NORMALIZE_TO_ONE, normaliz_dlts.load() ? MF_CHECKED : MF_UNCHECKED);
     return EXIT_SUCCESS;
 }
 

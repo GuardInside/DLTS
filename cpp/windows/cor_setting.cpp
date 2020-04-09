@@ -29,7 +29,7 @@ BOOL CorWindow_OnInit(HWND hWnd, HWND, WPARAM)
     hWeightGraph = gwin::gCreateWindow(hInst, hWnd, WS_CHILD | WS_DLGFRAME | WS_VISIBLE);
     gwin::gPosition(hWeightGraph, 10, 18);
     gwin::gSize(hWeightGraph, 400, 276);
-    gwin::gPrecision(hWeightGraph, 0, 1);
+    //gwin::gPrecision(hWeightGraph, 0, 1);
     gwin::gTitle(hWeightGraph, "Weight function");
     //Получаем описатели элементов управления
     hWeightList = GetDlgItem(hWnd, ID_LIST_CORRELATION);
@@ -204,7 +204,7 @@ BOOL CorWindow_OnCommand(HWND hWnd, INT id, HWND, UINT what)
 
                 if(WeightType == DoubleBoxCar && correlation_width < 1000*10*dt)
                 {
-                    for(int i = 0; i < points; ++i)
+                    for(size_t i = 0; i < points; ++i)
                         xAxis.push_back(i*dt);
                     yAxis.assign(points, 0.0);
                     yAxis[size_t(Tg / dt)] = 1.0;
@@ -213,7 +213,7 @@ BOOL CorWindow_OnCommand(HWND hWnd, INT id, HWND, UINT what)
                 else
                 {
                     double (*w) (double, double) = get_weight_function(WeightType);
-                    for(int i = 0; i < points; ++i)
+                    for(size_t i = 0; i < points; ++i)
                     {
                         xAxis.push_back(i*dt);
                         yAxis.push_back(w(i*dt, Tg));
@@ -255,13 +255,11 @@ BOOL CorWindow_OnCommand(HWND hWnd, INT id, HWND, UINT what)
                 correlation_width = ApplySettingEditBox(hWnd, ID_EDITCONTROL_WIDTH, 2);
                 //Применить настройки константы отношения
                 correlation_c = ApplySettingEditBox(hWnd, ID_EDITCONTROL_C, 2);
-                /*if(correlation_c == 1 && WeightType == DoubleBoxCar)
+                if(correlation_c == 0)
                 {
-                    MessageBox(hWnd, "You cant set the fraction [Tc/Tg] = 1\n"
-                               "for Double box-car\n"
-                               "(", "Warning", MB_ICONWARNING);
+                    MessageBox(hWnd, "You cant set the fraction [Tc/Tg] = 0\n", "Warning", MB_ICONWARNING);
                     return TRUE;
-                }*/
+                }
                 correlation_alpha = ApplySettingEditBox(hWnd, ID_EDITCONTROL_ALPHA, 2);
                 //Применить настройки времен корреляторов
                 UseAlphaBoxCar = UseAlpha;
@@ -276,10 +274,12 @@ BOOL CorWindow_OnCommand(HWND hWnd, INT id, HWND, UINT what)
                     CorTc.push_back(Tc);
                 }
                 write_settings();
-                RefreshDLTS();
+                //RefreshDLTS();
+                SendMessage(hMainWindow, WM_COMMAND, WM_REFRESH_DLTS, 0);
             }
             SendMessage(hWnd, WM_COMMAND, WM_REPAINT, 0);
             return TRUE;
     }
+     return FALSE;
 }
 

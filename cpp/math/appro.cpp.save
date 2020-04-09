@@ -1,0 +1,72 @@
+#include <cmath>
+#include <vector>
+#include "dlts_math.h"
+#include "gsl_math/gsl_bspline.h"
+
+gsl_approx::~gsl_approx()
+{
+    gsl_bspline_free(bw);
+    gsl_vector_free(B);
+    gsl_vector_free(x);
+    gsl_vector_free(y);
+    gsl_vector_free(c);
+    gsl_vector_free(w);
+    gsl_matrix_free(X);
+    gsl_matrix_free(cov);
+    gsl_multifit_linear_free(mw);
+}
+gsl_approx::gsl_approx(std::vector<double> const &vData1, std::vector<double> const &vData2,
+           size_t ncoeffs_, /* number of fit coefficients */
+           size_t k /* spline order *//* breakpoint = ncoeffs + 2 - k, */
+           )
+:   N{vData1.size()},
+    ncoeffs{ncoeffs_},
+    nbreak{ncoeffs_ + 2 - k},
+    bw{gsl_bspline_alloc(k, nbreak)},    /* allocate a cubic bspline workspace (k = 4) */
+    B{gsl_vector_alloc(ncoeffs)},
+    x{gsl_vector_alloc(N)},
+    y{gsl_vector_alloc(N)},
+    c{gsl_vector_alloc(ncoeffs)},
+    w{gsl_vector_alloc(N)},
+    X{gsl_matrix_alloc(N, ncoeffs)},
+    cov{gsl_matrix_alloc(ncoeffs, ncoeffs)},
+    mw{gsl_multifit_linear_alloc(N, ncoeffs)}
+{
+
+    for(size_t i = 0; i < N; ++i)
+    {
+        gsl_vector_set(x, i, vData1[i]);
+        gsl_vector_set(y, i, vData2[i]);
+        gsl_vector_set(w, i, 1.0);
+    }
+    /* use uniform breakpoints on [ , ] */
+    gsl_bspline_knots_uniform(vData1[0], vData1[N-1], bw);
+
+    /* construct the fit matrix X */
+    for (size_t i = 0; i < N; ++i)
+    {
+      double xi = gsl_vector_get(x, i);
+
+      /* compute B_j(xi) for all j */
+      gsl_bspline_eval(xi, B, bw);
+
+      /* fill in row i of X */
+      for (size_t j = 0; j < ncoeffs; ++j)
+        {
+          double Bj = gsl_vector_get(B, j);
+          gsl_matrix_set(X, i, j, Bj);
+        }
+    }
+
+    /* do the fit */
+    gsl_multifit_wlinear(X, w, y, c, cov, &chisq, mw);
+}
+double gsl_approx::operator()(double x)
+{
+    double y;
+    double yerr;
+    gsl_bspline_eval(x, B, bw);
+    gsl_multifit_linear_est(B, c, cov, &y, &yerr);
+
+    return y;
+}

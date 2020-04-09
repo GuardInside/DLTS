@@ -46,9 +46,10 @@ float64 gate_DAQ = 0.0;      //Длительность запирающего импульса
 int RANGE_SULA_index = 0;
 int PRE_AMP_GAIN_SULA_index = 0;
 /* Настройки аппроксимации */
-bool AprEnableRelax = false;
-int  AprIter = 50;
-double AprErr = 1e-6;
+bool    bspline::enable{false};
+bool    bspline::enableDLTS{false}
+size_t  bspline::order{4};
+size_t  bspline::ncoeffs{12};
 /* Флаги */
 atomic_bool start{false};            //Нажата кнопка старт
 atomic_bool stability{false};        //Температура стабилизировалась вблизи сетпоинта

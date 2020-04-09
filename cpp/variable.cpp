@@ -1,15 +1,15 @@
 #include "variable.h"
 #include "dlts_math.h"
 
-vector<double>          xAxisDLTS;
-vector<vector<double>>  yAxisDLTS;
-vector<double>          xAxisITS;
-vector<vector<double>>  yAxisITS;
-vector<double>          xAxisAr;
-vector<vector<double>>  yAxisAr;
-vector<double>          CorTc;
-//vector<double>          itsAmpVoltages;
-//vector<double>          itsBiasVoltages;  /* Хранит значения напряжений импульсов */
+vector<double>              xAxisDLTS;
+vector<vector<double>>      yAxisDLTS;
+vector<double>              xAxisITS;
+vector<vector<double>>      yAxisITS;
+vector<double>              xAxisAr;
+vector<vector<double>>      yAxisAr;
+vector<double>              CorTc;
+vector<double>              TimeAxis;
+
 
 vector<vector<double>>              SavedRelaxations;   // Хранит все сохраненные и загруженные релаксации
 //vector<double>                      TimeAxis;
@@ -46,16 +46,17 @@ float64 gate_DAQ = 0.0;      //Длительность запирающего импульса
 int RANGE_SULA_index = 0;
 int PRE_AMP_GAIN_SULA_index = 0;
 /* Настройки аппроксимации */
-bool AprEnableRelax = false;
-int  AprIter = 50;
-double AprErr = 1e-6;
+bool    bspline::enable{false};
+bool    bspline::enable2{false};
+size_t  bspline::order{4};
+size_t  bspline::ncoeffs{12};
 /* Флаги */
 atomic_bool start{false};            //Нажата кнопка старт
 atomic_bool stability{false};        //Температура стабилизировалась вблизи сетпоинта
 atomic_bool bfNewfile{true};         //Создавать ли новый файл при старте эксперимента?
 atomic_bool fix_temp{false};         //Фиксация температуры
 atomic_bool auto_peak_search{true};  //Автоопределение пика методом золотого сечения
-atomic_bool normaliz_dlts{false};
+//atomic_bool normaliz_dlts{false};
 
 /* Параметры коррелятора */
 int WeightType = DoubleBoxCar;
