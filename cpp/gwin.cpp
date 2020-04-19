@@ -30,6 +30,7 @@ namespace gwin
             hBitMap{NULL},
             iMark1{5}, iMark2{10}, iAdMark1{2}, iAdMark2{0},
             iPrec1{DEFAULT_PRECISION}, iPrec2{DEFAULT_PRECISION},
+            iSubInfoAligment{ALIGMENT::LEFT},
             hAxisPen{CreatePen(PS_SOLID, 0, RGB(255,255,255))},
             hPlotPen{CreatePen(PS_SOLID, 0, RGB(255,215,0))},
             hGridPen{CreatePen(PS_DOT, 0, RGB(50,50,50))},
@@ -46,6 +47,7 @@ namespace gwin
         HBITMAP hBitMap;
         UINT iMark1, iMark2, iAdMark1, iAdMark2;
         INT iPrec1, iPrec2;
+        ALIGMENT iSubInfoAligment;
         HPEN hAxisPen, hPlotPen, hGridPen;
         COLORREF crAxisSubscribeColor, crAdInfoColor;
         HFONT hTextFont;
@@ -272,13 +274,14 @@ BOOL gwin::gMark(HWND hWnd, int iMark1, int iMark2, int iAdMark1, int iAdMark2)
     return TRUE;
 }
 
-BOOL gwin::gAdditionalInfo(HWND hWnd, std::string str)
+BOOL gwin::gAdditionalInfo(HWND hWnd, std::string str, ALIGMENT iAligment)
 {
     if(str.empty())
     {
         _gMap.at(hWnd).bfEnableAdInfo = FALSE;
         return FALSE;
     }
+    _gMap.at(hWnd).iSubInfoAligment = iAligment;
     _gMap.at(hWnd).strAdInfo = str;
     _gMap.at(hWnd).bfEnableAdInfo = TRUE;
     return TRUE;
@@ -419,7 +422,7 @@ BOOL gwin::gMulDrawPlot(HWND hWnd, HDC &hdc, const gVector *vData1, const gMulVe
     if(_gMap.at(hWnd).bfEnableFixedXBand == false)
     {
         for(const auto &itir: *vData1)
-            if(max_x < itir) max_x = itir;
+            if(max_x <= itir) max_x = itir;
             else if(min_x > itir) min_x = itir;
         /* Сохраняем новые границы */
         _gMap.at(hWnd).dMinX = min_x;
@@ -434,7 +437,7 @@ BOOL gwin::gMulDrawPlot(HWND hWnd, HDC &hdc, const gVector *vData1, const gMulVe
     {
         for(const auto &extiter: *vMulData2)
             for(const auto &itir: extiter)
-                if(max_y < itir) max_y = itir;
+                if(max_y <= itir) max_y = itir;
                 else if(min_y > itir) min_y = itir;
         /* Сохраняем новые границы */
         _gMap.at(hWnd).dMinY = min_y;
@@ -446,34 +449,37 @@ BOOL gwin::gMulDrawPlot(HWND hWnd, HDC &hdc, const gVector *vData1, const gMulVe
         max_y = _gMap.at(hWnd).dMaxY;
     }
     /* Коррекция масштаба оси Y */
-    double e = fabs(max_y) > fabs(min_y)? fabs(max_y) : fabs(min_y);
     int expY = 0, expX = 0;
-    while(e < 1.0 && bfEnableScCor)
+    if(max_y != min_y)
     {
-        e*=10;
-        expY++;
+        double e = fabs(max_y) > fabs(min_y)? fabs(max_y) : fabs(min_y);
+        while(e < 1.0 && bfEnableScCor)
+        {
+            e*=10;
+            expY++;
+        }
+        while(e > 999.9 && bfEnableScCor)
+        {
+            e/=10;
+            expY--;
+        }
+        while(expY%3 != 0) expY--;
+        /* Коррекция масштаба оси X */
+        e = fabs(max_x) > fabs(min_x)? fabs(max_x) : fabs(min_x);
+        while(e < 1.0 && bfEnableScCor)
+        {
+            e*=10;
+            expX++;
+        }
+        while(e > 999.9 && bfEnableScCor)
+        {
+            e/=10;
+            expX--;
+        }
+        while(expX%3 != 0) expX--;
+        hx = (max_x - min_x)/iMark1;
+        hy = (max_y - min_y)/iMark2;
     }
-    while(e > 999.9 && bfEnableScCor)
-    {
-        e/=10;
-        expY--;
-    }
-    while(expY%3 != 0) expY--;
-    /* Коррекция масштаба оси X */
-    e = fabs(max_x) > fabs(min_x)? fabs(max_x) : fabs(min_x);
-    while(e < 1.0 && bfEnableScCor)
-    {
-        e*=10;
-        expX++;
-    }
-    while(e > 999.9 && bfEnableScCor)
-    {
-        e/=10;
-        expX--;
-    }
-    while(expX%3 != 0) expX--;
-    hx = (max_x - min_x)/iMark1;
-    hy = (max_y - min_y)/iMark2;
     /* Сдвигаем начало координат */
     LONG iWidth, iHeight;
     gWindowMetric(hWnd, &iWidth, &iHeight);
@@ -486,6 +492,19 @@ BOOL gwin::gMulDrawPlot(HWND hWnd, HDC &hdc, const gVector *vData1, const gMulVe
     OldTextColor = SetTextColor(hdc, _gMap.at(hWnd).crAxisSubscribeColor);
     buff.fixed();
     SetBkMode(hdc, TRANSPARENT);
+    /* В массиве только нули, экстренный выход */
+    if(max_y == min_y)
+    {
+        std::string error_msg = "Maximum and minimum values are equal.";
+        SetTextColor(hdc, _gMap.at(hWnd).crAdInfoColor);
+        GetTextExtentPoint32(hdc, error_msg.data(), error_msg.length(), &szText);
+        TextOut(hdc, iPlotSize-szText.cx-iIndent, iPlotSize - iIndent - szText.cy, error_msg.data(), error_msg.length());
+
+        SetTextColor(hdc, OldTextColor);
+        SelectObject(hdc, (HPEN)hOldPen);
+        SelectObject(hdc, (HFONT)hOldFont);
+        return TRUE;
+    }
     /* Рисуем прямоугольную координатную сетку */
     for(int c = 0; c < 2; c++)
     {
@@ -634,10 +653,19 @@ BOOL gwin::gMulDrawPlot(HWND hWnd, HDC &hdc, const gVector *vData1, const gMulVe
     {
         gInfoVector vInfo;
         gSplit(_gMap.at(hWnd).strAdInfo, &vInfo);
+
+        ALIGMENT aligment = _gMap.at(hWnd).iSubInfoAligment;
         for(const auto &it: vInfo)
         {
             GetTextExtentPoint32(hdc, it.data(), it.length(), &szText);
-            TextOut(hdc, iPlotSize-szText.cx-iIndent, iPlotSize - iIndent - szText.cy*(s++), it.data(), it.length());
+            switch(aligment)
+            {
+                case ALIGMENT::RIGHT: /* Right */
+                    TextOut(hdc, iIndent, iPlotSize - iIndent - szText.cy*(s++), it.data(), it.length());
+                    break;
+                default:
+                    TextOut(hdc, iPlotSize-szText.cx-iIndent, iPlotSize - iIndent - szText.cy*(s++), it.data(), it.length());
+            }
         }
     }
     /* Выводим масштабирующий множитель */
@@ -695,6 +723,7 @@ BOOL gwin::gMulDrawPlot(HWND hWnd, HDC &hdc, const gVector *vData1, const gMulVe
         //Rectangle(hdc, rc.left, rc.top, rc.right, rc.bottom);
         DrawText(hdc, str.c_str(), str.length(), &rc, DT_CENTER | DT_SINGLELINE);
     }
+
     SelectObject(hdc, (HPEN)hOldPen);
     SelectObject(hdc, (HFONT)hOldFont);
     SetTextColor(hdc, OldTextColor);

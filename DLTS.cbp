@@ -5,6 +5,149 @@
 		<Option title="DLTS" />
 		<Option pch_mode="2" />
 		<Option compiler="gcc" />
+		<Option show_notes="0">
+			<notes>
+				<![CDATA[template <typename RELAXATION>
+void AddPoint(RELAXATION &f /* Релаксация*/, double capacity, size_t offset)
+{
+    double (*w) (double, double) = get_weight_function(WeightType);
+    if(index_mode.load() == DLTS)
+    {   /* Добавляем кривую DLTS */
+        for(size_t c = 0; c < CorTc.size(); ++c)          /* Пробегаемся по всем корреляторам */
+        {
+            double Tc = CorTc[c];
+            double Tg = Tc / correlation_c;
+            double I = Integral(Tg, Tc, w, f);
+
+            /* Добавляем по точке на каждой из осей */
+            VoltageToCapacity(&I);
+
+            if(menu::divide)
+            {
+                I /= divider(Tc, WeightType);
+            }
+
+            yAxisDLTS[c].insert(yAxisDLTS[c].begin() + offset, I);
+        }
+    }
+    else
+    {   /* Добавляем кривую ITS */
+        constexpr static double Tc_delta = 1; /* ms */
+
+        double Tg = 0.001 * gate_DAQ;
+        double Tc_begin = Tg * correlation_c;
+        double Tc_end   = 2*PI * correlation_c * measure_time_DAQ / (correlation_c + 1);
+
+        int min_i = ceil(Tc_begin / Tc_delta);
+        int max_i = floor(Tc_end / Tc_delta);
+
+        vector<double> vBuff;
+        vBuff.reserve(max_i - min_i);
+
+        for(int i = max_i, j = 0; i > min_i; --i)
+        {
+            PostMessage(hProgress, PBM_SETPOS, 100.0*(++j)/max_i, 0);
+
+            double Tc = i*Tc_delta;
+
+            auto sin_woo = [&Tc](double x, double Tg)
+            {
+                if(x >= Tg && x <= Tg + Tc)
+                    return sin((x-Tg)*2*PI/Tc);
+                return 0.0;
+            };
+
+            auto exp_woo = [](double val)
+            {
+                return exp(-val/10);
+            };
+
+            /*vector<double> Buff;
+            MessageBox(0,"","",0);
+            for(int i = 0; i < TimeAxis.size(); ++i)
+            {
+                if(i > TimeAxis.size() - 5)
+                {
+                    MessageBox(0,"","",0);
+                    stringstream buff;
+                    buff << TimeAxis.size() << endl;
+                    buff << f(TimeAxis[i]) << " " << exp(-TimeAxis[i] / 10);
+                    MessageBox(0,buff.str().c_str(), "",0);
+                }
+                Buff.push_back(f(TimeAxis[i]));
+            }
+            MessageBox(0,"","",0);
+            gwin::gData(hRelax, &TimeAxis, &Buff);
+            MessageBox(0,"","",0);*/
+            double I = Integral(Tg, Tc, sin_woo, f);
+
+            /*double omega = 2*PI / Tc;
+            double tau = 32;
+            double s0 = 1 / tau;
+            double Tg = Tc_begin;
+            double I = exp(-Tg*s0) * omega / (s0*s0 + omega*omega) * (1 - exp(-(Tc-Tg)*s0));*/
+
+            VoltageToCapacity(&I);
+            if(menu::divide)
+            {
+                I /= divider(Tc, WeightType);
+            }
+            vBuff.push_back(I);
+        }
+        yAxisITS.insert(yAxisITS.begin() + offset, vBuff);
+        PostMessage(hProgress, PBM_SETPOS, 0, 0);
+
+        /* Формируем ось log от сорости эмиссии */
+        if(xAxisITS.empty())
+        {
+            xAxisITS.reserve(max_i-min_i);
+            //double Tg = Tc / correlation_c;
+            for(int i = max_i; i > min_i; --i)
+            {
+                double val = log10(2*PI / ( (i*Tc_delta - Tc_begin)) );
+                constexpr double psi = log10(1 + 0.01); /* Поправка на точность вычислений */
+                /*stringstream buff;
+                buff << psi;
+                MessageBox(0,buff.str().c_str(),"",0);*/
+                xAxisITS.push_back(val + psi);
+            }
+        }
+    }
+}
+
+void AddPointToDLTS(const vector<double> *vRelaxation, const double temp, const double capacity)
+{
+    /* Проверка на существование точки и выбор смещение для вставки новой */
+    size_t offset = 0;
+    for(const auto& T: xAxisDLTS)
+    {
+        if(temp > T) offset++;
+        else if(temp == T)
+            return;
+    }
+    xAxisDLTS.insert(xAxisDLTS.begin() + offset, temp);
+
+    if(bspline::enable)
+    { /* Используем аппроксимацию для построения DLTS- ITS-кривых */
+        gsl_approx f(TimeAxis, *vRelaxation);
+        vector<double> vBuff;
+        vBuff.reserve(vRelaxation->size());
+        for(const auto &t: TimeAxis)
+        {
+            vBuff.push_back( f(t) );
+        }
+        interp foo(TimeAxis, vBuff, gsl_interp_linear);
+        AddPoint(foo, capacity, offset);
+    }
+    else
+    { /* Используем интерполянт для построения DLTS- ITS-кривых */
+        interp f(TimeAxis, *vRelaxation, gsl_interp_linear);
+        AddPoint(f, capacity, offset);
+    }
+}
+]]>
+			</notes>
+		</Option>
 		<Build>
 			<Target title="Release">
 				<Option platforms="Windows;" />

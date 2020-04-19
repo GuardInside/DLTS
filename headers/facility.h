@@ -15,6 +15,9 @@
 #include "variable.h"
 using namespace std;
 
+/* Тесты */
+void Test(int mode);
+
 enum SAVE_MODE {SAVE_SETTINGS, SAVE_RELAXATIONS, SAVE_DLTS, SAVE_ARRHENIUS, SAVE_CT};
 
 stringstream&   rewrite(stringstream& buff);
@@ -34,7 +37,7 @@ double MeanOfTemp(std::vector<double>::const_iterator b,
 void write_settings();
 void read_settings();
 //Инициализация сборщика данных, термостата и зон для PID регулировки
-void ApplySettings();
+int ApplySettings();
 void InitializeVirtualInstruments();
 /* Функции для сохранения и загрузки save-файлов */
 VOID DownloadWindow();

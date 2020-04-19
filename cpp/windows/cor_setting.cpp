@@ -234,6 +234,7 @@ BOOL CorWindow_OnCommand(HWND hWnd, INT id, HWND, UINT what)
 
                 gwin::gAdditionalInfo(hWeightGraph, info.str());
                 gwin::gAxisInfo(hWeightGraph, "Time [ms]", "W [Arb]");
+                gwin::gPrecision(hWeightGraph, 0, 2);
                 gwin::gData(hWeightGraph, &xAxis, &yAxis);
                 UseAlphaBoxCar = tmp;
             }

@@ -47,8 +47,8 @@ BOOL BuildMenu(HWND hWnd)
     SetMenuItemBitmaps(hAnalysisMenu, 0, MF_BYPOSITION, hbmpFitting, hbmpFitting);
         SetMenuItemBitmaps(hAnalysisMenu, ID_MENU_FITTING_BSPLINE, MF_BYCOMMAND, hbmpExp, hbmpExp);
     SetMenuItemBitmaps(hAnalysisMenu, 1, MF_BYPOSITION, hbmpDLTS, hbmpDLTS);
-    CheckMenuItem(hAnalysisMenu, ID_MENU_AUTO_PEAK_DETECTING, auto_peak_search.load() ? MF_CHECKED : MF_UNCHECKED);
-    //CheckMenuItem(hAnalysisMenu, ID_MENU_NORMALIZE_TO_ONE, normaliz_dlts.load() ? MF_CHECKED : MF_UNCHECKED);
+    CheckMenuItem(hAnalysisMenu, ID_MENU_AUTO_PEAK_DETECTING, menu::automatic ? MF_CHECKED : MF_UNCHECKED);
+    CheckMenuItem(hAnalysisMenu, ID_MENU_DIVIDE_S_ON_TC, menu::divide ? MF_CHECKED : MF_UNCHECKED);
     return EXIT_SUCCESS;
 }
 

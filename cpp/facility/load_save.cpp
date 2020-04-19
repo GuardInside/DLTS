@@ -69,7 +69,8 @@ UINT CALLBACK LoadFile(PVOID)
          >> placeholder >> rate_DAQ >> placeholder
          >> placeholder >> RANGE_SULA_index >> placeholder
          >> placeholder >> PRE_AMP_GAIN_SULA_index >> placeholder;
-    ApplySettings();
+    if(ApplySettings() != 0)
+        return FALSE;
     file >> placeholder >> Generator.bias >> placeholder
          >> placeholder >> Generator.amp >> placeholder
          >> placeholder >> Generator.width >> placeholder;
@@ -135,8 +136,8 @@ void SaveRelaxSignalToFile(double MeanTemp, const vector<double> *vData, double 
              << "Time: " << measure_time_DAQ << " [ms]\n"
              << "Gate: " << gate_DAQ << " [mcs]\n"
              << "Rate: " << rate_DAQ << " [Hz]\n"
-             << "Capa: " << RANGE_SULA_index << "[0|10 pF, 1|30 pF, 2|100 pF, 3|300 pF, 4|1 nF]"
-             << "Pre-amp: " << RANGE_SULA_index << "[0|1, 1|3, 2|10, 3|30, 4|100]"
+             << "Capa: " << RANGE_SULA_index << " [0|10pF,1|30pF,2|100pF,3|300pF,4|1nF]\n"
+             << "Pre-amp: " << RANGE_SULA_index << " [0|1,1|3,2|10,3|30,4|100]\n"
              << setprecision(VOLTAGE_PRECISION)
              << "Bias: " << Generator.bias << " [V]\n"
              << "Amp: " << Generator.amp << " [V]\n"
@@ -150,7 +151,7 @@ void SaveRelaxSignalToFile(double MeanTemp, const vector<double> *vData, double 
     }
 
     file << setprecision(THERMO_PRECISION)
-         << MeanTemp
+         << MeanTemp << " "
          << setprecision(VOLTAGE_PRECISION)
          << capacity << endl;
     UINT32 uSamples = rate_DAQ*measure_time_DAQ*0.001;
@@ -166,7 +167,8 @@ void SaveRelaxSignalToFile(double MeanTemp, const vector<double> *vData, double 
 
 VOID SaveWindow(SAVE_MODE _mode)
 {
-    static SAVE_MODE mode = _mode;
+    static SAVE_MODE mode;
+    mode = _mode;
     string strTitle;
     switch(mode)
     {
@@ -187,7 +189,7 @@ VOID SaveWindow(SAVE_MODE _mode)
             break;
     }
     strcpy(SaveFileName, FileSaveName.data()); /* Имя файла по умолчанию */
-    const string ext = "txt", filter = "*.txt\0\0";
+    const string ext = "txt", filter = ".txt\0";
     OPENFILENAME file = {0};
         file.lStructSize = sizeof(OPENFILENAME);
         file.hwndOwner = NULL;
@@ -287,12 +289,11 @@ UINT SaveArrhenius()
     /* Таблица */
     for(size_t i = 0; i < uSample; i++)
     {
-        file << setprecision(2) << xAxisAr.at(i) << setprecision(2);
-        for(size_t j = 0; j < yAxisAr.size(); j++)
-        {
-            file << '\t' << yAxisAr[j][i];
-        }
-        file << endl;
+        file << setprecision(2) << xAxisAr.at(i)
+             << setprecision(2)
+             << '\t' << yAxisAr[i]
+             << '\t' << yAxisArMSQ[i]
+             << endl;
         progress = 99*i/(uSample);
         SendMessage(hProgress, PBM_SETPOS, progress, 0);
     }
@@ -311,18 +312,19 @@ UINT SaveRelax()
     file << fixed << setprecision(THERMO_PRECISION);
     file << "[ms]";
     EnterCriticalSection(&csSavedData);
-        size_t uSample = SavedRelaxations[0].size();
+    const vector<vector<double>> &y = SavedRelaxations;
+        size_t uSample = y[0].size();
         file << "\t" << xAxisDLTS[0];
-        for(size_t j = 1; j < SavedRelaxations.size(); j++)
-            file << "\t\t" << xAxisDLTS[j];
+        for(size_t j = 1; j < y.size(); j++)
+            file << "\t" << xAxisDLTS[j];
         file << endl;
         for(size_t i = 0; i < uSample; i++)
         {
             file << setprecision(TIME_PRECISION) << (0.001*gate_DAQ + i*dt)
                  << setprecision(VOLTAGE_PRECISION);
-            for(size_t j = 0; j < SavedRelaxations.size(); j++)
+            for(size_t j = 0; j < y.size(); j++)
             {
-                file << '\t' << SavedRelaxations[j][i];
+                file << '\t' << y[j][i];
             }
             file << endl;
             progress = 99*i/(uSample);
@@ -341,14 +343,17 @@ UINT SaveDLTS()
     int progress = 0;
     size_t uSample = xAxisDLTS.size();
     file << fixed;
+    const vector<vector<double>> &y = yAxisDLTS;
+    file << "T [K]";
+    for(const auto Tc: CorTc)
+        file << '\t' << Tc;
     for(size_t i = 0; i < uSample; i++)
     {
-        file << setprecision(THERMO_PRECISION) << xAxisDLTS.at(i) << setprecision(10);
+        file << endl << setprecision(THERMO_PRECISION) << xAxisDLTS.at(i) << setprecision(10);
         for(size_t j = 0; j < CorTc.size(); j++)
         {
-            file << '\t' << yAxisDLTS[j][i];
+            file << '\t' << y[j][i];
         }
-        file << endl;
         progress = 99*i/(uSample);
         SendMessage(hProgress, PBM_SETPOS, progress, 0);
     }
@@ -368,17 +373,16 @@ UINT SaveITS()
     file << fixed << setprecision(THERMO_PRECISION) << "log[ms^-1]\t";
     for(size_t i = 0; i < nCurves; i++)
     {
-        file << xAxisDLTS[i] << "\n";
+        file << xAxisDLTS[i] << "\t";
     }
     file << setprecision(10);
     for(size_t i = 0; i < n; i++)
     {
-        file << xAxisITS[i] << "\t";
+        file <<  endl << xAxisITS[i] << "\t";
         for(size_t j = 0; j < nCurves; j++)
         {
             file << yAxisITS[j][i] << "\t";
         }
-        file << endl;
         SendMessage(hProgress, PBM_SETPOS, 100*i/n, 0);
     }
     SendMessage(hProgress, PBM_SETPOS, 0, 0);

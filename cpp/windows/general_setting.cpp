@@ -106,7 +106,8 @@ BOOL SettingsWindow_OnCommand(HWND hwnd, int ID, HWND, UINT codeNotify)
                 rewrite(buff) << Generator.period;
                 SetDlgItemText(hwnd, ID_EDITCONTROL_PERIOD, buff.str().data());
                 //Вывести текущие настройки ширины импульсов
-                rewrite(buff) << Generator.width;
+                rewrite(buff) << setprecision(3);
+                rewrite(buff) << 1000.0 * Generator.width;
                 SetDlgItemText(hwnd, ID_EDITCONTROL_WIDTHPULSE, buff.str().data());
                 //Вывести текущие настройки амплитуды импульса в вольтах
                 rewrite(buff) << setprecision(3);
@@ -122,9 +123,11 @@ BOOL SettingsWindow_OnCommand(HWND hwnd, int ID, HWND, UINT codeNotify)
                 rewrite(buff) << setprecision(3) << scientific << ::dEfMass;
                 SetDlgItemText(hwnd, ID_EDITCONTROL_EFFECTIVE_MASS, buff.str().data());
                 //Вывести текущие настройки фактора вырождения
-                rewrite(buff) << setprecision(0) << fixed;
-                rewrite(buff) << ::dFactorG;
+                rewrite(buff) << setprecision(0) << fixed <<::dFactorG;
                 SetDlgItemText(hwnd, ID_EDITCONTROL_G, buff.str().data());
+                //Вывести текущие настройки концентрации мелкой примеси
+                rewrite(buff) << setprecision(3) << scientific << ::dImpurity;
+                SetDlgItemText(hwnd, ID_EDITCONTROL_IMPURITY, buff.str().data());
             }
         return TRUE;
         /* Показать окно с сигналом, идущим на образец */
@@ -207,7 +210,7 @@ BOOL SettingsWindow_OnCommand(HWND hwnd, int ID, HWND, UINT codeNotify)
                     //Применить настройки периода
                     Generator.period = ApplySettingEditBox(hwnd, ID_EDITCONTROL_PERIOD, 2);
                     //Вывести текущие настройки ширины импульсов
-                    Generator.width = ApplySettingEditBox(hwnd, ID_EDITCONTROL_WIDTHPULSE, 2);
+                    Generator.width = 0.001 * ApplySettingEditBox(hwnd, ID_EDITCONTROL_WIDTHPULSE, 2);
                     if(Generator.width >= Generator.period) alright = false;
                     //Применить настройки амплитуды импульса в вольтах
                     Generator.amp = ApplySettingEditBox(hwnd, ID_EDITCONTROL_AMPLITUDE, 3);
@@ -216,31 +219,35 @@ BOOL SettingsWindow_OnCommand(HWND hwnd, int ID, HWND, UINT codeNotify)
                     Generator.bias = ApplySettingEditBox(hwnd, ID_EDITCONTROL_BIAS, 3);
                     if(Generator.bias < MIN_VOLTAGE_PULSE || Generator.bias > MAX_VOLTAGE_PULSE) alright = false;
                 }
-                //Применить настройки эффективной массы
+                //Применить настройки эффективной массы и концентрации мелкой примеси
                 {
                     stringstream buff;
                     buff << setprecision(3) << scientific;
                     GetDlgItemTextMod(hwnd, ID_EDITCONTROL_EFFECTIVE_MASS, buff);
                     ::dEfMass = atof(buff.str().data());
+                    GetDlgItemTextMod(hwnd, ID_EDITCONTROL_IMPURITY, buff);
+                    ::dImpurity = atof(buff.str().data());
                 }
                 //Применить настройки фактора вырождения
                 ::dFactorG = ApplySettingEditBox(hwnd, ID_EDITCONTROL_G, 0);
                 //Применить настройки к физическим устройствам и сохранить файл настроек при условии их корректности
                 if(alright == true)
                 {
+                    bool bfRefresh = false;
+                    if(::index_mode.load() != index_mode)
+                    {
+                        bfRefresh = true;
+                    }
+
                     Generator.is_active = Generator_Agilent_is_active;
+                    ::index_mode.store(index_mode);
                     ApplySettings();
-                    if(index_mode != ::index_mode.load())
-                    {
-                        ::index_mode.store(index_mode);
-                        //RefreshDLTS();
-                        SendMessage(hMainWindow, WM_COMMAND, WM_REFRESH_DLTS, 0);
-                    }
-                    else
-                    {
-                        ::index_mode.store(index_mode);
-                    }
                     write_settings();
+
+                    if(bfRefresh)
+                        SendMessage(hMainWindow, WM_COMMAND, WM_REFRESH_DLTS, 0);
+                    else
+                        SendMessage(hMainWindow, WM_COMMAND, WM_PAINT_DLTS, 0);
                 }
                 else
                     MessageBox(hwnd, "Incorrect settings.\nYou should be more careful.", "Warning", MB_ICONWARNING);

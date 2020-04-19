@@ -5,6 +5,9 @@
 #include "ini.h"
 #include <gsl_bspline.h>
 
+//Для отладки
+#include <random>
+
 void AddPoint_with_interp(const vector<double> *vRelaxation, const double temp);
 void AddPoint_with_approx(const vector<double> *vRelaxation, const double temp);
 
@@ -87,7 +90,7 @@ double HiRes5_w(double x, double Tg)
 double HiRes6_w(double x, double Tg)
 {
     double t2 = Tg * (1 + correlation_c);
-    double step =  0.1 * Tg * correlation_c;
+    double step =  (1./15) * Tg * correlation_c;
     double a[] = {1, -7./8, 7./32, -1./64};
     double t[] = {Tg + 1*step, Tg + 3*step, Tg + 7*step};
     if(x >= Tg && x <= t[0])
@@ -134,8 +137,8 @@ double double_boxcar_width(double &Tg)
 }
 double double_boxcar(double x, double Tg)
 {
-    double t2 = Tg*(1 + correlation_c);     //начало второго испульса
-    double dt = double_boxcar_width(Tg);    //ширина импульсов в мсек
+    double t2 = Tg*(1 + correlation_c);     //начало второго импульса
+    double dt = double_boxcar_width(Tg);    //ширина импульсов в мс
     if(x >= Tg && x <= Tg+dt)
         return 1;
     if(x >= t2-dt && x <= t2)
@@ -146,6 +149,16 @@ double double_boxcar(double x, double Tg)
 double test_func(double x, double t1)
 {
     return 1.0;
+}
+
+double divider(const double &Tc, const int &type)
+{
+    if(type == DoubleBoxCar)
+    {
+        double Tg = Tc / correlation_c;
+        return 2 * double_boxcar_width(Tg);
+    }
+    return Tc;
 }
 
 template <typename RELAXATION>
@@ -162,33 +175,41 @@ void AddPoint(RELAXATION &f /* Релаксация*/, double capacity, size_t offset)
 
             /* Добавляем по точке на каждой из осей */
             VoltageToCapacity(&I);
-            I /= ( int_pre_amplifier[PRE_AMP_GAIN_SULA_index] * capacity);// * Tc);
+
+            if(menu::divide)
+            {
+                I /= divider(Tc, WeightType);
+            }
 
             yAxisDLTS[c].insert(yAxisDLTS[c].begin() + offset, I);
         }
     }
-    else
+    else if(index_mode.load() == ITS)
     {   /* Добавляем кривую ITS */
         constexpr static double Tc_delta = 0.1; /* ms */
 
-        double Tc_begin = 0.001 * gate_DAQ * correlation_c;
+        double Tc_begin = ( 0.001 * gate_DAQ ) * correlation_c;
         double Tc_end   = correlation_c * measure_time_DAQ / (correlation_c + 1);
 
-        int min_i = Tc_begin / Tc_delta;
-        int max_i = Tc_end / Tc_delta;
+        int min_i = ceil(Tc_begin / Tc_delta);
+        int max_i = floor(Tc_end / Tc_delta);
 
         vector<double> vBuff;
         vBuff.reserve(max_i - min_i);
+
         for(int i = max_i, j = 0; i > min_i; --i)
         {
             PostMessage(hProgress, PBM_SETPOS, 100.0*(++j)/max_i, 0);
 
             double Tc = i*Tc_delta;
             double Tg = Tc / correlation_c;
+
             double I = Integral(Tg, Tc, w, f);
 
             VoltageToCapacity(&I);
-            I /= ( int_pre_amplifier[PRE_AMP_GAIN_SULA_index] * capacity);// * Tc);
+
+            I /= divider(Tc, WeightType);
+
             vBuff.push_back(I);
         }
         yAxisITS.insert(yAxisITS.begin() + offset, vBuff);
@@ -200,7 +221,7 @@ void AddPoint(RELAXATION &f /* Релаксация*/, double capacity, size_t offset)
             xAxisITS.reserve(max_i-min_i);
             for(int i = max_i; i > min_i; --i)
             {
-                xAxisITS.push_back( log10(1.0 /(i*Tc_delta)) );
+                xAxisITS.push_back(-log10((i*Tc_delta) ) );
             }
         }
     }
@@ -216,17 +237,23 @@ void AddPointToDLTS(const vector<double> *vRelaxation, const double temp, const 
         else if(temp == T)
             return;
     }
-    xAxisDLTS.insert(xAxisDLTS.begin() + offset, temp); // TUS
-    /* Интерполируем кривую */
+    xAxisDLTS.insert(xAxisDLTS.begin() + offset, temp);
 
-    if(bspline::enable2)
-    {
+    if(bspline::enable)
+    { /* Используем аппроксимацию для построения DLTS- ITS-кривых */
         gsl_approx f(TimeAxis, *vRelaxation);
-        AddPoint(f, capacity, offset);
+        vector<double> vBuff;
+        vBuff.reserve(vRelaxation->size());
+        for(const auto &t: TimeAxis)
+        {
+            vBuff.push_back( f(t) );
+        }
+        interp foo(TimeAxis, vBuff, gsl_interp_linear);
+        AddPoint(foo, capacity, offset);
     }
     else
-    {
-        interp f(TimeAxis, *vRelaxation, gsl_interp_cspline);
+    { /* Используем интерполянт для построения DLTS- ITS-кривых */
+        interp f(TimeAxis, *vRelaxation, gsl_interp_linear);
         AddPoint(f, capacity, offset);
     }
 }

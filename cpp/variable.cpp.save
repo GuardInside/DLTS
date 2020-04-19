@@ -1,15 +1,18 @@
 #include "variable.h"
 #include "dlts_math.h"
 
-vector<double>          xAxisDLTS;
-vector<vector<double>>  yAxisDLTS;
-vector<double>          xAxisITS;
-vector<vector<double>>  yAxisITS;
-vector<double>          xAxisAr;
-vector<vector<double>>  yAxisAr;
-vector<double>          CorTc;
-//vector<double>          itsAmpVoltages;
-//vector<double>          itsBiasVoltages;  /* Хранит значения напряжений импульсов */
+vector<double>              xAxisDLTS;
+vector<vector<double>>      yAxisDLTS;
+vector<double>              xAxisITS;
+vector<vector<double>>      yAxisITS;
+vector<double>              xAxisLD;
+vector<vector<double>>      yAxisITS;
+vector<double>              xAxisAr;
+vector<double>              yAxisAr;
+vector<double>              yAxisArMSQ;
+vector<double>              CorTc;
+vector<double>              TimeAxis;
+
 
 vector<vector<double>>              SavedRelaxations;   // Хранит все сохраненные и загруженные релаксации
 //vector<double>                      TimeAxis;
@@ -31,6 +34,7 @@ const string        FileSaveExt{".dlts"};
 
 double dEfMass = ELECTRON_MASS;
 double dFactorG = 1;
+double dImpurity = 1e15;
 
 double itsTemperature = 0.0; /* Температура в режиме ITS */
 unsigned int id_DAQ = 0;
@@ -47,7 +51,7 @@ int RANGE_SULA_index = 0;
 int PRE_AMP_GAIN_SULA_index = 0;
 /* Настройки аппроксимации */
 bool    bspline::enable{false};
-bool    bspline::enableDLTS{false}
+bool    bspline::enable2{false};
 size_t  bspline::order{4};
 size_t  bspline::ncoeffs{12};
 /* Флаги */
@@ -55,8 +59,10 @@ atomic_bool start{false};            //Нажата кнопка старт
 atomic_bool stability{false};        //Температура стабилизировалась вблизи сетпоинта
 atomic_bool bfNewfile{true};         //Создавать ли новый файл при старте эксперимента?
 atomic_bool fix_temp{false};         //Фиксация температуры
-atomic_bool auto_peak_search{true};  //Автоопределение пика методом золотого сечения
-atomic_bool normaliz_dlts{false};
+/* Меню */
+bool menu::divide{false};
+bool menu::automatic{true};
+//atomic_bool normaliz_dlts{false};
 
 /* Параметры коррелятора */
 int WeightType = DoubleBoxCar;

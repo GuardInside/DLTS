@@ -14,14 +14,19 @@ interp::interp(const std::vector<double> &xAxis, const std::vector<double> &yAxi
     gsl_interp_init(inter_poly, x, y, size);
 }
 
-double interp::at(double x_0)
+double interp::at(const double &x0)
 {
-    return gsl_interp_eval(inter_poly, x, y, x_0, acc);
+    return gsl_interp_eval(inter_poly, x, y, x0, acc);
 }
 
-double interp::operator()(double x_0)
+double interp::operator()(const double &x0)
 {
-    return at(x_0);
+    return at(x0);
+}
+
+complex<double> interp::operator()(const complex<double> &x0)
+{
+    return at(x0.real()) ;
 }
 
 interp::~interp()

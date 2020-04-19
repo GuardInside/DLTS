@@ -37,7 +37,6 @@ BOOL Analysis_OnCommand(HWND hWnd, INT id, HWND, UINT)
     {
         case ID_BUTTON_APPLY:
             {
-                bool oldEnable2 = bspline::enable2;
                 /* Установка режима аппроксимации */
                 bool enable     = SendMessage(GetDlgItem(hWnd, ID_CHECKBOX_USE_FITTING_RELAX), BM_GETCHECK, 0, 0);
                 bool enable2    = SendMessage(GetDlgItem(hWnd, ID_CHECKBOX_USE_BSPLINE_DLTS), BM_GETCHECK, 0, 0);
@@ -66,11 +65,7 @@ BOOL Analysis_OnCommand(HWND hWnd, INT id, HWND, UINT)
                 CloseHandle((HANDLE)_beginthreadex(NULL, 0, dlg_success, NULL, 0, NULL));
                 /* Пересчитываем и обновляем графики */
                 SendMessage(hMainWindow, WM_COMMAND, WM_PAINT_RELAX, 0);
-                if(bspline::enable2 && oldEnable2 != bspline::enable2)
-                { /* Обновляем лишь в случае изменения чекбокса */
-                    //RefreshDLTS();
-                    SendMessage(hMainWindow, WM_COMMAND, WM_REFRESH_DLTS, 0);
-                }
+                PostMessage(hMainWindow, WM_COMMAND, WM_REFRESH_DLTS, 0);
             }
             return TRUE;
         case ID_BUTTON_CLOSE:

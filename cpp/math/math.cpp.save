@@ -76,8 +76,6 @@ double find_middle_x0(double Tg, double Tc, int type)
 }
 
 /* **************************************** */
-/* Только для экспоненциального коррелятора */
-/* **************************************** */
 
 double S_foo(double Tg, double Tc, double tau, weight_function weight_f)
 {
@@ -87,12 +85,19 @@ double S_foo(double Tg, double Tc, double tau, weight_function weight_f)
 
     auto sub_fp = [&](double x, double tau) -> double
     {
-        return exp( - x / tau ) / Tc; /* Подинтегральная функция */
+        return exp( - x / tau ); /* Подинтегральная функция */
     };
     auto sub_f = bind(sub_fp, _1, tau); /* Фиксируем tau */
 
-    return Integral(Tg, Tc, weight_f, sub_f, precision);
+    return Integral(Tg, Tc, weight_f, sub_f, precision) / Tc;
 }
+
+/*double LockInEq(const double &tau, const double &Tc, const double &Tg)
+{
+    double a = tau / Tc;
+    double b = Tg / Tc;
+    return ( (a + b) / (a + b + 1) - exp( - 1 / (2*a) ));
+}*/
 
 double find_tau(double Tg, double Tc, int type)
 {
@@ -102,6 +107,16 @@ double find_tau(double Tg, double Tc, int type)
 
     if(type == DoubleBoxCar && !UseAlphaBoxCar && Tg != Tc)
         return (Tc - Tg ) / log(Tc / Tg);
+    /*if(type == LockIn)
+    {
+        auto D = bind(LockInEq, _1, Tc, Tg);
+        /**auto D_abs = [&](const double &tau)
+        {
+            return fabs(D(tau));
+        };
+        return GoldSerch(Tg, Tg + Tc, 1e-3, D_abs, MAXIMUM);**/
+        /*return dichotomy(Tg, Tg+Tc, 1e-9, D);
+    }*/
 
     auto S = bind(S_foo, Tg, Tc, _1, weight_f);
     auto S_abs = [&](double tau)
@@ -111,7 +126,7 @@ double find_tau(double Tg, double Tc, int type)
     return GoldSerch(0, Tg + Tc, 1e-3, S_abs, MAXIMUM); /* Поиск экстремума с точностью до мкс */
 }
 
-double helper(double Tg, double Tc, int type) /* Для отладки */
+void helper(double Tg, double Tc, int type) /* Для отладки */
 {
     using namespace std::placeholders;
     weight_function weight_f = get_weight_function(type);
@@ -140,7 +155,7 @@ double helper(double Tg, double Tc, int type) /* Для отладки */
         it /= s_limit;
     for(size_t i = 0; i < vData1.size(); ++i)
     {
-        file << std::fixed << std::setprecision(4) << vData1[i] << "\t" << vData2[i] << std::endl;
+        file << std::fixed << std::setprecision(4) << vData1[i] << "\t" << fabs(vData2[i]) << std::endl;
     }
     file.close();
     gwin::gCross(hRelax, &vMark1, &vMark2);
@@ -280,4 +295,19 @@ double MeanSquareError(std::vector<double>::const_iterator b,
     double MeanFromSquares = std::accumulate(b, e, static_cast<double> (0.0),
                                 [](double init, double value){ return init + pow(value, 2);}) / range;
     return round( pow(MeanFromSquares - pow(MeanValue, 2), 0.5), 2);
+}
+
+cmplex DFT(const double &Tw, vector<double> &f, const int &n)
+{
+    using namespace std::literals::complex_literals;
+
+    size_t N        = f.size() - 1;
+    cmplex result   = 0.5 * (f[0] + f[N]);
+
+    for(int k = 1; k < N; ++k) //Метод трапеций
+    {
+        result += f[k] * exp( -2*PI*n*k/);
+    }
+
+    return result;
 }

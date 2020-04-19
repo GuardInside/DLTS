@@ -55,6 +55,9 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE, LPSTR, int)
         hDownloadEvent = CreateEvent(NULL, TRUE, TRUE, NULL);
         InitCommonControls();
         hMainWindow = CreateDialog(hInstance, MAKEINTRESOURCE(ID_MAIN_WINDOW), HWND_DESKTOP, NULL);
+
+        /* Тесты */
+        Test(DLTS);
         while (GetMessage(&messages, NULL, 0, 0))
         {
             if(!IsDialogMessage(hSettinWnd, &messages) && !IsDialogMessage(hAnalysisWnd, &messages))
@@ -156,13 +159,19 @@ void MainWindow_OnCommand(HWND hwnd, int id, HWND, UINT)
             StopRefreshDLTS.store(false);
             break;
         case WM_PAINT_RELAX:
+            EnterCriticalSection(&csSavedData);
             PlotRelax();
+            LeaveCriticalSection(&csSavedData);
             break;
         case WM_PAINT_DLTS:
+            EnterCriticalSection(&csSavedData);
             if(index_mode.load() == DLTS)
                 PlotDLTS(xAxisDLTS, yAxisDLTS);
-            else
+            else if(index_mode.load() == ITS)
                 PlotDLTS(xAxisITS, yAxisITS);
+            else if(index_mode.load() == LDLTS)
+                PlotDLTS(xAxisLDLTS, yAxisLDLTS);
+            LeaveCriticalSection(&csSavedData);
             break;
         case ID_BUTTON_PREVIOUS_W2:
             if(index_w2.load() == 0 || !bfDAQ0k)
@@ -223,6 +232,7 @@ void MainWindow_OnCommand(HWND hwnd, int id, HWND, UINT)
             SaveWindow(SAVE_SETTINGS);
             break;
         case ID_MENU_SAVE_RELAXATIONS:
+
             SaveWindow(SAVE_RELAXATIONS);
             break;
         case ID_MENU_SAVE_DLTS:
@@ -238,18 +248,18 @@ void MainWindow_OnCommand(HWND hwnd, int id, HWND, UINT)
             ClearMemmory();
             break;
         case ID_MENU_AUTO_PEAK_DETECTING:
-            auto_peak_search.store(auto_peak_search.load() ? false : true);
+            menu::automatic = (menu::automatic ? false : true);
             SendMessage(hMainWindow, WM_COMMAND, WM_REFRESH_MENU, 0);
             SendMessage(hMainWindow, WM_COMMAND, WM_PAINT_DLTS, 0);
             break;
-        case ID_MENU_NORMALIZE_TO_ONE:
-            normaliz_dlts.store(normaliz_dlts.load() ? false : true);
+        case ID_MENU_DIVIDE_S_ON_TC:
+            menu::divide = (menu::divide ? false : true);
             SendMessage(hMainWindow, WM_COMMAND, WM_REFRESH_MENU, 0);
-            SendMessage(hMainWindow, WM_COMMAND, WM_PAINT_DLTS, 0);
+            SendMessage(hMainWindow, WM_COMMAND, WM_REFRESH_DLTS, 0);
             break;
         case WM_REFRESH_MENU:
-            CheckMenuItem(GetSubMenu(GetMenu(hwnd), 1), ID_MENU_AUTO_PEAK_DETECTING, auto_peak_search.load() ? MF_CHECKED : MF_UNCHECKED);
-            CheckMenuItem(GetSubMenu(GetMenu(hwnd), 1), ID_MENU_NORMALIZE_TO_ONE, normaliz_dlts.load() ? MF_CHECKED : MF_UNCHECKED);
+            CheckMenuItem(GetSubMenu(GetMenu(hwnd), 1), ID_MENU_AUTO_PEAK_DETECTING, menu::automatic ? MF_CHECKED : MF_UNCHECKED);
+            CheckMenuItem(GetSubMenu(GetMenu(hwnd), 1), ID_MENU_DIVIDE_S_ON_TC, menu::divide ? MF_CHECKED : MF_UNCHECKED);
             break;
         /* Загрузить файл */
         case ID_MENU_OPEN:
@@ -442,12 +452,11 @@ UINT Thermostat_Process()
     buff << setprecision(THERMO_PRECISION) << fixed;
     /* Получаем значение текущей температуры */
     Thermostat.CurrentTemp(&dTemp);
-    dTemp = round(dTemp, 2);
     #ifdef TEST_MODE
-        srand(time(NULL));
-        dTemp = rand()%50+10;
-        dTemp = round(dTemp,2);
+        //srand(time(NULL));
+        dTemp = 295;//rand()%50+10;
     #endif
+    dTemp = round(dTemp, 2);
     /* Сохраняем полученное значение */
     vTemp.push_back(dTemp);
     /* Удаляем старое значение */
@@ -605,8 +614,8 @@ UINT CALLBACK ReadDLTS(void* ptrMeanTemp)
             AddPointToDLTS(&Relaxation, MeanTemp, capacity);
             SaveRelaxSignalToFile(MeanTemp, &Relaxation, 0.0, 0.0, capacity);
             index_relax.store(offset);
-            SendMessage(hMainWindow, WM_COMMAND, WM_PAINT_RELAX, 0);
-            SendMessage(hMainWindow, WM_COMMAND, WM_PAINT_DLTS, 0);
+            PostMessage(hMainWindow, WM_COMMAND, WM_PAINT_RELAX, 0);
+            PostMessage(hMainWindow, WM_COMMAND, WM_PAINT_DLTS, 0);
         }
         stability.store(false);
     } catch(out_of_range const &e){ MessageBox(0, e.what(), "Exception in ReadDLTS", 0); StartButPush(); }

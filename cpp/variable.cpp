@@ -6,7 +6,8 @@ vector<vector<double>>      yAxisDLTS;
 vector<double>              xAxisITS;
 vector<vector<double>>      yAxisITS;
 vector<double>              xAxisAr;
-vector<vector<double>>      yAxisAr;
+vector<double>              yAxisAr;
+vector<double>              yAxisArMSQ;
 vector<double>              CorTc;
 vector<double>              TimeAxis;
 
@@ -31,6 +32,7 @@ const string        FileSaveExt{".dlts"};
 
 double dEfMass = ELECTRON_MASS;
 double dFactorG = 1;
+double dImpurity = 1e15;
 
 double itsTemperature = 0.0; /* Температура в режиме ITS */
 unsigned int id_DAQ = 0;
@@ -55,7 +57,9 @@ atomic_bool start{false};            //Нажата кнопка старт
 atomic_bool stability{false};        //Температура стабилизировалась вблизи сетпоинта
 atomic_bool bfNewfile{true};         //Создавать ли новый файл при старте эксперимента?
 atomic_bool fix_temp{false};         //Фиксация температуры
-atomic_bool auto_peak_search{true};  //Автоопределение пика методом золотого сечения
+/* Меню */
+bool menu::divide{false};
+bool menu::automatic{true};
 //atomic_bool normaliz_dlts{false};
 
 /* Параметры коррелятора */

@@ -13,7 +13,6 @@
 #define WHEEL_SCALE   2
 
 bool capture = false; /* Флаг захвата мыши */
-//bool recal   = false; /* Флаг пересчета положения пика */
 size_t index = 0;     /* Индекс захваченного пика */
 vector<double> vPickData1, vPickData2; /* Вектор со значениями температур, соответствующих пикам */
 
@@ -57,35 +56,15 @@ VOID plotDAQ(gwin::gVector *vData1, gwin::gVector *vData2)
 VOID PlotRelax()
 {
     EnterCriticalSection(&csSavedData);
-        if(SavedRelaxations.empty())
-        {
-            LeaveCriticalSection(&csSavedData);
-            return;
-        }
-        int limit_index_relax = SavedRelaxations.size();
-        gwin::gVector vData1, vData2;
-        const size_t n = SavedRelaxations[index_relax.load()].size();
-        vData1.reserve(n);
-        vData2.reserve(n);
-        double gate     = 0.001 * gate_DAQ;
-        double delta    = 1000 / rate_DAQ;
-        for(size_t i = 0; i < n; i++)
-        {
-            vData1.push_back(gate + i*delta); /* ms */
-        }
-        if(bspline::enable)
-        {
-            gsl_approx approx(vData1, SavedRelaxations[index_relax.load()], bspline::ncoeffs, bspline::order);
-            for(size_t i = 0; i < n; ++i)
-                vData2.push_back(approx(gate + i*delta));
-        }
-        else
-        {
-            for(size_t i = 0; i < n; ++i)
-                vData2.push_back(SavedRelaxations[index_relax.load()][i]);
-        }
-        double capacity = SavedCapacity[index_relax.load()];
-    LeaveCriticalSection(&csSavedData);
+    if(SavedRelaxations.empty())
+    {
+        LeaveCriticalSection(&csSavedData);
+        return;
+    }
+    int limit_index_relax = SavedRelaxations.size();
+    const size_t n = SavedRelaxations[index_relax.load()].size();
+
+    double capacity = SavedCapacity[index_relax.load()];
 
     stringstream buffer;
     if(!xAxisDLTS.empty())
@@ -102,9 +81,21 @@ VOID PlotRelax()
     rewrite(buffer) << "[" << index_relax + 1 << "|" << limit_index_relax << "]";
     Title = Title + buffer.str();
     gwin::gTitle(hRelax, Title);
-
     gwin::gAxisInfo(hRelax, xSubscribe, ySubscribe);
-    gwin::gData(hRelax, &vData1, &vData2);
+
+    if(bspline::enable)
+    {
+        gwin::gVector vBuff;
+        gsl_approx approx(TimeAxis, SavedRelaxations[index_relax.load()], bspline::ncoeffs, bspline::order);
+        for(size_t i = 0; i < n; ++i)
+            vBuff.push_back(approx(TimeAxis[i]));
+        gwin::gData(hRelax, &TimeAxis, &vBuff);
+    }
+    else
+    {
+        gwin::gData(hRelax, &TimeAxis, &SavedRelaxations[index_relax.load()]);
+    }
+    LeaveCriticalSection(&csSavedData);
 }
 
 /* ** */
@@ -139,41 +130,26 @@ VOID PlotDLTS(const gwin::gVector &xAxis, const gwin::gMulVector &yAxis)
         gwin::gDefaultPlot(hGraph_DLTS, "You should measure the second point\nfor plotting DLTS curves\0");
         return;
     }
-
     if(index_w4.load() == 2 && !xAxisDLTS.empty() && !SavedCapacity.empty())    /* CV график */
     {
         PlotCV();
     }
-
     /* Точность определения пика */
     double eps = pow(10, -THERMO_PRECISION);
     if(index_mode.load() == ITS)
-        eps = 1e-9; /* Высокая точность определения для ITS */
+        eps = 1e-6; /* Высокая точность определения для ITS */
     /* Поиск максимума методом золотого сечения */
     double a = xAxis.at(0); // Левый край
     double b = xAxis.at(xAxis.size()-1); // Правый край
-    size_t n            = yAxis.size(); //Количество DLTS or ITS кривых
+    size_t n = yAxis.size(); //Количество кривых
     for(size_t i = 0; i < n; i++)
     {
         const gwin::gVector &vData2 = yAxis[i];
-        
-        unique_ptr<gsl_approx> f_approx;
-        unique_ptr<interp>     f_interp;
-        auto f = [&](double arg)
-        {
-            return bspline::enable2 ? (*f_approx)(arg) : (*f_interp)(arg);
-        };
+
+        interp f (xAxis, vData2, gsl_interp_linear);
         auto f_abs = [&](double arg){ return fabs(f(arg)); };
 
-        if(bspline::enable2)
-        {
-            f_approx =  make_unique <gsl_approx> (xAxis, vData2, bspline::ncoeffs, bspline::order);
-        }
-        else
-        {
-            f_interp = make_unique <interp> (xAxis, vData2, gsl_interp_linear);
-        }
-        if(auto_peak_search.load() == true)
+        if(menu::automatic == true)
         {
             if(vPickData1.size() < i + 1)
             {
@@ -183,10 +159,7 @@ VOID PlotDLTS(const gwin::gVector &xAxis, const gwin::gMulVector &yAxis)
             }
             else
             {
-                double delta = 0.1 * (b-a);
-                double from = (vPickData1[i] - delta > a ? vPickData1[i] - delta: a);
-                double to = (vPickData1[i] + delta < b ? vPickData1[i] + delta: b);
-                double tau = GoldSerch(from, to, eps, f_abs, MAXIMUM);
+                double tau = GoldSerch(a, b, eps, f_abs, MAXIMUM);
                 vPickData1[i] = tau;
                 vPickData2[i] = f(tau);
             }
@@ -206,10 +179,26 @@ VOID PlotDLTS(const gwin::gVector &xAxis, const gwin::gMulVector &yAxis)
 
             if(index_mode.load() == DLTS)
             {
-                buffer << "T: "  << vPickData1[index] << " [K]\n"
-                       << "Tc: " << CorTc[index] << " [ms]\n";
+                double Tc = CorTc[index];
+                double Tpeak = vPickData1.at(index);
+                buffer << "T: "  << Tpeak << " [K]\n"
+                       << "Tc: " << Tc << " [ms]\n";
+                if(WeightType == DoubleBoxCar)
+                { /* Рассчитываем и выводим концентрацию ловушек */
+                    double Tg = Tc / correlation_c;
+                    double tau = find_tau(Tg, Tc, WeightType); //мсек
+                    interp C (xAxis, SavedCapacity, gsl_interp_linear);
+                    double Smax = vPickData2[index];
+
+                    double N = 2 * (::dImpurity / (C(Tpeak)) ) * (1 - exp(- Tc/tau)) * exp(-Tg/tau) * Smax;
+                    if(!menu::divide)
+                    {
+                        N /= divider(Tc, WeightType);
+                    }
+                    buffer << scientific << "N: " << fabs(N) << "[cm^-3]" << endl;
+                }
             }
-            else
+            else if(index_mode.load() == ITS)
             {
                 buffer << "tau: "  << pow(10, -vPickData1[index]) << " [ms]\n"
                        << "T: " << xAxisDLTS[index] << " [K]\n";
@@ -222,11 +211,15 @@ VOID PlotDLTS(const gwin::gVector &xAxis, const gwin::gMulVector &yAxis)
         }
         gwin::gBand(hGraph_DLTS, 0, 0, 0.0, 0.0);
         gwin::gPrecision(hGraph_DLTS, THERMO_PRECISION, 3);
-        std::string Title{"DLTS curves"}, xSubscribe{"Temperature [K]"}, ySubscribe{"S [Arb.]"};
+        std::string Title{"DLTS curves"}, xSubscribe{"Temperature [K]"}, ySubscribe{"S [pF*ms]"};
         if(index_mode.load() == ITS)
         {
             Title = "ITS curves";
             xSubscribe = "Log of emission rate [1/ms]";
+        }
+        if(menu::divide || index_mode.load() == ITS)
+        {
+            ySubscribe = "S [pF]";
         }
         Title = Title + " [" + names_wFunc[WeightType] + "]";
         gwin::gTitle(hGraph_DLTS, Title);
@@ -251,7 +244,8 @@ VOID PlotDLTS(const gwin::gVector &xAxis, const gwin::gMulVector &yAxis)
             gwin::gDefaultPlot(hGraph_DLTS, "You should measure a second temperature point\nfor plotting Arrhenius graph.\0");
             return;
         }
-        double B = 2*sqrt(3.0)*pow(::dFactorG,-1)*(::dEfMass*pow(BOLTZMANN,2)*pow(PLANCKS_CONSTANT_H,-3))*pow(2*PI, 1.5);
+
+        double B = ::dEfMass * pow(::dFactorG,-1) * B_CONSTANT;
         gwin::gVector vData1, vData2, vData3;
         for(size_t i = 0; i < yAxis.size(); i++)
         {
@@ -267,36 +261,47 @@ VOID PlotDLTS(const gwin::gVector &xAxis, const gwin::gMulVector &yAxis)
             }
             else if(index_mode.load() == ITS)
             {
-                tau = 0.001 * pow(10, -vPickData1.at(i));
+                tau = 0.001 * (pow(10, -vPickData1.at(i)));
                 T_max = xAxisDLTS[i];
             }
-            vData1.push_back(-1 * pow(T_max*BOLTZMANN,-1));
+            vData1.push_back(pow(T_max*BOLTZMANN_SI,-1));
             vData2.push_back(log( tau*pow(T_max, 2) ) );
         }
         double a = 0.0, b = 0.0, Energy = 0.0, CrossSection = 0.0;
         GetParam(vData1, vData2, a, b);
-        Energy = -1 * b;
-        CrossSection = exp(-1 * a) / B;
-        for(const auto &x: vData1)
-            vData3.push_back(a+b*x);
+        Energy = b * 625e19;  //мэВ
+        CrossSection = (exp(-a) / B) * 1e4; //см^2
 
+        for(size_t i = 0; i < vData1.size(); ++i)
+        {   /* Формируем оси */
+            const double x = vData1[i];
+            const double shift = 2*log(BOLTZMANN_SI * x);
+            vData3.push_back( (a+b*x) - shift );
+            vData2[i] = vData2[i] - shift;
+            vData1[i] = x / 625e16;
+        }
+        stringstream buff0;
+        for(int i = 0; i < vData1.size(); ++i)
+        {
+            buff0 << vData1
+        }
+        
         stringstream buff;
-        buff << setprecision(2) << scientific << "CS: " << CrossSection << " [m^2]" << endl
-             << "R: " << sqrt(CrossSection/PI) << " [m]" << endl
-             << fixed << setprecision(0) << "E: " << 1000*Energy*(625e+16) << " [meV]";
-        std::string Title{"Arrhenius plot"}, xSubscribe{"1/kT [1/J]"}, ySubscribe{"ln(tau T^2)"};
+        buff << setprecision(2) << scientific << "CS: " << CrossSection << " [cm^2]" << endl
+             << "R: " << sqrt(CrossSection/PI) << " [cm]" << endl
+             << fixed << setprecision(0) << "E: " << Energy << " [meV]" << endl;
+        std::string Title{"Arrhenius plot"}, xSubscribe{"1/kT [1/eV]"}, ySubscribe{"ln(e)"};
         gwin::gTitle(hGraph_DLTS, Title);
         gwin::gBand(hGraph_DLTS, 0, 0, 0.0, 0.0);
         gwin::gAxisInfo(hGraph_DLTS, xSubscribe, ySubscribe);
         gwin::gCross(hGraph_DLTS, &vData1, &vData2); /* Экспериментальные точки */
-        gwin::gAdditionalInfo(hGraph_DLTS, buff.str());
+        gwin::gAdditionalInfo(hGraph_DLTS, buff.str(), gwin::ALIGMENT::RIGHT);
         gwin::gPrecision(hGraph_DLTS, THERMO_PRECISION, 3);
         gwin::gData(hGraph_DLTS, &vData1, &vData3);
         /* Сохраняем результаты */
-        ::xAxisAr = move(vData1);
-        gwin::gMulVector vMulData;
-        vMulData.push_back(vData2);
-        ::yAxisAr = move(vMulData);
+        ::xAxisAr       = move(vData1);
+        ::yAxisAr       = move(vData2);
+        ::yAxisArMSQ    = move(vData3);
     }
 }
 
@@ -323,15 +328,29 @@ VOID dlts_OnLButtonDown(HWND hWnd, BOOL fDoubleClick, INT x, INT y, UINT keyFlag
     RECT rt;
     /* Добавить проверку полноты вектора */
     try{
-        size_t n = (index_mode.load() == DLTS) ? yAxisDLTS.size() : yAxisITS.size();
+        size_t n = 0;
+        switch(index_mode.load())
+        {
+            case DLTS:
+                n = yAxisDLTS.size();
+                break;
+            case ITS:
+                n = yAxisITS.size();
+                break;
+        }
         for(size_t i = 0; i < n; i++)
         {
             gwin::gPoint pt = {vPickData1.at(i), vPickData2.at(i)}; // В ед. температуры и arb. соответственно
             gwin::gGpToLp(hWnd, &pt); // В лог. ед.
             SetRect(&rt, pt.x-MARK, pt.y-MARK, pt.x+MARK, pt.y+MARK);
+            /*stringstream buff;
+            buff << "pt" << pt.x << " and " << pt.y << endl;
+            buff << point.x << " " << point.y;
+            MessageBox(0,buff.str().c_str(),"",0);*/
+            menu::automatic = false;
             if(PtInRect(&rt, POINT{(LONG)point.x, (LONG)point.y}))
             {
-                auto_peak_search.store(false);
+
                 SendMessage(hMainWindow, WM_COMMAND, WM_REFRESH_MENU, 0);
                 index = i;
                 capture = true;
@@ -342,32 +361,6 @@ VOID dlts_OnLButtonDown(HWND hWnd, BOOL fDoubleClick, INT x, INT y, UINT keyFlag
     } catch(out_of_range  &e){ MessageBox(0, e.what(), "Exception in dlts_OnLButtonDown", 0); }
       catch(...){ MessageBox(0, "Some exception.", "Exception in dlts_OnLButtonDown", 0); }
 }
-
-/*VOID dlts_OnRButtonDown(HWND hWnd, BOOL fDoubleClick, INT x, INT y, UINT keyFlags)
-{
-    if(vPickData1.empty() || vPickData2.empty())
-        return;
-    static CONST LONG MARK = 10; // Размер (радиус) области выделения пика в лог. ед
-    gwin::gPoint point{(double)x, (double)y};
-    gwin::gDvToLp(hWnd, &point); // Положение курсора в лог. ед.
-    RECT rt;
-    try{
-        size_t n = (index_mode.load() == DLTS) ? yAxisDLTS.size() : yAxisITS.size();
-        for(size_t i = 0; i < n; i++)
-        {
-            gwin::gPoint pt = {vPickData1.at(i), vPickData2.at(i)}; // В ед. температуры и arb. соответственно
-            gwin::gGpToLp(hWnd, &pt); // В лог. ед.
-            SetRect(&rt, pt.x-MARK, pt.y-MARK, pt.x+MARK, pt.y+MARK);
-            if(PtInRect(&rt, POINT{(LONG)point.x, (LONG)point.y}))
-            {
-                index = i;
-                recal = true;
-                SendMessage(hMainWindow, WM_COMMAND, WM_PAINT_DLTS, 0);
-            }
-        }
-    } catch(out_of_range  &e){ MessageBox(0, e.what(), "Exception in dlts_OnLButtonDown", 0); }
-      catch(...){ MessageBox(0, "Some exception.", "Exception in dlts_OnLButtonDown", 0); }
-}*/
 
 
 VOID dlts_OnLButtonUp(HWND hWnd, INT x, INT y, UINT keyFlags)
@@ -391,7 +384,7 @@ VOID dlts_OnMouseMove(HWND hWnd, INT x, INT y, UINT keyFlags)
             /* Проверка границ окна */
             if((index_mode.load() == DLTS && point.x >= xAxisDLTS.at(0) && point.x <= xAxisDLTS.at(xAxisDLTS.size()-1) )
                ||
-               (index_mode.load() == ITS && point.x >= xAxisITS.at(0) && point.x <= xAxisITS.at(xAxisITS.size()-1)))
+               (index_mode.load() == ITS && point.x >= xAxisITS.at(0) && point.x <= xAxisITS.at(xAxisITS.size()-1)) )
             {
                 vPickData1.at(index) = point.x;
                 SendMessage(hMainWindow, WM_COMMAND, WM_PAINT_DLTS, 0);

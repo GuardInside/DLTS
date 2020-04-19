@@ -1,0 +1,236 @@
+#include "facility.h"
+#include <fstream>
+
+#include "ini.h"
+#include "variable.h"
+#include "dlts_math.h"
+#include <gsl_bspline.h>
+
+void Test(int mode)
+{
+        const double gate = 0.001 * gate_DAQ;
+        const double rate = rate_DAQ;
+        const double time = measure_time_DAQ;
+        const double dt = 1000 / rate_DAQ; //мс
+        size_t maxi = time / dt;
+
+        const double mass = ELECTRON_MASS; //кг
+        const double sigma_cm = 5e-13; //см:-2
+        const double Ea_mev = 514; //мэВ
+
+        const double sigma = sigma_cm * 1e-4;
+        const double Ea    = Ea_mev * 1.6e-22;
+
+        for(double T = 150; T < 244; T += 1)
+        {
+            double V = sqrt(3*BOLTZMANN_SI*T / dEfMass);
+            double Nc = 2* pow(2*PI*dEfMass * BOLTZMANN_SI * T / pow(PLANCKS_CONSTANT_H_SI,2), 1.5);
+            double tau   = 1000 * pow(sigma * V * Nc * exp( -(Ea / (BOLTZMANN_SI * T)) ), -1); //ms
+            /*stringstream buff;
+            buff << V << endl << Nc << endl << tau;
+            MessageBox(0,buff.str().c_str(),"",0);*/
+
+            vector<double> vBuff;
+            for(size_t i = 0; i < maxi; ++i)
+            {
+                vBuff.push_back(  exp( -(gate + i*dt) / tau) );
+            }
+            xAxisDLTS.push_back(T);
+            SavedCapacity.push_back(1);
+            SavedRelaxations.push_back(vBuff);
+        }
+
+        index_relax = 0;
+        index_mode = DLTS;
+        PostMessage(hMainWindow, WM_COMMAND, WM_PAINT_RELAX, 0);
+        PostMessage(hMainWindow, WM_COMMAND, WM_REFRESH_DLTS, 0);
+}
+
+void FileOpeningTest(const ofstream& file)
+{
+    if(!file.is_open())
+    {
+        MessageBox(NULL, "Save file isn't being found.", "Error", MB_ICONERROR);
+        return;
+    }
+}
+
+map<int, map<double,corinfo>> CorInfo;
+corinfo get_corinfo(int type, double Tc)
+{
+    if(CorInfo[type].find(Tc) == CorInfo[type].end())
+    {
+        double Tg = Tc / correlation_c;
+        CorInfo[type][Tc].tau0 = find_tau(Tg, Tc, type);
+        CorInfo[type][Tc].SN   = SN(Tg, Tc, type);
+        CorInfo[type][Tc].lw   = lw(Tg, Tc, type);
+    }
+
+    return CorInfo[type][Tc];
+}
+
+int GetResPidTable(int i, string const &str)
+{
+    if(str == "UPPER_BOUNDARY")
+    {
+        const int id_upper_bound[] = {ID_EDITCONTROL_UBOUNDARY_1, ID_EDITCONTROL_UBOUNDARY_2, ID_EDITCONTROL_UBOUNDARY_3,
+                            ID_EDITCONTROL_UBOUNDARY_4, ID_EDITCONTROL_UBOUNDARY_5, ID_EDITCONTROL_UBOUNDARY_6,
+                            ID_EDITCONTROL_UBOUNDARY_7, ID_EDITCONTROL_UBOUNDARY_8, ID_EDITCONTROL_UBOUNDARY_9,
+                            ID_EDITCONTROL_UBOUNDARY_10};
+        return id_upper_bound[i];
+    }
+    else if(str == "P")
+    {
+        const int id_p[] = {ID_EDITCONTROL_P_1, ID_EDITCONTROL_P_2, ID_EDITCONTROL_P_3, ID_EDITCONTROL_P_4,
+                        ID_EDITCONTROL_P_5, ID_EDITCONTROL_P_6, ID_EDITCONTROL_P_7, ID_EDITCONTROL_P_8,
+                        ID_EDITCONTROL_P_9, ID_EDITCONTROL_P_10};
+        return id_p[i];
+    }
+    else if(str == "I")
+    {
+        const int id_i[] = {ID_EDITCONTROL_I_1, ID_EDITCONTROL_I_2, ID_EDITCONTROL_I_3, ID_EDITCONTROL_I_4,
+                        ID_EDITCONTROL_I_5, ID_EDITCONTROL_I_6, ID_EDITCONTROL_I_7, ID_EDITCONTROL_I_8,
+                        ID_EDITCONTROL_I_9, ID_EDITCONTROL_I_10};
+        return id_i[i];
+    }
+    else if(str == "D")
+    {
+        const int id_d[] = {ID_EDITCONTROL_D_1, ID_EDITCONTROL_D_2, ID_EDITCONTROL_D_3, ID_EDITCONTROL_D_4,
+                        ID_EDITCONTROL_D_5, ID_EDITCONTROL_D_6, ID_EDITCONTROL_D_7, ID_EDITCONTROL_D_8,
+                        ID_EDITCONTROL_D_9, ID_EDITCONTROL_D_10};
+        return id_d[i];
+    }
+    return -1;
+}
+
+double MeanSquareErrorOfTemp(std::vector<double>::const_iterator b,
+                             std::vector<double>::const_iterator e)
+{
+    /* Используем последние N отсчетов температуры для рассчета среднего и отклонения,
+       для того чтобы ускорить процесс стабилизации */
+    constexpr static const size_t LNS = AVERAGING_TIME/(0.001*REFRESH_TIME_THERMOSTAT);
+    size_t range = static_cast<size_t>( std::abs( std::distance(b, e) ) );
+    size_t diff = LNS;
+    if(range < LNS) diff = range;
+    double result = MeanSquareError(e - diff, e);
+    constexpr double lower_MSK = pow(10, -THERMO_PRECISION);
+    return (result < lower_MSK) ? 0.0 : result;
+}
+
+double MeanOfTemp(std::vector<double>::const_iterator b,
+                  std::vector<double>::const_iterator e)
+{
+    /* Используем последние N отсчетов температуры для рассчета среднего и отклонения,
+       для того чтобы ускорить процесс стабилизации */
+    constexpr static const size_t LNS = 0.001*REFRESH_TIME_THERMOSTAT*AVERAGING_TIME;
+    size_t range = static_cast<size_t>( std::abs( std::distance(b, e) ) );
+    size_t diff = LNS;
+    if(range < LNS) diff = range;
+    return Mean(e - diff, e);
+}
+
+void VoltageToCapacity(double *value)
+{
+    static const double _SULA_CONST = 0.2;
+    *value = _SULA_CONST*(*value)*int_range_sula[RANGE_SULA_index];// / int_pre_amp_gain[PRE_AMP_GAIN_SULA_index];
+}
+
+void ClearMemmory()
+{
+    /* Включить автопоиск минимума */
+    menu::automatic = true;
+    SendMessage(hMainWindow, WM_COMMAND, WM_REFRESH_MENU, 0);
+    ClearMemmoryDLTS();
+
+    EnterCriticalSection(&csSavedData);
+    SavedCapacity.clear();
+    SavedRelaxations.clear();
+    CorInfo.clear();
+    LeaveCriticalSection(&csSavedData);
+
+    gwin::gDefaultPlot(hRelax, "\0");
+    gwin::gDefaultPlot(hGraph_DLTS, "\0");
+}
+
+void ClearMemmoryDLTS()
+{
+    EnterCriticalSection(&csSavedData);
+    yAxisDLTS.clear();
+    yAxisDLTS.resize(CorTc.size());
+    xAxisDLTS.clear();
+
+    yAxisITS.clear();
+    xAxisITS.clear();
+
+    std::vector<double>().swap(vPickData1);
+    std::vector<double>().swap(vPickData2);
+
+    LeaveCriticalSection(&csSavedData);
+}
+
+atomic_bool StopRefreshDLTS{false};
+
+UINT CALLBACK RefreshDLTS(PVOID)
+{
+    if(xAxisDLTS.empty())
+        return 1;
+
+    EnterCriticalSection(&csSavedData);
+    gwin::gVector xAxisBuffer = std::move(xAxisDLTS);
+
+    ClearMemmoryDLTS();
+
+    size_t n = xAxisBuffer.size();
+    for(size_t i = 0; i < n; i++)
+    {
+        if(StopRefreshDLTS.load() == true)
+        {
+            xAxisDLTS = std::move(xAxisBuffer);
+            LeaveCriticalSection(&csSavedData);
+            PostMessage(hProgress, PBM_SETPOS, 0, 0);
+            return 0;
+        }
+        AddPointToDLTS(&SavedRelaxations[i], xAxisBuffer[i], SavedCapacity[i]);
+        /* Обновление информации о ходе записи */
+        PostMessage(hProgress, PBM_SETPOS, 100*i/n, 0);
+    }
+    /* Аппроксимация DLTS-кривых */
+    if(bspline::enable2)
+    {
+        vector<vector<double>>  &Y = yAxisDLTS;
+        vector<double>          &X = xAxisDLTS;
+        if(index_mode.load() == ITS)
+        {
+            Y       = yAxisITS;
+            X       = xAxisITS;
+        }
+        size_t n = Y.size();
+        size_t k = X.size();
+        for(size_t i = 0; i < n; ++i)
+        {
+            gsl_approx f (X, Y[i], bspline::ncoeffs, bspline::order);
+            for(size_t j = 0; j < k; ++j)
+            {
+                Y[i][j] = f(X[j]);
+            }
+            PostMessage(hProgress, PBM_SETPOS, 100*i/n, 0);
+        }
+    }
+
+    LeaveCriticalSection(&csSavedData);
+
+    PostMessage(hProgress, PBM_SETPOS, 0, 0);
+    menu::automatic = true;
+    SendMessage(hMainWindow, WM_COMMAND, WM_REFRESH_MENU, 0);
+    SendMessage(hMainWindow, WM_COMMAND, WM_PAINT_DLTS, 0);
+    return 0;
+}
+
+/* Возвращает расширение открытого файла */
+string GetExtensionFile(string str)
+{
+    for(size_t i = 0; i < str.length(); i++)
+        if(str[i] == '.')
+            return string(str, i);
+    return string("Incorrect format");
+}

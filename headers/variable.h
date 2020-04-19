@@ -51,10 +51,15 @@ using namespace NIDAQmx::innards;
 #define TIME_PRECISION              4
 
 /* Физические константы */
-#define BOLTZMANN                   (1.380649e-23)      //Дж/К
-#define PLANCKS_CONSTANT_H          (6.62607015e-34)    //Дж*с
+#define BOLTZMANN                   (8.617333262145e-5) // эВ/К
+#define BOLTZMANN_SI                (1.380649e-23)      // Дж/К
+
+#define PLANCKS_CONSTANT_H          (4.135667696e-15) //эВ-с//(6.62607015e-34)    //Дж*с
+#define PLANCKS_CONSTANT_H_SI       (6.62607015e-34)    //Дж*с
 #define ELECTRON_MASS               (9.10938188e-31)    //[кг], значение по умолчанию
-#define PI                          3.1415926535897932384626433832795
+#define PI                          (3.141592653589793238462643)
+
+constexpr double B_CONSTANT = 2*sqrt(3.0)*(pow(BOLTZMANN_SI,2)*pow(PLANCKS_CONSTANT_H_SI,-3))*pow(2*PI, 1.5);
 
 enum mode{DLTS, ITS};
 
@@ -72,7 +77,8 @@ extern vector<vector<double>>       yAxisDLTS;
 extern vector<double>               xAxisITS;
 extern vector<vector<double>>       yAxisITS;
 extern vector<double>               xAxisAr;
-extern vector<vector<double>>       yAxisAr;
+extern vector<double>               yAxisAr;
+extern vector<double>               yAxisArMSQ;
 extern vector<double>               CorTc;
 extern vector<double>               TimeAxis;
 extern vector<double>               vPickData1; /* Вектор со значениями температур, соответствующих пикам */
@@ -104,6 +110,7 @@ extern const string FileSaveExt;
 
 extern double dEfMass;
 extern double dFactorG;
+extern double dImpurity;
 
 extern double itsTemperature; /* Температура в режиме ITS */
 extern unsigned int id_DAQ;
@@ -127,13 +134,17 @@ namespace bspline
     extern size_t   order;
     extern size_t   ncoeffs;
 }
+namespace menu
+{
+    extern bool divide; /* Делить S на Tc */
+    extern bool automatic; /* Автоматический поиск пика */
+}
 
 /* Флаги */
 extern atomic_bool start;               //Нажата кнопка старт
 extern atomic_bool stability;           //Температура стабилизировалась вблизи сетпоинта
 extern atomic_bool bfNewfile;           //Создавать ли новый файл при старте эксперимента?
 extern atomic_bool fix_temp;            //Фиксация температуры
-extern atomic_bool auto_peak_search;    //Автоопределение пика методом золотого сечения
 //extern atomic_bool normaliz_dlts;
 /* Параметры коррелятора */
 extern int WeightType;

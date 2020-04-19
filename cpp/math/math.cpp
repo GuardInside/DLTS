@@ -76,8 +76,6 @@ double find_middle_x0(double Tg, double Tc, int type)
 }
 
 /* **************************************** */
-/* Только для экспоненциального коррелятора */
-/* **************************************** */
 
 double S_foo(double Tg, double Tc, double tau, weight_function weight_f)
 {
@@ -94,14 +92,38 @@ double S_foo(double Tg, double Tc, double tau, weight_function weight_f)
     return Integral(Tg, Tc, weight_f, sub_f, precision) / Tc;
 }
 
+/*double LockInEq(const double &tau, const double &Tc, const double &Tg)
+{
+    double a = tau / Tc;
+    double b = Tg / Tc;
+    return ( (a + b) / (a + b + 1) - exp( - 1 / (2*a) ));
+}*/
+
 double find_tau(double Tg, double Tc, int type)
 {
     using namespace std::placeholders;
     using namespace std;
     weight_function weight_f = get_weight_function(type);
 
-    if(type == DoubleBoxCar && !UseAlphaBoxCar && Tg != Tc)
-        return (Tc - Tg ) / log(Tc / Tg);
+    if(type == DoubleBoxCar)
+    {
+        if(!UseAlphaBoxCar && correlation_c != 0.0)
+        {
+            return Tc / log(1 + correlation_c);
+        }
+    }
+
+        //return (Tc - Tg ) / log(Tc / Tg);
+    /*if(type == LockIn)
+    {
+        auto D = bind(LockInEq, _1, Tc, Tg);
+        /*auto D_abs = [&](const double &tau)
+        {
+            return fabs(D(tau));
+        };
+        return GoldSerch(Tg, Tg + Tc, 1e-3, D_abs, MAXIMUM);*/
+        /*return dichotomy(Tg, Tg+Tc, 1e-9, D);
+    }*/
 
     auto S = bind(S_foo, Tg, Tc, _1, weight_f);
     auto S_abs = [&](double tau)
@@ -111,7 +133,7 @@ double find_tau(double Tg, double Tc, int type)
     return GoldSerch(0, Tg + Tc, 1e-3, S_abs, MAXIMUM); /* Поиск экстремума с точностью до мкс */
 }
 
-double helper(double Tg, double Tc, int type) /* Для отладки */
+void helper(double Tg, double Tc, int type) /* Для отладки */
 {
     using namespace std::placeholders;
     weight_function weight_f = get_weight_function(type);

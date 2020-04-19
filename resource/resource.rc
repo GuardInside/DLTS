@@ -86,6 +86,7 @@ ID_MAIN_MENU MENUEX
         POPUP "&DLTS-curves", 0, 0, 0
         {
             MENUITEM "&Auto peak detecting", ID_MENU_AUTO_PEAK_DETECTING, 0, 0
+            MENUITEM "&Divide S on Tc", ID_MENU_DIVIDE_S_ON_TC, 0, 0
         }
     }
 }
@@ -315,7 +316,7 @@ FONT 8, "Ms Shell Dlg"
     CONTROL         "Mean-squared error [K]", 0, WC_STATIC, NOT WS_GROUP | SS_LEFT, 15, 60, 75, 9, WS_EX_LEFT
     CONTROL         "Averaging [amount]", 0, WC_STATIC, NOT WS_GROUP | SS_LEFT, 110, 60, 65, 9, WS_EX_LEFT
     CONTROL         "Pre-amplifier", 0, WC_STATIC, NOT WS_GROUP | SS_LEFT, 285, 60, 60, 9, WS_EX_LEFT
-    CONTROL         "Width [ms]", 0, WC_STATIC, NOT WS_GROUP | SS_LEFT, 200, 60, 60, 9, WS_EX_LEFT
+    CONTROL         "Width [µs]", 0, WC_STATIC, NOT WS_GROUP | SS_LEFT, 200, 60, 60, 9, WS_EX_LEFT
     CONTROL         "Save file name", 0, WC_STATIC, NOT WS_GROUP | SS_LEFT, 370, 60, 50, 9, WS_EX_LEFT
     CONTROL         "g factor [Arb.]", 0, WC_STATIC, NOT WS_GROUP | SS_LEFT, 455, 60, 50, 10, WS_EX_LEFT
     CONTROL         "", ID_EDITCONTROL_DISPERSION, WC_EDIT, WS_BORDER | WS_TABSTOP | ES_AUTOHSCROLL, 15, 75, 70, 15, WS_EX_LEFT
@@ -341,6 +342,8 @@ FONT 8, "Ms Shell Dlg"
     CONTROL         "Apply", ID_BUTTON_APPLY_SETTINGS, WC_BUTTON, WS_TABSTOP | BS_DEFPUSHBUTTON, 415, 210, 54, 14, WS_EX_LEFT
     CONTROL         "Close", ID_BUTTON_CLOSE_SETTINGS, WC_BUTTON, WS_TABSTOP | BS_DEFPUSHBUTTON, 475, 210, 54, 14, WS_EX_LEFT
     CONTROL         "Use Agilent gen.", 0, WC_STATIC, NOT WS_GROUP | SS_LEFT, 200, 170, 65, 9, WS_EX_LEFT
+    CONTROL         "", ID_EDITCONTROL_IMPURITY, WC_EDIT, WS_BORDER | WS_TABSTOP | ES_AUTOHSCROLL, 455, 110, 65, 15, WS_EX_LEFT
+    CONTROL         "Na - Nd [cm^-3]", 0, WC_STATIC, NOT WS_GROUP | SS_LEFT, 455, 95, 50, 10, WS_EX_LEFT
 }
 
 

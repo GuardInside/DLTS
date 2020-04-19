@@ -52,6 +52,7 @@ void write_settings()
     /* Сохраняем настройки блока математической модели */
     iniFile.WriteDoubleSc("Model", "mass", dEfMass, 3);
     iniFile.WriteInt("Model", "g", (int)dFactorG);
+    iniFile.WriteDoubleSc("Model", "Impurity", dImpurity, 3);
         /* Расширенне настройки */
     /* Расширенные настройки термостата */
     iniFile.WriteInt("Thermostat", "GPIB", Thermostat.gpib);
@@ -131,6 +132,7 @@ void read_settings()
     /* Загружаем настройки блока математической модели */
     iniFile.ReadDouble("Model", "mass", &dEfMass);
     iniFile.ReadInt("Model", "g", (int*)(&dFactorG));
+    iniFile.ReadDouble("Model", "Impurity", &dImpurity);
         /* Расширенне настройки */
     /* Расширенные настройки термостата */
     iniFile.ReadInt("Thermostat", "GPIB", &Thermostat.gpib);
@@ -181,7 +183,7 @@ void read_settings()
     }
 }
 //Инициализация сборщика данных, термостата и зон для PID регулировки
-void ApplySettings()
+int ApplySettings()
 {
     Thermostat.connect();
     Generator.connect();
@@ -198,18 +200,31 @@ void ApplySettings()
         {
             MessageBox(NULL, ("You must change correlation settings\n"
                        "Gate > Tg\nChange the Tc = " + to_string(Tc) + " [ms]").c_str(), "Note", MB_ICONINFORMATION);
+            return -1;
         }
         if( Tc + Tg > measure_time_DAQ) /* Все в мс */
         {
             MessageBox(NULL, ("You must change correlation settings\n"
                        "Tc+Tg > measure time\nChange the Tc = " + to_string(Tc) + " [ms]").c_str(), "Note", MB_ICONINFORMATION);
+            return -1;
         }
     }
     /* Формирем ось времени */
-    size_t  n       = 0.001 * measure_time_DAQ * rate_DAQ; // Все в мс
     double  gate    = 0.001 * gate_DAQ;
     double  delta   = 1000.0 / rate_DAQ;
+    size_t  n       = measure_time_DAQ / delta; // Все в мс
     TimeAxis.clear();
     for(size_t i = 0; i < n; i++)
         TimeAxis.push_back(gate + i*delta);
+
+    if(index_mode.load() == ITS)
+    {
+        /* Деактивируем возможность менять пункт меню Divide S on Tc */
+        EnableMenuItem( GetSubMenu(GetMenu(hMainWindow), 1), ID_MENU_DIVIDE_S_ON_TC, MF_GRAYED );
+    }
+    else
+    {
+        EnableMenuItem( GetSubMenu(GetMenu(hMainWindow), 1), ID_MENU_DIVIDE_S_ON_TC, MF_ENABLED);
+    }
+    return 0;
 }

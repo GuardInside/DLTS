@@ -128,6 +128,7 @@
 #define ID_BUTTON_PREVIOUS_W2                   40000
 #define ID_CHECKBOX_USE_BSPLINE_DLTS            40000
 #define ID_EDITCONTROL_AI_CAPACITY              40000
+#define ID_EDITCONTROL_IMPURITY                 40000
 #define ID_EDITCONTROL_STEP_AMPLITUDE           40000
 #define ID_EDITCONTROL_ALPHA                    40001
 #define ID_EDITCONTROL_BEGIN_AMPLITUDE          40001
@@ -139,7 +140,6 @@
 #define ID_EDITCONTROL_BSPLINE_NCOEFFS          40002
 #define ID_EDITCONTROL_END_AMPLITUDE            40002
 #define ID_EDITCONTROL_STEP_BIAS                40002
-#define ID_MENU_NORMALIZE_TO_ONE                40002
 #define ID_EDITCONTROL_BEGIN_BIAS               40003
 #define ID_MENU_FITTING_BSPLINE                 40099
 #define ID_BUTTON_NEXT_W4                       40201
@@ -155,3 +155,4 @@
 #define ID_MENU_AUTO_PEAK_DETECTING             40309
 #define ID_MAIN_WINDOW                          40310
 #define ID_MAIN_MENU                            40311
+#define ID_MENU_DIVIDE_S_ON_TC                  40678

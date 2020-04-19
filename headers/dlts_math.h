@@ -1,6 +1,7 @@
 #ifndef DLTS_MATH_H_INCLUDED
 #define DLTS_MATH_H_INCLUDED
 #include <cmath>
+#include <complex>
 #include <vector>
 #include <string>
 #include <map>
@@ -24,8 +25,9 @@ class interp
         double *y;
     public:
         interp(const std::vector<double> &xAxis, const std::vector<double> &yAxis, const gsl_interp_type *type);
-        double at(double x_0);
-        double operator()(double x_0);
+        double at(const double &x0);
+        double operator()(const double &x0);
+        complex<double> operator()(const complex<double> &x0);
         ~interp();
 };
 
@@ -66,6 +68,7 @@ typedef enum {DoubleBoxCar, LockIn, ExpW, SinW, Hodgart, HiRes3, HiRes4, HiRes5,
 typedef double(*weight_function)(double, double);
 /* x и t1 должны измер€тьс€ в одинаковых единицах */
 extern bool UseAlphaBoxCar;    //Ts = alpha * Tc
+double divider(const double &Tc, const int &type);
 double double_boxcar_width(double &Tg);
 double double_boxcar(double x, double Tg);
 
@@ -87,7 +90,7 @@ double SN(double Tg, double Tc, int type);
 double lw(double Tg, double Tc, int type);
 weight_function get_weight_function(int type);
 
-double helper(double Tg, double Tc, int type);
+void helper(double Tg, double Tc, int type);
 
 /* ѕоиск посто€нной времени релаксации в точке DLTS-максимума */
 double find_tau(double Tg /* measure time, ms*/, double Tc /* ms */, int type /* тип коррел€тора */);
@@ -138,29 +141,40 @@ double GoldSerch(double a, double b, double eps, func_t &Fun, int sign = 1)
 }
 #undef tau
 
-template <typename F>
+template <typename F, typename W>
 double Integral(double Tg, double Tc,
-                double(*w)(double,double), F &f,
-                const int precision =  1e5,
-                std::vector<double> *pts = nullptr)
+                W &w, F &f,
+                int precision =  1e5)
 {
+
     const int &n    = precision;
     double &a       = Tg;
     double b        = a + Tc;
     //double k        = Tc / 5.0; // дл€ возрастани€ точности с ростом промежутка
     double h        = (b - a) / (n);
-    double result   = 0.5 * (f(a)*w(a,Tg) + f(b)*w(b,Tc));
+    double result   = 0.5 * (f(a)*w(a,Tg) + f(b)*w(b,Tg));
 
     for(int i = 1; i < n; ++i) //ћетод трапеций
     {
         double weight = w(a + i*h, Tg);
         if( weight != 0.0)
-            {
-                result += f(a + i*h)*weight;
-            }
+        {
+            result += f(a + i*h)*weight;
+        }
     }
+
     return h*result;
 }
+
+
+/* ¬ычисл€ет интеграл, нормированный на промежуток, где f != 0 */
+/*template <typename F>
+double NIntegral(const double &Tg, const double &Tc,
+                double(*w)(double,double), F &f,
+                const int precision =  1e5)
+{
+    return Integral(Tg, Tc, w, f, true);
+}*/
 
 /*template <typename F>
 double IntegralRomberg(double Tg, double Tc,
@@ -214,5 +228,104 @@ double dichotomy(double infinum, double supremum, double eps, func_t &Fun) {
    }
    return (infinum + supremum) / 2;
 }
+
+/*----------------------------------------------------------------
+  Laplace Inversion Source Code
+  Copyright © 2010 James R. Craig, University of Waterloo
+----------------------------------------------------------------*/
+
+
+#define MAX_LAPORDER 60
+
+typedef complex<double> cmplex;
+template <typename FUNC>
+double LaplaceInversion(FUNC &F,
+                        const double &t,
+                        const double tolerance)
+{
+    using namespace std;
+    //--Variable declaration---------------------------------
+    int    i,n,m,r;          //counters & intermediate array indices
+    int    M(40);            //order of Taylor Expansion (must be less than MAX_LAPORDER)
+    double DeHoogFactor(4.0);//DeHoog time factor
+    double T;                //Period of DeHoog Inversion formula
+    double gamma;            //Integration limit parameter
+    cmplex h2M,R2M,z,dz,s;   //Temporary variables
+
+    static cmplex Fctrl [2*MAX_LAPORDER+1];
+    static cmplex e     [2*MAX_LAPORDER][MAX_LAPORDER];
+    static cmplex q     [2*MAX_LAPORDER][MAX_LAPORDER];
+    static cmplex d     [2*MAX_LAPORDER+1];
+    static cmplex A     [2*MAX_LAPORDER+2];
+    static cmplex B     [2*MAX_LAPORDER+2];
+
+    //Calculate period and integration limits------------------------------------
+    T    =DeHoogFactor*t;
+    gamma=-0.5*log(tolerance)/T;
+
+    //Calculate F(s) at evalution points gamma+IM*i*PI/T for i=0 to 2*M-1--------
+    //This is likely the most time consuming portion of the DeHoog algorithm
+    Fctrl[0]=0.5*F(gamma);
+    for (i=1; i<=2*M;i++)
+    {
+    s=cmplex(gamma,i*PI/T);
+    Fctrl[i]=F(s);
+    }
+
+    //Evaluate e and q ----------------------------------------------------------
+    //eqn 20 of De Hoog et al 1982
+    for (i=0;i<2*M;i++)
+    {
+    e[i][0]=0.0;
+    q[i][1]=Fctrl[i+1]/Fctrl[i];
+    }
+    e[2*M][0]=0.0;
+
+    for (r=1;r<=M-1;r++) //one minor correction - does not work for r<=M, as suggested in paper
+    {
+    for (i=2*(M-r);i>=0;i--)
+    {
+      if ((i<2*(M-r)) && (r>1)){
+      q[i][r]=q[i+1][r-1]*e[i+1][r-1]/e[i  ][r-1];
+      }
+      e[i][r]=q[i+1][r  ]-q[i  ][r  ]+e[i+1][r-1];
+    }
+    }
+
+    //Populate d vector-----------------------------------------------------------
+    d[0]=Fctrl[0];
+    for (m=1;m<=M;m++)
+    {
+    d[2*m-1]=-q[0][m];
+    d[2*m  ]=-e[0][m];
+    }
+
+    //Evaluate A, B---------------------------------------------------------------
+    //Eqn. 21 in De Hoog et al.
+    z =cmplex(cos(PI*t/T),sin(PI*t/T));
+
+    A[0]= 0.0; B[0]=1.0; //A_{-1},B_{-1} in De Hoog
+    A[1]=d[0]; B[1]=1.0;
+    for (n=2;n<=2*M+1; n++)
+    {
+    dz  =d[n-1]*z;
+    A[n]=A[n-1]+dz*A[n-2];
+    B[n]=B[n-1]+dz*B[n-2];
+    }
+
+    //Eqn. 23 in De Hoog et al.
+    h2M=0.5*(1.0+z*(d[2*M-1]-d[2*M]));
+    R2M=-h2M*(1.0-sqrt(1.0+(z*d[2*M]/h2M/h2M)));
+
+    //Eqn. 24 in De Hoog et al.
+    A[2*M+1]=A[2*M]+R2M*A[2*M-1];
+    B[2*M+1]=B[2*M]+R2M*B[2*M-1];
+
+    //Final result: A[2*M]/B[2*M]=sum [F(gamma+itheta)*exp(itheta)]-------------
+    return 1.0/T*exp(gamma*t)*(A[2*M+1]/B[2*M+1]).real();
+}
+
+
+
 
 #endif // DLTS_MATH_H_INCLUDED

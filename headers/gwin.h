@@ -20,6 +20,7 @@ typedef std::vector<std::string> gInfoVector;
 struct gPoint{double x; double y;};
 
 enum SCALETYPE {NORMAL, EXP, LOG10};
+enum ALIGMENT {RIGHT, LEFT};
 
 HWND gCreateWindow(HINSTANCE hInst, HWND hWndParent, DWORD style);
 BOOL gClose(HWND hWnd);
@@ -28,7 +29,7 @@ BOOL gData(HWND hWnd, gVector const *vData1, gVector const *vData2);
 BOOL gPosition(HWND hWnd, INT x, INT y);
 BOOL gSize(HWND hWnd, INT x, INT y);
 BOOL gFont(HWND hWnd, int iHeight, int iWidth, int iAngle, int iWeight, std::string strFontName = "");
-BOOL gAdditionalInfo(HWND hWnd, std::string);
+BOOL gAdditionalInfo(HWND hWnd, std::string, ALIGMENT iAligment = ALIGMENT::LEFT);
 BOOL gMark(HWND hWnd, int iMark1, int iMark2, int iAdMark1, int iAdMark2);
 BOOL gPrecision(HWND hWnd, INT iPrec1, INT iPrec2);
 BOOL gBand(HWND hWnd, double dMinX, double dMaxX, double dMinY, double dMaxY);

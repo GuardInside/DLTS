@@ -1,9 +1,81 @@
 #include "facility.h"
 #include <fstream>
+#include <random>
 
 #include "ini.h"
 #include "variable.h"
 #include "dlts_math.h"
+#include <gsl_bspline.h>
+
+void Test(int type)
+{
+        const double gate = 0.001 * gate_DAQ;
+        measure_time_DAQ = 120;
+        ApplySettings();
+        const double time = measure_time_DAQ;
+        const double dt = 1000 / rate_DAQ; //мс
+        size_t maxi = time / dt;
+
+        const double sigma_cm = 7e-15; //см:-2
+        const double Ea_mev = 560; //мэВ
+
+        const double sigma = sigma_cm * 1e-4;
+        const double Ea    = Ea_mev * 1.6e-22;
+
+        if(type == DLTS)
+        {
+            //FileSaveName = "240 to 310";
+            for(double T = 240; T < 310; T += 1)
+            {
+                double V = sqrt(3*BOLTZMANN_SI*T / dEfMass);
+                double Nc = 2* pow(2*PI*dEfMass * BOLTZMANN_SI * T / pow(PLANCKS_CONSTANT_H_SI,2), 1.5);
+                double tau   = 1000 * pow(sigma * V * Nc * exp( -(Ea / (BOLTZMANN_SI * T)) ), -1); //ms
+                /*stringstream buff;
+                buff << V << endl << Nc << endl << tau;
+                MessageBox(0,buff.str().c_str(),"",0);*/
+
+                vector<double> vBuff;
+                for(size_t i = 0; i < maxi; ++i)
+                {
+                    vBuff.push_back(  exp( -(gate + i*dt) / tau) );
+                }
+                xAxisDLTS.push_back(T);
+                SavedCapacity.push_back(1);
+                SavedRelaxations.push_back(vBuff);
+                //SaveRelaxSignalToFile(T, &vBuff, 0.0, 0.0, 1.0);
+            }
+        }
+        else if(type == ITS)
+        {
+            EnableMenuItem( GetSubMenu(GetMenu(hMainWindow), 1), ID_MENU_DIVIDE_S_ON_TC, MF_GRAYED );
+
+            double Temp[] = {270, 285, 290, 300, 310};
+            //for(double T = 260; T < 310; T += 10)
+            for(int i = 0; i < 5; ++i)
+            {
+                double T = Temp[i];
+                double V = sqrt(3*BOLTZMANN_SI*T / dEfMass);
+                double Nc = 2* pow(2*PI*dEfMass * BOLTZMANN_SI * T / pow(PLANCKS_CONSTANT_H_SI,2), 1.5);
+                double tau   = 1000 * pow(sigma * V * Nc * exp( -(Ea / (BOLTZMANN_SI * T)) ), -1); //ms
+                /*stringstream buff;
+                buff << V << endl << Nc << endl << tau;
+                MessageBox(0,buff.str().c_str(),"",0);*/
+
+                vector<double> vBuff;
+                for(size_t i = 0; i < maxi; ++i)
+                {
+                    vBuff.push_back(  -exp( -(gate + i*dt) / tau) );
+                }
+                xAxisDLTS.push_back(T);
+                SavedCapacity.push_back(1);
+                SavedRelaxations.push_back(vBuff);
+            }
+        }
+        index_relax = 0;
+        index_mode = static_cast<mode>(type);
+        PostMessage(hMainWindow, WM_COMMAND, WM_PAINT_RELAX, 0);
+        PostMessage(hMainWindow, WM_COMMAND, WM_REFRESH_DLTS, 0);
+}
 
 void FileOpeningTest(const ofstream& file)
 {
@@ -97,7 +169,7 @@ void VoltageToCapacity(double *value)
 void ClearMemmory()
 {
     /* Включить автопоиск минимума */
-    auto_peak_search.store(true);
+    menu::automatic = true;
     SendMessage(hMainWindow, WM_COMMAND, WM_REFRESH_MENU, 0);
     ClearMemmoryDLTS();
 
@@ -119,10 +191,11 @@ void ClearMemmoryDLTS()
     xAxisDLTS.clear();
 
     yAxisITS.clear();
-    xAxisITS.clear();
+    std:;vector<doub.e>xAxisITS.clear();
 
-    std::vector<double>.swap(vPickData1);
-    vPickData2.clear();
+    std::vector<double>().swap(vPickData1);
+    std::vector<double>().swap(vPickData2);
+
     LeaveCriticalSection(&csSavedData);
 }
 
@@ -138,8 +211,7 @@ UINT CALLBACK RefreshDLTS(PVOID)
 
     ClearMemmoryDLTS();
 
-    size_t n = xAxisBuffer.size();;
-
+    size_t n = xAxisBuffer.size();
     for(size_t i = 0; i < n; i++)
     {
         if(StopRefreshDLTS.load() == true)
@@ -153,11 +225,36 @@ UINT CALLBACK RefreshDLTS(PVOID)
         /* Обновление информации о ходе записи */
         PostMessage(hProgress, PBM_SETPOS, 100*i/n, 0);
     }
+    //MessageBox(0,to_string(xAxisDLTS.size()).c_str(),"",0);
+    /* Аппроксимация DLTS-кривых */
+    if(bspline::enable2)
+    {
+        vector<vector<double>>  *Y = &yAxisDLTS;
+        vector<double>          *X = &xAxisDLTS;
+        if(index_mode.load() == ITS)
+        {
+            Y       = &yAxisITS;
+            X       = &xAxisITS;
+        }
+
+        size_t n = Y->size();
+        size_t k = X->size();
+
+        for(size_t i = 0; i < n; ++i)
+        {
+            gsl_approx f (*X, (*Y)[i], bspline::ncoeffs, bspline::order);
+            for(size_t j = 0; j < k; ++j)
+            {
+                (*Y)[i][j] = f((*X)[j]);
+            }
+            PostMessage(hProgress, PBM_SETPOS, 100*i/n, 0);
+        }
+    }
 
     LeaveCriticalSection(&csSavedData);
 
     PostMessage(hProgress, PBM_SETPOS, 0, 0);
-    auto_peak_search.store(true);
+    menu::automatic = true;
     SendMessage(hMainWindow, WM_COMMAND, WM_REFRESH_MENU, 0);
     SendMessage(hMainWindow, WM_COMMAND, WM_PAINT_DLTS, 0);
     return 0;
