@@ -14,7 +14,7 @@ using namespace std;
 using namespace NIDAQmx::innards;
 
 /* Активация режима отладки */
-#define TEST_MODE
+//#define TEST_MODE
 
 /* Сообщения главному окну */
 #define WM_PAINT_RELAX  WM_USER
@@ -59,7 +59,7 @@ using namespace NIDAQmx::innards;
 #define ELECTRON_MASS               (9.10938188e-31)    //[кг], значение по умолчанию
 #define PI                          (3.141592653589793238462643)
 
-constexpr double B_CONSTANT = 2*sqrt(3.0)*(pow(BOLTZMANN,2)*pow(PLANCKS_CONSTANT_H,-3))*pow(2*PI, 1.5);
+constexpr double B_CONSTANT = 2*sqrt(3.0)*(pow(BOLTZMANN_SI,2)*pow(PLANCKS_CONSTANT_H_SI,-3))*pow(2*PI, 1.5);
 
 enum mode{DLTS, ITS};
 
@@ -110,7 +110,7 @@ extern const string FileSaveExt;
 
 extern double dEfMass;
 extern double dFactorG;
-extern double dImpurity;
+extern double dImpurity;        //Примесь Na - Nd
 
 extern double itsTemperature; /* Температура в режиме ITS */
 extern unsigned int id_DAQ;

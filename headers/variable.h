@@ -14,7 +14,7 @@ using namespace std;
 using namespace NIDAQmx::innards;
 
 /* Активация режима отладки */
-#define TEST_MODE
+//#define TEST_MODE
 
 /* Сообщения главному окну */
 #define WM_PAINT_RELAX  WM_USER
@@ -110,7 +110,7 @@ extern const string FileSaveExt;
 
 extern double dEfMass;
 extern double dFactorG;
-extern double dImpurity;
+extern double dImpurity;        //Примесь Na - Nd
 
 extern double itsTemperature; /* Температура в режиме ITS */
 extern unsigned int id_DAQ;

@@ -14,7 +14,7 @@
 	<sstream>
 	<vector>
 
-1587115606 c:\users\Виктор\documents\github\dlts\headers\variable.h
+1590690846 c:\users\Виктор\documents\github\dlts\headers\variable.h
 	<atomic>
 	<string>
 	<vector>
@@ -58,7 +58,7 @@
 	"gwin.h"
 	"variable.h"
 
-1587130284 c:\users\Виктор\documents\github\dlts\headers\dlts_math.h
+1587131146 c:\users\Виктор\documents\github\dlts\headers\dlts_math.h
 	<cmath>
 	<complex>
 	<vector>
@@ -116,9 +116,9 @@
 	<stdlib.h>
 	<gsl/gsl_types.h>
 
-1586645109 c:\users\Виктор\documents\github\dlts\headers\resource.h
+1590056427 c:\users\Виктор\documents\github\dlts\headers\resource.h
 
-1587046527 source:c:\users\Виктор\documents\github\dlts\cpp\facility\load_save.cpp
+1590688353 source:c:\users\Виктор\documents\github\dlts\cpp\facility\load_save.cpp
 	<sstream>
 	<string>
 	<fstream>
@@ -148,7 +148,7 @@
 	"vi.h"
 	"daq.h"
 
-1587117149 source:c:\users\Виктор\documents\github\dlts\cpp\facility\utility.cpp
+1587131100 source:c:\users\Виктор\documents\github\dlts\cpp\facility\utility.cpp
 	"facility.h"
 	<fstream>
 	<random>
@@ -214,7 +214,7 @@
 1585899961 source:c:\users\Виктор\documents\github\dlts\cpp\windows\start_setting.cpp
 	"winfunc.h"
 
-1586645109 source:c:\users\Виктор\documents\github\dlts\resource\resource.rc
+1590056427 source:c:\users\Виктор\documents\github\dlts\resource\resource.rc
 	<windows.h>
 	<commctrl.h>
 	<richedit.h>
@@ -800,7 +800,7 @@
 	<gsl/gsl_matrix.h>
 	<gsl/gsl_types.h>
 
-1587129206 source:c:\users\Виктор\documents\github\dlts\cpp\math\math.cpp
+1587131148 source:c:\users\Виктор\documents\github\dlts\cpp\math\math.cpp
 	<numeric>
 	<functional>
 	<algorithm>

@@ -183,20 +183,22 @@ VOID PlotDLTS(const gwin::gVector &xAxis, const gwin::gMulVector &yAxis)
                 double Tpeak = vPickData1.at(index);
                 buffer << "T: "  << Tpeak << " [K]\n"
                        << "Tc: " << Tc << " [ms]\n";
-                if(WeightType == DoubleBoxCar)
-                { /* –ассчитываем и выводим концентрацию ловушек */
+                /*if(WeightType == DoubleBoxCar)
+                { // –ассчитываем и выводим концентрацию ловушек
                     double Tg = Tc / correlation_c;
                     double tau = find_tau(Tg, Tc, WeightType); //мсек
                     interp C (xAxis, SavedCapacity, gsl_interp_linear);
                     double Smax = vPickData2[index];
+                    double c = correlation_c;
 
-                    double N = 2 * (::dImpurity / (C(Tpeak)) ) * (1 - exp(- Tc/tau)) * exp(-Tg/tau) * Smax;
+                    double beta = c * pow( 1.0 + c, - (1.0 / c + 1.0) );
+                    double N = 2 * ( ::dImpurity / (C(Tpeak)) ) * (Smax*beta);
                     if(!menu::divide)
                     {
                         N /= divider(Tc, WeightType);
                     }
                     buffer << scientific << "N: " << fabs(N) << "[cm^-3]" << endl;
-                }
+                }*/
             }
             else if(index_mode.load() == ITS)
             {

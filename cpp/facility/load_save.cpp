@@ -395,7 +395,7 @@ UINT SaveCT()
     ofstream file;
     file.open(SaveFileName, ios_base::trunc);
     size_t uSample = SavedCapacity.size();
-    file << fixed << "T [K]\tCapacity [pF]";
+    file << fixed << "T [K]\tCapacity [pF]" << endl;
     for(size_t i = 0; i < uSample; i++)
     {
         file << setprecision(THERMO_PRECISION) << xAxisDLTS[i] << setprecision(3)
